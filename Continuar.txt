@@ -1,0 +1,3 @@
+- Subir documentos descargados a zotero
+- Clasificar los papers en el Excel
+- Seguir agregando papers, añadiéndolos altiro a Zotero y al Excel
