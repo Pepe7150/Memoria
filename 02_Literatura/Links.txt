@@ -1,5 +1,0 @@
-MATLAB Aerospace Blockset https://www.simtool.com/article/matlab-aerospace-blockset-six-degree-of-freedom-flight-dynamics-modeling-for-defense-applications/?utm_source=chatgpt.com
-
-Aerospace Blockset https://la.mathworks.com/help/aeroblks/index.html
-
-Design a Guidance System in MATLAB and Simulink https://la.mathworks.com/help/simulink/slref/designing-a-guidance-system-in-matlab-and-simulink.html?utm_source=chatgpt.com
