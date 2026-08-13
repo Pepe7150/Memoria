@@ -214,4 +214,91 @@ Propone un modelo sustituto multi-fidelidad simplificado basado en regresión li
 ### Notas del tema 4
 - Este tema complementa directamente al RF-002 del proyecto ("El sistema deberá interpolar los valores de torque para condiciones intermedias") y al módulo de "Procesamiento (Python)" descrito en la arquitectura del sistema.
 - Hay dos líneas metodológicas principales representadas: (a) kriging/cokriging y sus extensiones (Laurenceau & Sagaut, Mackman et al., Toal & Keane, Keane, Xiao et al., Toal, Zhang et al.), y (b) splines multivariados como alternativa (de Visser et al.). Conviene decidir cuál enfoque se adoptará antes de profundizar la lectura.
-- Con esto se completan las 60 referencias planificadas entre los cuatro temas (15 CFD + 15 banco de ensayos + 15 actuadores + 15 interpolación, con 2 referencias compartidas entre CFD e interpolación).
+
+---
+
+## Tema 5: Instrumentación y adquisición de datos (15 referencias)
+
+**1. Yu, Z., Qiu, Z., Li, H., Xue, J., Hu, W., & Wang, C. (2022).** *Design and Calibration of Torque Measurement System of Comprehensive Performance Test Instrument of Industrial Robot Reducer.* Computational Intelligence and Neuroscience, 2022, 8155818. DOI: 10.1155/2022/8155818
+Diseña y calibra un sistema de medición de torque que aísla el "torque adicional" generado por la cadena de transmisión entre el sensor y el elemento bajo prueba, usando una red neuronal para compensar el error. Muy relevante para el diseño del sistema de medición de torque del banco, donde puede existir un problema análogo.
+
+**2. Jubair, A., Mazali, I. I., Che Daud, Z. H., CheKob, M. S., Asus, Z., & Abdul Hamid, M. K. (2025).** *Torque Meter Calibration for Powertrain Test Bench.* AIP Conference Proceedings, 3056(1), 020007. DOI: 10.1063/5.0208589
+Describe el proceso de calibración estática de un torquímetro para un banco de ensayos, incluyendo el diseño de la estructura del banco, brazo de torque, acoplador y detector de deflexión. Buen ejemplo práctico y reciente de calibración de sensores de torque en un banco.
+
+**3. Sun, Y. (2022).** *Design, Manufacture, Test and Experiment of Six-Axis Force Torque Sensor for Chinese Experimental Module Manipulator.* Sensors, 22(9), 3603. DOI: 10.3390/s22093603
+Desarrolla un sensor de fuerza/torque de seis ejes basado en galgas extensométricas para un manipulador espacial, cubriendo diseño del elemento elástico, sistema eléctrico de adquisición y calibración mediante sistema de pesas y poleas. Ejemplo completo de diseño e instrumentación de un sensor multiaxial para aplicación aeroespacial.
+
+**4. Ahmad, A. R., Wynn, T., & Lin, C.-Y. (2021).** *A Comprehensive Design of Six-Axis Force/Moment Sensor.* Sensors, 21(13), 4498. DOI: 10.3390/s21134498
+Propone la integración de un sistema de adquisición de datos (DAQ) de alta eficiencia directamente en el sensor de fuerza/momento de seis ejes, reduciendo el error de crosstalk típico de usar un DAQ externo. Aporta una solución concreta al problema de acondicionamiento de señal cerca del punto de medición.
+
+**5. Ewald, B. F. R. (2000).** *Multi-Component Force Balances for Conventional and Cryogenic Wind Tunnels.* Measurement Science and Technology, 11(6), R81–R94. DOI: 10.1088/0957-0233/11/6/201
+Revisión clásica y muy citada sobre balanzas multicomponente basadas en galgas extensométricas para medir cargas aerodinámicas: principio de funcionamiento, optimización del diseño, fabricación y teoría de calibración. Referencia de fondo obligada para cualquier instrumentación de medición de cargas aerodinámicas.
+
+**6. Vuković, Đ., & Damljanović, D. (2015).** *Evaluation of a Force Balance with Semiconductor Strain Gages in Wind Tunnel Tests of the HB-2 Standard Model.* Proc. IMechE Part G: J. Aerospace Engineering. DOI: 10.1177/0954410015573556
+Evalúa una balanza de seis componentes con galgas semiconductoras en ensayos de un modelo balístico estándar a velocidades supersónicas, comparando contra datos de referencia. Caso concreto de instrumentación para medición de cargas en el dominio de vehículos guiados.
+
+**7. Santamaría, L. et al. (2024).** *Different Calibration Methods for a Three-Component Strain Gauge Balance to Measure Aerodynamic Forces on Airfoils.* Sensors and Actuators A: Physical.
+Explora distintos métodos de calibración (incluyendo ajuste por mínimos cuadrados de tercer orden) para una balanza de tres componentes basada en galgas extensométricas, con un dataset experimental completo y metodología detallada para asegurar reproducibilidad.
+
+**8. Bardera, R., Rodriguez-Sevillano, A. A., Barroso Barderas, E., Sor, S., & Matías García, J. C. (2024).** *Calibration of a 3-Component External Balance for MAVs Wind Tunnel Research.* Applied Sciences, 14(23), 11236. DOI: 10.3390/app142311236
+Diseña, construye y calibra una balanza externa de tres componentes con celdas de carga de alta precisión para medir cargas aerodinámicas sobre micro vehículos aéreos en túnel de viento. Ejemplo reciente y de escala pequeña, potencialmente más cercano en tamaño al banco del proyecto.
+
+**9. Niven, A. J., & Tait, S. W. (2016).** *A New Approach to the Third Order Calibration of Internal Strain Gauge Balances Used for Aerodynamic Load Measurement.* The Aeronautical Journal.
+Propone un nuevo enfoque para la calibración de tercer orden de balanzas internas de galgas extensométricas, discutiendo las limitaciones de las ecuaciones de calibración tradicionales frente a cargas aerodinámicas de seis componentes.
+
+**10. ElSaid, A., Adjekum, D., Nordlie, J., & El Jamiy, F. (2019).** *A Test Bed for Measuring UAV Servo Reliability.* arXiv:1901.11486
+Diseña un banco de ensayos que comanda un servoactuador de UAV con posiciones reales extraídas de un registrador de vuelo, mide la posición real mediante un encoder óptico digital y simula en tiempo real las fuerzas que el servo experimenta en operación. Conceptualmente muy cercano al banco de ensayos del proyecto: comando + medición de posición + simulación de carga.
+
+**11. Ulbrich, N., & Volden, T. (2017).** *Wind Tunnel Strain-Gage Balance Calibration Data Analysis Using a Weighted Least Squares Approach.* NASA Ames Research Center.
+Parte de una extensa línea de trabajo de NASA Ames sobre el análisis de datos de calibración de balanzas de galgas extensométricas, proponiendo un ajuste por mínimos cuadrados ponderados que mejora la influencia de las cargas de un solo componente en la regresión. Referencia metodológica rigurosa para el procesamiento de datos de calibración.
+
+**12. Doebelin, E. O., & Manik, D. N. (2007).** *Measurement Systems: Application and Design* (6.ª ed.). McGraw-Hill Education.
+Libro de texto clásico y ampliamente usado sobre el diseño de sistemas de medición: sensores, acondicionamiento de señal, y análisis de error. Referencia de fondo transversal a todo el eje de instrumentación.
+
+**13. Fraden, J. (2016).** *Handbook of Modern Sensors: Physics, Designs, and Applications* (5.ª ed.). Springer. DOI: 10.1007/978-3-319-19303-8
+Manual de referencia sobre física, diseño y aplicaciones de sensores modernos (fuerza, torque, posición, temperatura, entre otros), útil como material de consulta al seleccionar los sensores del banco.
+
+**14. AIAA/GTTC Internal Balance Technology Working Group (2003).** *Recommended Practice: Calibration and Use of Internal Strain-Gage Balances with Application to Wind Tunnel Testing.* AIAA R-091-2003.
+Práctica recomendada de la industria/AIAA para la calibración y uso de balanzas internas de galgas extensométricas en ensayos de túnel de viento. Documento normativo de referencia, útil si se busca alinear la metodología de calibración del banco con estándares reconocidos.
+
+**15. Bentley, J. P. (2005).** *Principles of Measurement Systems* (4.ª ed.). Pearson Education.
+Otro libro de texto clásico sobre principios de sistemas de medición (características estáticas y dinámicas de sensores, errores de medición, acondicionamiento de señal), complementario a Doebelin & Manik.
+
+### Notas del tema 5
+- ElSaid et al. (2019) es la referencia conceptualmente más cercana al proyecto completo: combina comando de posición, medición vía encoder y simulación de carga en tiempo real sobre un servoactuador, tal como se plantea para el banco.
+- Hay una línea completa de literatura sobre balanzas de galgas extensométricas para medir cargas aerodinámicas (Ewald, Vuković & Damljanović, Santamaría et al., Bardera et al., Niven & Tait, Ulbrich & Volden) que, aunque proviene del mundo de túneles de viento, es directamente aplicable al diseño del sistema de medición de torque/carga del banco.
+- Los libros de texto (Doebelin & Manik, Fraden, Bentley) son referencias de fondo, no artículos originales; sirven como material de consulta general más que como fuentes a citar puntualmente.
+
+---
+
+## Tema 6: Software de control y operación del banco (8 referencias)
+
+Este eje tiene menos literatura académica específica sobre "software para bancos de ensayo de actuadores" per se; la mayoría de las fuentes disponibles provienen de dominios adyacentes (arquitectura de software de tiempo real, vehículos submarinos, robótica industrial) pero con metodologías transferibles. Se presentan 8 referencias de buena calidad; si quieres profundizar hasta 15, se puede continuar la búsqueda en una próxima sesión.
+
+**1. Elliott, C., Vijayakumar, V., Zink, W., & Hansen, R. (2007).** *National Instruments LabVIEW: A Programming Environment for Laboratory Automation and Measurement.* Journal of Laboratory Automation, 12(1), 17–24. DOI: 10.1016/j.jala.2006.07.012
+Describe las características de LabVIEW como entorno de programación gráfica para automatización de laboratorio y adquisición de datos, con un caso de aplicación real de integración y control de múltiples plataformas automatizadas. Referencia de fondo si el software del banco se desarrolla en LabVIEW.
+
+**2. Zuluaga, C. A., Aristizábal, L. M., Rúa, S., Franco, D. A., Osorio, D. A., & Vásquez, R. E. (2022).** *Development of a Modular Software Architecture for Underwater Vehicles Using Systems Engineering.* Journal of Marine Science and Engineering, 10(4), 464. DOI: 10.3390/jmse10040464
+Desarrolla una arquitectura de software modular (modelo de actores, programación orientada a objetos) para un vehículo operado remotamente, siguiendo un proceso de ingeniería de sistemas (modelo Vee). Metodológicamente relevante para estructurar el software de operación y control del banco de forma modular y mantenible; además, el dominio (vehículos submarinos) conecta con la mención de "sistemas aeroespaciales y submarinos" en el alcance del proyecto.
+
+**3. Zalewski, J. (2001).** *Real-Time Software Architectures and Design Patterns: Fundamental Concepts and Their Consequences.* Annual Reviews in Control, 25, 133–146.
+Discute los principios de arquitecturas de software de tiempo real basados en el concepto de retroalimentación de la ingeniería de control, derivando un patrón de diseño fundamental aplicable a distintas categorías de sistemas de tiempo real, incluyendo sistemas de adquisición de datos.
+
+**4. Gomaa, H. (2016).** *Real-Time Software Design for Embedded Systems.* Cambridge University Press.
+Libro de referencia sobre diseño de software de tiempo real para sistemas embebidos, cubriendo patrones arquitectónicos de control centralizado y distribuido, y análisis de temporización. Útil como marco metodológico general para el software de control del banco.
+
+**5. Bahari, M., Barjini, A. H., Mustalahti, P., & Mattila, J. (2025).** *All-Electric Heavy-Duty Robotic Manipulator: Actuator Configuration Optimization and Sensorless Control.* arXiv:2509.15778
+Presenta un banco de pruebas ("testbed") de un actuador electromecánico lineal acoplado a un cilindro electrohidráulico que actúa como emulador de carga, con adquisición y actuación en tiempo real vía EtherCAT. Caso muy cercano en concepto al banco del proyecto (actuador + emulador de carga + sincronización en tiempo real).
+
+**6. Zhang, J., Xia, M., Li, H., Li, S., & Shi, J. (2024).** *The Design and Real-Time Optimization of an EtherCAT Master for Multi-Axis Motion Control.* Electronics, 13(15), 3101. DOI: 10.3390/electronics13153101
+Implementa un maestro EtherCAT de código abierto sobre una plataforma embebida con kernel de tiempo real, optimizando el jitter de comunicación para control de movimiento multieje. Referencia técnica útil si el banco requiere sincronización de bajo jitter entre el controlador y los sensores/actuadores.
+
+**7. ElSaid, A., Adjekum, D., Nordlie, J., & El Jamiy, F. (2019).** *A Test Bed for Measuring UAV Servo Reliability.* arXiv:1901.11486 *(ver detalle completo en Tema 5; el sistema de control del banco descrito también aplica a este tema)*
+
+**8. Åström, K. J., & Wittenmark, B. (1997).** *Computer-Controlled Systems: Theory and Design* (3.ª ed.). Prentice Hall.
+Libro de texto clásico sobre el diseño e implementación de sistemas de control por computadora, incluyendo muestreo, discretización y aspectos prácticos de implementación de software de control en tiempo real. Referencia de fondo para el diseño del lazo de control del banco.
+
+### Notas del tema 6
+- Este tema es el que menos literatura académica específica tiene disponible en comparación con los otros cinco; la mayoría de la "literatura" real sobre software de bancos de ensayo vive en documentación de fabricantes (NI, Dewesoft) más que en papers, por lo que se priorizaron fuentes académicas con metodologías transferibles.
+- Bahari et al. (2025) y Zhang et al. (2024) son las referencias más técnicamente cercanas si el banco usará EtherCAT u otro bus de tiempo real para sincronizar sensores y actuador.
+- Con esto se completan 73 referencias en total entre los seis temas (15+15+15+15+15+8), con 3 referencias compartidas entre temas (Da Ronch et al. y Laurenceau & Sagaut entre CFD e Interpolación; ElSaid et al. entre Instrumentación y Software).
