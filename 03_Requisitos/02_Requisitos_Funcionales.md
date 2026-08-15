@@ -36,22 +36,24 @@
 | RF-CFD-04 | El sistema deberá reportar al usuario el rango válido (envolvente de Mach/ángulo/deflexión) contenido en la tabla cargada. | Media | P | OE-4 |
 | RF-PRO-01 | El sistema deberá interpolar el valor de torque objetivo para condiciones intermedias no presentes explícitamente en la tabla cargada. | Alta | P | OE-2 / OE-4 |
 | RF-PRO-02 | El sistema deberá permitir seleccionar el método de interpolación a emplear (p. ej. lineal, kriging, splines) de forma configurable. | Media | D | OE-2 |
-| RF-PRO-03 | El sistema deberá generar un perfil temporal de torque objetivo a partir de una maniobra o escenario de ensayo definido por el usuario. | Alta | P | OE-2 / OE-4 |
+| RF-PRO-03 | El sistema deberá generar un perfil temporal de torque objetivo, a partir de una maniobra o escenario de ensayo definido por el usuario, que sirva como referencia inicial y envolvente de validación del ensayo. | Alta | P | OE-2 / OE-4 |
 | RF-PRO-04 | El sistema deberá calcular y reportar una estimación del error de interpolación respecto a los puntos originales de la tabla CFD. | Media | A | OE-2 |
 | RF-PRO-05 | El sistema deberá entregar la referencia de carga generada al módulo de control del banco en un formato y frecuencia compatibles con el lazo de control. | Alta | P | OE-3 / OE-4 |
-| RF-BAN-01 | El banco deberá aplicar sobre el eje del actuador bajo prueba el torque objetivo entregado por el módulo de procesamiento. | Alta | P | OE-5 / OE-6 |
-| RF-BAN-02 | El banco deberá aplicar el torque objetivo de forma consistente mientras el actuador bajo prueba está en movimiento, minimizando el torque parásito inducido por dicho movimiento. | Alta | P | OE-5 / OE-6 |
+| **RF-PRO-06** | **El sistema deberá recalcular el torque objetivo en tiempo real a partir de la posición angular real de la aleta (realimentación, I-10), en lugar de aplicar únicamente el perfil temporal precalculado (RF-PRO-03).** | **Alta** | **P** | **OE-3 / OE-4** |
+| RF-BAN-01 | El banco deberá aplicar, mediante el motor de carga, sobre el eje del actuador bajo prueba, el torque objetivo entregado por el módulo de procesamiento. | Alta | P | OE-5 / OE-6 |
+| RF-BAN-02 | El banco deberá aplicar el torque objetivo de forma consistente mientras el actuador bajo prueba está en movimiento, minimizando el torque parásito inducido por dicho movimiento mediante una estrategia de compensación activa (p. ej. feedforward o sincronización de velocidad). | Alta | P | OE-5 / OE-6 |
 | RF-BAN-03 | El banco deberá limitar el torque aplicado a un valor máximo configurable, para proteger al actuador bajo prueba y a la estructura del banco. | Alta | P | OE-5 |
 | RF-BAN-04 | El banco deberá detener automáticamente la aplicación de carga ante condiciones de falla, saturación o señales fuera de rango. | Alta | D | OE-5 / OE-6 |
 | RF-BAN-05 | El banco deberá permitir la operación manual (torque de referencia fijo) para fines de calibración y puesta en marcha. | Media | D | OE-5 |
+| **RF-BAN-06** | **El banco deberá detectar condiciones de atasco mutuo (stall) entre el motor de carga y el actuador bajo prueba —torque diferencial sostenido sin cambio de posición de la aleta— y detener automáticamente la aplicación de carga ante dicha condición.** | **Alta** | **P** | **OE-5 / OE-6** |
 | RF-INS-01 | El sistema deberá medir el torque efectivamente aplicado sobre el eje del actuador bajo prueba. | Alta | P | OE-5 |
-| RF-INS-02 | El sistema deberá medir la posición angular (y/o velocidad) del actuador bajo prueba. | Alta | P | OE-5 |
+| RF-INS-02 | El sistema deberá medir la posición angular (y/o velocidad) real de la **aleta**, dado que puede diferir de la posición comandada al actuador por holgura o compliance mecánica bajo carga. | Alta | P | OE-5 |
 | RF-INS-03 | El sistema deberá adquirir variables eléctricas del actuador bajo prueba (corriente y/o tensión), cuando aplique. | Media | P | OE-5 / OE-6 |
 | RF-INS-04 | El sistema deberá sincronizar temporalmente todas las señales adquiridas (torque, posición, variables eléctricas, referencia objetivo). | Alta | P | OE-5 |
 | RF-INS-05 | El sistema deberá registrar las variables medidas junto con la referencia objetivo y una marca de tiempo, durante toda la duración del ensayo. | Alta | P | OE-5 / OE-6 |
 | RF-SWC-01 | El software deberá proveer una interfaz de usuario para configurar los parámetros de un ensayo (tabla de carga, escenario, duración, límites de seguridad). | Alta | D | OE-4 |
-| RF-SWC-02 | El software deberá ejecutar el lazo de control que compara el torque objetivo con el torque medido y comanda el sistema de aplicación de carga. | Alta | P | OE-3 / OE-4 |
-| RF-SWC-03 | El software deberá visualizar en tiempo real las variables relevantes del ensayo (torque objetivo vs. medido, posición del actuador, estado del sistema). | Media | D | OE-4 |
+| RF-SWC-02 | El software deberá ejecutar el lazo de control que compara el torque objetivo con el torque medido y comanda el motor de carga. | Alta | P | OE-3 / OE-4 |
+| RF-SWC-03 | El software deberá visualizar en tiempo real las variables relevantes del ensayo (torque objetivo vs. medido, posición real de la aleta, estado del sistema). | Media | D | OE-4 |
 | RF-SWC-04 | El software deberá exportar los resultados del ensayo en un formato estructurado y abierto (p. ej. CSV) para su análisis posterior. | Alta | P | OE-6 |
 | RF-SWC-05 | El software deberá registrar eventos, alarmas y errores del sistema durante la ejecución del ensayo (bitácora). | Media | D | OE-4 / OE-6 |
 | RF-SWC-06 | El software deberá permitir detener el ensayo en curso de forma segura, por acción del operador o por activación de una condición de parada. | Alta | D | OE-4 / OE-5 |
@@ -63,7 +65,10 @@
 ## Notas de trazabilidad y justificación
 
 - **RF-CFD-xxx / RF-PRO-xxx** materializan directamente el flujo *"CFD → Base de datos aerodinámica → Software de procesamiento"* de `05_Arquitectura_del_Sistema.md` y los requisitos originales RF-001/RF-002 del borrador. La literatura del **Tema 1** (Da Ronch et al. 2011; Ghoreyshi et al. 2010) y del **Tema 4** (Mackman et al. 2013; de Visser et al. 2008–2010) respalda tanto el formato de tabla como los métodos de interpolación mencionados en RF-PRO-02.
+- **RF-PRO-06** es nuevo: refleja la decisión de que el torque objetivo depende de la deflexión real de la aleta (variable de la tabla CFD), no solo del tiempo. Introduce la interfaz I-10 (instrumentación → interpolación) en la arquitectura.
 - **RF-BAN-02** responde explícitamente al **riesgo #2** de la especificación ("Dificultad en la reproducción experimental de las cargas objetivo") y a la línea de literatura del **Tema 2** sobre torque/fuerza parásita en simuladores de carga (Plummer 2007; Yao et al. 2010/2012; Anastasopoulos & Hornung 2018).
+- **RF-BAN-06** es nuevo: cubre el caso específico de un esquema con dos motores enfrentados (motor de carga vs. actuador bajo prueba), donde ambos pueden forzarse mutuamente de forma sostenida sin que la aleta se mueva. No estaba cubierto por RF-BAN-04 (fallas/saturación genéricas).
+- **RF-INS-02** se reformuló: antes medía la posición del actuador; ahora mide la posición real de la **aleta**, que es la magnitud relevante para evaluar si el actuador logra el ángulo comandado bajo carga (ver OE-6 y CU-003).
 - **RF-INS-xxx** se apoya en el **Tema 5** (instrumentación y balanzas de galgas extensométricas) y en particular en ElSaid et al. (2019), la referencia conceptualmente más cercana al banco completo (comando + medición + simulación de carga).
 - **RF-SWC-xxx** recoge el **Tema 6**, priorizando una arquitectura de software modular (Zuluaga et al. 2022; Gomaa 2016) y desacoplada del control de tiempo real.
 - **RF-SIS-01/02** formalizan explícitamente la modularidad exigida en el Alcance ("actualización de las tablas de carga, sin requerir modificaciones sustanciales en la plataforma experimental").
@@ -71,4 +76,5 @@
 ## Pendiente / a definir en próxima iteración
 
 - Valores numéricos concretos (frecuencia de interpolación, formato exacto de archivo, rango de torque) dependerán de la selección preliminar del actuador y del rango de cargas obtenido en la etapa CFD — corresponde a OE-1 y OE-2.
+- Umbral concreto de torque diferencial sostenido y timeout para la detección de atasco mutuo (RF-BAN-06) — a definir junto con RNF-SEG-04.
 - Falta desarrollar el detalle de **RF-SWC** relativo a manejo de múltiples usuarios/perfiles, si aplica al contexto docente (Alcance, sección "Laboratorios de docencia avanzada").

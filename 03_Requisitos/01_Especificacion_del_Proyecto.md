@@ -24,7 +24,7 @@ Finalmente, el banco de ensayos propuesto puede constituir una plataforma de inv
 
 Se propone el desarrollo de un banco de ensayos para el dimensionamiento y caracterización de actuadores de superficies de control basado en cargas fluidodinámicas obtenidas mediante simulación CFD.
 
-La metodología contempla la generación de tablas aerodinámicas mediante simulaciones CFD, su posterior procesamiento mediante un software de interpolación y la aplicación de las cargas equivalentes en un banco de ensayos instrumentado.
+La metodología contempla la generación de tablas aerodinámicas mediante simulaciones CFD, su posterior procesamiento mediante un software de interpolación y la aplicación de las cargas equivalentes en un banco de ensayos instrumentado. El banco monta, en un mismo eje, un **motor de carga** (que aplica el torque equivalente derivado de CFD), un sensor de torque, el **actuador bajo prueba** y una **aleta física representativa**; esta última no experimenta carga aerodinámica real, sino que sirve como punto de medición del ángulo real alcanzado y como fuente de inercia/dinámica adicional que el actuador debe vencer bajo carga.
 
 La arquitectura propuesta desacopla la simulación numérica del ensayo físico, permitiendo reutilizar el banco para distintas plataformas mediante la sustitución de las tablas de carga correspondientes.
 
@@ -55,9 +55,9 @@ La arquitectura propuesta se concibe como un sistema modular, permitiendo su ada
 
 * Diseño de la metodología CFD → banco.
 * Desarrollo de tablas de carga.
-* Diseño mecánico del banco.
+* Diseño mecánico del banco, incluyendo el montaje del conjunto motor de carga–sensor–actuador bajo prueba–aleta física representativa.
 * Diseño electrónico e instrumentación.
-* Desarrollo del software de control.
+* Desarrollo del software de control, incluyendo el recálculo de torque objetivo en tiempo real a partir de la posición angular real de la aleta.
 * Construcción del prototipo.
 * Validación experimental.
 * Caracterización de actuadores.
@@ -68,7 +68,8 @@ La arquitectura propuesta se concibe como un sistema modular, permitiendo su ada
 * Diseño del misil o torpedo.
 * Desarrollo de algoritmos de guiado y navegación.
 * Simulación de vuelo en tiempo real.
-* Acoplamiento directo entre CFD y el banco de ensayos.
+* Acoplamiento directo entre CFD y el banco de ensayos, entendido como: **no se ejecutan simulaciones CFD durante el ensayo**; la interpolación en tiempo real sobre la tabla de carga ya generada (recálculo según la posición real de la aleta, dentro del dominio ONLINE) no constituye un incumplimiento de esta exclusión.
+* Diseño de una superficie de control específica de una plataforma o vehículo real. La **aleta física** montada en el banco es un **elemento representativo de prueba**, de geometría genérica, que no está vinculada al diseño de un misil, torpedo u otro vehículo en particular, ni experimenta carga aerodinámica real (no hay túnel de viento asociado al banco): su función es proporcionar un punto de medición del ángulo real alcanzado por el conjunto actuador–aleta bajo la carga aplicada por el motor de carga.
 
 ## 7. Usuarios objetivo
 
@@ -141,13 +142,13 @@ Establecer una metodología de simulación validada, definir adecuadamente los p
 ### 2. Dificultad en la reproducción experimental de las cargas objetivo
 
 **Descripción:**
-La transformación de cargas aerodinámicas obtenidas mediante CFD hacia un sistema físico puede presentar diferencias debido a limitaciones mecánicas, dinámicas o de control del banco de ensayos.
+La transformación de cargas aerodinámicas obtenidas mediante CFD hacia un sistema físico puede presentar diferencias debido a limitaciones mecánicas, dinámicas o de control del banco de ensayos. En particular, al enfrentar dos motores en un mismo eje (motor de carga vs. actuador bajo prueba), el movimiento del actuador induce un torque parásito sobre el motor de carga que puede degradar la fidelidad del torque aplicado; adicionalmente, ambos motores pueden llegar a oponerse de forma sostenida (atasco mutuo).
 
 **Impacto:**
-La plataforma podría no representar adecuadamente las condiciones de carga esperadas, reduciendo la utilidad de los ensayos.
+La plataforma podría no representar adecuadamente las condiciones de carga esperadas, reduciendo la utilidad de los ensayos. Un atasco mutuo no detectado podría además dañar el actuador bajo prueba o la estructura del banco.
 
 **Mitigación:**
-Definir una arquitectura de aplicación de carga adecuada, incorporar instrumentación para verificar las condiciones aplicadas y realizar procesos de calibración experimental.
+Definir una arquitectura de aplicación de carga adecuada, incorporar instrumentación para verificar las condiciones aplicadas y realizar procesos de calibración experimental. Específicamente, se adopta: (a) una estrategia de compensación activa del torque parásito (feedforward o sincronización de velocidad, ver Tema 2 de la revisión de literatura), y (b) una protección de atasco mutuo que detiene automáticamente la aplicación de carga ante torque diferencial sostenido sin cambio de posición de la aleta (RF-BAN-06 / RNF-SEG-04).
 
 ---
 
@@ -167,7 +168,7 @@ Realizar una etapa previa de especificación de requerimientos y selección de c
 ### 4. Complejidad del desarrollo del sistema de control e instrumentación
 
 **Descripción:**
-La integración entre sensores, adquisición de datos y control de la aplicación de carga puede requerir un nivel de desarrollo superior al inicialmente estimado.
+La integración entre sensores, adquisición de datos y control de la aplicación de carga puede requerir un nivel de desarrollo superior al inicialmente estimado. El recálculo del torque objetivo en tiempo real a partir de la posición angular real de la aleta (en lugar de un perfil temporal fijo) añade complejidad adicional al lazo de control respecto a un esquema de referencia precalculada.
 
 **Impacto:**
 Retrasos en la implementación o reducción de las capacidades de automatización del banco.
