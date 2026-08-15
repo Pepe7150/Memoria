@@ -78,6 +78,7 @@ flowchart LR
 
 - **Entradas:** comando de torque del Controlador.
 - **Salidas:** señales medidas (torque, posición, variables eléctricas) hacia el Controlador (realimentación) y hacia Adquisición de datos.
+- **Tecnología del actuador de carga:** electromecánico (motor eléctrico BLDC/servo AC + reductor), según la selección preliminar documentada en `06_Seleccion_Actuador_de_Carga.md`. El comando desde el Controlador (interfaz I-03) es, en consecuencia, un comando eléctrico a un driver de motor, y no una señal hidráulica/neumática.
 - **Interfaz externa:** el **actuador bajo prueba** es un componente intercambiable, fuera del alcance de desarrollo del proyecto (ver "No incluye" en `01_Especificacion_del_Proyecto.md`), montado mediante un acople mecánico normalizado.
 - **RF relacionados:** RF-BAN-01 a RF-BAN-05, RF-INS-01 a RF-INS-04, RF-SIS-02.
 - **RNF relacionados:** RNF-PRE-02, RNF-PRE-03, RNF-SEG-01, RNF-SEG-03.
@@ -100,19 +101,19 @@ flowchart LR
 
 ## 3. Interfaces entre subsistemas
 
-| ID   | Origen                             | Destino                           | Datos intercambiados                                      | Formato / mecanismo                                                                                 | RF relacionado                  |
-| ---- | ---------------------------------- | --------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------- |
-| I-01 | Módulo de procesamiento (offline) | Lectura e interpolación (online) | Tabla de carga aerodinámica                              | Archivo CSV/JSON                                                                                    | RF-CFD-01, RF-CFD-02            |
-| I-02 | Lectura e interpolación           | Controlador                       | Perfil temporal de torque objetivo                        | Estructura interna / cola de referencias                                                            | RF-PRO-05                       |
-| I-03 | Controlador                        | Banco (actuador de carga)         | Comando de torque                                         | **Por definir** — candidatos: bus de tiempo real (EtherCAT/CAN) o señal analógica + driver | RF-BAN-01                       |
-| I-04 | Banco / actuador bajo prueba       | Instrumentación                  | Señales físicas (torque, posición, corriente/tensión) | Señal analógica o digital de sensor                                                               | RF-INS-01, RF-INS-02, RF-INS-03 |
-| I-05 | Instrumentación                   | Controlador                       | Torque medido (realimentación del lazo de control)       | Señal digitalizada, ciclo de control                                                               | RF-BAN-02, RF-SWC-02            |
-| I-06 | Instrumentación                   | Adquisición de datos             | Señales digitalizadas y sincronizadas                    | Bus/DAQ interno                                                                                     | RF-INS-04                       |
-| I-07 | Adquisición de datos              | Software de operación            | Datos en tiempo real para visualización                  | Interna (misma aplicación o IPC)                                                                   | RF-SWC-03                       |
-| I-08 | Adquisición de datos              | Almacenamiento / exportación     | Registro completo del ensayo                              | Archivo CSV                                                                                         | RF-SWC-04, RNF-DOC-01           |
-| I-09 | Software de operación             | Operador                          | Configuración, visualización, control del ensayo        | Interfaz gráfica (GUI)                                                                             | RF-SWC-01, RF-SWC-06            |
+| ID   | Origen                             | Destino                           | Datos intercambiados                                      | Formato / mecanismo                                                                                                                                                                                                                                                | RF relacionado                  |
+| ---- | ---------------------------------- | --------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
+| I-01 | Módulo de procesamiento (offline) | Lectura e interpolación (online) | Tabla de carga aerodinámica                              | Archivo CSV/JSON                                                                                                                                                                                                                                                   | RF-CFD-01, RF-CFD-02            |
+| I-02 | Lectura e interpolación           | Controlador                       | Perfil temporal de torque objetivo                        | Estructura interna / cola de referencias                                                                                                                                                                                                                           | RF-PRO-05                       |
+| I-03 | Controlador                        | Banco (actuador de carga)         | Comando de torque                                         | Comando eléctrico a driver de motor (electromecánico). Nivel físico **por definir en diseño electrónico**: candidatos — señal analógica (±10 V) a driver, o bus de tiempo real (CAN / EtherCAT) para mayor sincronización con la instrumentación | RF-BAN-01                       |
+| I-04 | Banco / actuador bajo prueba       | Instrumentación                  | Señales físicas (torque, posición, corriente/tensión) | Señal analógica o digital de sensor                                                                                                                                                                                                                              | RF-INS-01, RF-INS-02, RF-INS-03 |
+| I-05 | Instrumentación                   | Controlador                       | Torque medido (realimentación del lazo de control)       | Señal digitalizada, ciclo de control                                                                                                                                                                                                                              | RF-BAN-02, RF-SWC-02            |
+| I-06 | Instrumentación                   | Adquisición de datos             | Señales digitalizadas y sincronizadas                    | Bus/DAQ interno                                                                                                                                                                                                                                                    | RF-INS-04                       |
+| I-07 | Adquisición de datos              | Software de operación            | Datos en tiempo real para visualización                  | Interna (misma aplicación o IPC)                                                                                                                                                                                                                                  | RF-SWC-03                       |
+| I-08 | Adquisición de datos              | Almacenamiento / exportación     | Registro completo del ensayo                              | Archivo CSV                                                                                                                                                                                                                                                        | RF-SWC-04, RNF-DOC-01           |
+| I-09 | Software de operación             | Operador                          | Configuración, visualización, control del ensayo        | Interfaz gráfica (GUI)                                                                                                                                                                                                                                            | RF-SWC-01, RF-SWC-06            |
 
-> **Nota:** la interfaz I-03 (comando de torque hacia el actuador de carga del banco) es la única que depende directamente de decisiones de diseño mecánico/electrónico aún no tomadas (tipo de actuador de carga: eléctrico, hidráulico, etc. — ver Tema 2 y 3 de la revisión de literatura). Debe cerrarse en la etapa de diseño detallado (OE-3) y actualizarse en esta tabla.
+> **Nota:** con la selección preliminar del actuador de carga electromecánico (`06_Seleccion_Actuador_de_Carga.md`), la interfaz I-03 queda definida a nivel de **tecnología** (comando eléctrico a driver de motor) pero aún **no a nivel de protocolo/bus físico** (analógico vs. CAN/EtherCAT). Esta definición de protocolo debe cerrarse en la etapa de diseño detallado (OE-3), en función de los requisitos de frecuencia del lazo de control (RNF-REN-01: 100–200 Hz preliminar) y de las alternativas identificadas en la literatura (Tema 6: EtherCAT — Zhang et al. 2024; Bahari et al. 2025).
 
 ## 4. Diagrama de bloques detallado
 
@@ -129,14 +130,14 @@ flowchart TB
     subgraph ON["ONLINE — Banco de ensayos"]
         INT[Lectura e<br/>interpolación]
         CTRL[Controlador]
-        BANCO[Banco: actuador de carga]
+        BANCO[Banco: actuador de carga<br/>electromecánico]
         ACT[["Actuador bajo prueba<br/>(componente externo/intercambiable)"]]
         INSTR[Instrumentación]
         DAQ[Adquisición<br/>y registro]
         UI[Software de<br/>operación / GUI]
 
         INT -->|I-02: torque objetivo| CTRL
-        CTRL -->|I-03: comando de torque<br/>a definir| BANCO
+        CTRL -->|I-03: comando eléctrico<br/>a driver de motor| BANCO
         BANCO --> ACT
         ACT -->|I-04: señales físicas| INSTR
         BANCO -->|I-04: señales físicas| INSTR
@@ -159,7 +160,7 @@ flowchart TB
 
 1. **Desacople offline/online estricto:** la única interfaz entre CFD y banco es el archivo de tabla de carga (I-01); no existe retroalimentación desde el banco hacia el módulo CFD ni ejecución de CFD durante el ensayo, conforme al alcance del proyecto.
 2. **Actuador bajo prueba como componente externo:** el banco se diseña para admitir distintos actuadores mediante un acople mecánico normalizado (RF-SIS-02); su desarrollo interno queda fuera de alcance.
-3. **Protocolo de comunicación controlador–banco (I-03) pendiente de definición:** se evaluará en la etapa de diseño detallado en función de los requisitos de frecuencia del lazo de control (RNF-REN-01) y de las alternativas identificadas en la literatura (Tema 6: EtherCAT — Zhang et al. 2024; Bahari et al. 2025).
+3. **Actuador de carga electromecánico (definido preliminarmente):** se seleccionó una arquitectura electromecánica (motor + reductor) para el actuador de carga del banco, según `06_Seleccion_Actuador_de_Carga.md`, descartando alternativas electrohidráulicas y neumáticas para la escala de torque asumida (<10 N·m) y la infraestructura de laboratorio disponible. **El protocolo/bus físico de la interfaz I-03 (analógico vs. CAN/EtherCAT) permanece pendiente de definición** en la etapa de diseño detallado, en función de los requisitos de frecuencia del lazo de control (RNF-REN-01) y de las alternativas identificadas en la literatura (Tema 6: EtherCAT — Zhang et al. 2024; Bahari et al. 2025).
 4. **Arquitectura de software modular:** "Lectura e interpolación", "Controlador", "Instrumentación/DAQ" y "Software de operación" se conciben como módulos con interfaces internas bien definidas, pudiendo implementarse como procesos separados o como una única aplicación multihilo, según se decida en el diseño detallado (RNF-MAN-01).
 5. **Un solo banco, un solo actuador a la vez:** no se contempla operación simultánea de múltiples bancos ni de múltiples actuadores en paralelo en la versión actual del alcance.
 6. **Trazabilidad de ensayos:** cada ejecución del ciclo I-01 → I-08 debe quedar asociada a la tabla de carga y configuración utilizadas (RNF-DOC-01), de modo que un resultado experimental sea siempre reproducible.
@@ -178,6 +179,7 @@ flowchart TB
 
 ## 7. Pendiente / a definir en próxima iteración
 
-- Selección del tipo de actuador de carga del banco (eléctrico vs. hidráulico) — condiciona directamente la interfaz I-03 y el diseño del Controlador. Ver Tema 2 y 3 de la revisión de literatura para alternativas.
-- Selección del bus/protocolo de comunicación entre Controlador e Instrumentación (I-03, I-04, I-05, I-06).
+- ~~Selección del tipo de actuador de carga del banco (eléctrico vs. hidráulico)~~ — **resuelto preliminarmente**: electromecánico (ver `06_Seleccion_Actuador_de_Carga.md`). Queda pendiente confirmar esta decisión una vez se cuente con el rango de torque real de la CFD propia del proyecto.
+- Selección del bus/protocolo de comunicación entre Controlador e Instrumentación, y entre Controlador y el driver del actuador de carga (I-03, I-04, I-05, I-06) — analógico vs. CAN/EtherCAT.
 - Definir si "Lectura e interpolación", "Controlador" y "Software de operación" se implementan como una única aplicación o como procesos/servicios separados.
+- Preseleccionar modelos COTS concretos de motor, reductor y sensor de torque para el actuador de carga (ver `07_Valores_Referencia_Literatura_Analoga.md` para los órdenes de magnitud orientativos).

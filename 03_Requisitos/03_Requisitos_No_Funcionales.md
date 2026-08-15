@@ -7,17 +7,19 @@
 **Método de verificación:** **I**nspección, **A**nálisis, **D**emostración, **P**rueba.
 **OE** = Objetivo específico trazado (ver `02_Requisitos_Funcionales.md` para la lista completa).
 
+> **Nota sobre valores preliminares:** los campos marcados **[preliminar]** fueron completados a partir de literatura análoga de escala comparable (ver `07_Valores_Referencia_Literatura_Analoga.md`), principalmente Anastasopoulos & Hornung (2018) y el criterio de diseño "índice diez-diez" recurrente en la literatura de Tema 2. **No son requisitos cerrados**: deben confirmarse en la etapa de diseño detallado (OE-2/OE-3) una vez definidos el actuador de carga específico (`06_Seleccion_Actuador_de_Carga.md`) y el rango de cargas obtenido de la CFD propia del proyecto.
+
 ---
 
 ## Tabla resumen
 
 | ID | Requisito | Categoría | Prioridad | Verificación | OE trazado |
 |---|---|---|---|---|---|
-| RNF-REN-01 | El lazo de control de aplicación de torque deberá ejecutarse a una frecuencia mínima de **[a definir, según ancho de banda del actuador bajo prueba]** para representar adecuadamente su dinámica. | Desempeño | Alta | P | OE-3 |
-| RNF-REN-02 | La latencia entre la medición de una variable y la actualización de la referencia de control no deberá superar **[a definir]**. | Desempeño | Media | P | OE-3 |
-| RNF-PRE-01 | El error de interpolación de la tabla de carga respecto a los datos CFD originales no deberá superar **[a definir, p. ej. 5 %]** en el rango de validación. | Precisión | Alta | A | OE-2 |
-| RNF-PRE-02 | El sistema de medición de torque deberá tener una incertidumbre menor a **[a definir, % del fondo de escala]**. | Precisión | Alta | P | OE-5 |
-| RNF-PRE-03 | El sistema de medición de posición angular deberá tener una resolución menor a **[a definir]**. | Precisión | Media | P | OE-5 |
+| RNF-REN-01 | El lazo de control de aplicación de torque deberá ejecutarse a una frecuencia mínima de **100–200 Hz [preliminar]**, para representar adecuadamente la dinámica del actuador bajo prueba. | Desempeño | Alta | P | OE-3 |
+| RNF-REN-02 | La latencia entre la medición de una variable y la actualización de la referencia de control no deberá superar **5–10 ms [preliminar]**. | Desempeño | Media | P | OE-3 |
+| RNF-PRE-01 | El error de interpolación de la tabla de carga respecto a los datos CFD originales no deberá superar **5 % [preliminar, conservador]** en el rango de validación. | Precisión | Alta | A | OE-2 |
+| RNF-PRE-02 | El sistema de medición de torque deberá tener una incertidumbre menor a **0,5 % del fondo de escala [preliminar]**. | Precisión | Alta | P | OE-5 |
+| RNF-PRE-03 | El sistema de medición de posición angular deberá tener una resolución menor a **0,1° [preliminar]**. | Precisión | Media | P | OE-5 |
 | RNF-CNF-01 | El banco deberá completar una campaña de ensayos de duración **[a definir]** sin fallas atribuibles al sistema de control o de adquisición. | Confiabilidad | Media | D | OE-6 |
 | RNF-CNF-02 | Ante pérdida de comunicación entre módulos, el sistema deberá llevar el banco a un estado seguro (sin aplicación de torque). | Confiabilidad | Alta | P | OE-5 |
 | RNF-SEG-01 | El banco deberá contar con un mecanismo de parada de emergencia físico, independiente del software de control. | Seguridad | Alta | I | OE-5 |
@@ -40,12 +42,12 @@
 - **RNF-SEG-xxx** responde al **riesgo #4** de la especificación ("Complejidad del desarrollo del sistema de control e instrumentación") y a buenas prácticas de bancos de ensayo dinámicos descritas en Plummer (2007, Tema 2).
 - **RNF-MOD-01/02** formalizan el requisito explícito de la especificación: *"la arquitectura modular propuesta permitiría adaptar el banco a distintas aplicaciones mediante la actualización de las tablas de cargas, sin requerir modificaciones sustanciales en la plataforma experimental"*.
 - **RNF-COS-01** responde directamente al **riesgo #5** ("Disponibilidad limitada de recursos para fabricación y validación"), cuya mitigación propuesta es priorizar componentes comerciales de bajo costo.
-- **RNF-PRE-xxx** deberá refinarse una vez seleccionados los sensores candidatos; la literatura del **Tema 5** (Ewald 2000; Yu et al. 2022; Jubair et al. 2025) da órdenes de magnitud típicos de incertidumbre en balanzas de torque/galgas extensométricas que sirven de referencia para fijar estos valores.
-- **RNF-REN-01/02** son los requisitos más dependientes del actuador finalmente seleccionado: el ancho de banda dinámico del actuador bajo prueba condiciona la frecuencia mínima de actualización del lazo de carga (ver Tema 2, en particular Yao et al. 2010 sobre compensación de torque excedente en tiempo real).
+- **RNF-PRE-xxx** se refinó con valores preliminares extraídos de literatura análoga de escala comparable (ver `07_Valores_Referencia_Literatura_Analoga.md`): las tres clases de sensor de torque reportadas por Anastasopoulos & Hornung (2018) muestran consistentemente ≈0,1 % del fondo de escala, lo que sirvió de base para proponer 0,5 % FE como valor conservador en RNF-PRE-02; el error de interpolación <1 % reportado por Sinha et al. (2022, Tema 1) sirvió de base para proponer 5 % como cota conservadora en RNF-PRE-01. La literatura del **Tema 5** (Ewald 2000; Yu et al. 2022; Jubair et al. 2025) permanece como referencia complementaria para refinar estos valores una vez seleccionados los sensores candidatos.
+- **RNF-REN-01/02** se refinaron con el mismo criterio: el "índice diez-diez" (ancho de banda de 10 Hz con error de amplitud <10 % y retardo de fase <10°), recurrente en la literatura de simuladores de carga aerodinámica de Tema 2 (Nam 2001 y trabajos posteriores de la misma línea) tanto en gran escala como en el banco de pequeña escala de Anastasopoulos & Hornung (2018), sugiere que responde más a la dinámica de maniobra aerodinámica que a la magnitud del torque. Se propuso un margen de ~10–20× sobre ese ancho de banda objetivo (100–200 Hz) para la frecuencia del lazo de control, consistente con la frecuencia de muestreo de sensores (200 Hz) reportada en la misma fuente. Estos valores siguen siendo, en última instancia, dependientes del ancho de banda dinámico del actuador bajo prueba que se seleccione finalmente.
 
 ## Pendiente / a definir en próxima iteración
 
-Los campos marcados **[a definir]** requieren un valor numérico concreto. Se recomienda completarlos en dos etapas:
+Los campos que permanecen marcados **[a definir]** (RNF-CNF-01, RNF-USA-02) no contaron con un antecedente directo suficientemente comparable en la literatura revisada hasta ahora y requieren un valor numérico concreto. Se recomienda completarlos en dos etapas:
 
-1. **Etapa de estado del arte (OE-1):** usar rangos típicos reportados en la literatura de Temas 2 y 5 como primera aproximación (p. ej. frecuencias de lazo de control de simuladores de carga electrohidráulicos, incertidumbres típicas de balanzas de torque).
-2. **Etapa de diseño preliminar (OE-2/OE-3):** ajustar los valores una vez definido el actuador de referencia y el rango de cargas obtenido de las simulaciones CFD propias del proyecto.
+1. **Etapa de estado del arte (OE-1):** revisar si la literatura de Tema 2 y Tema 6 (confiabilidad de servoactuadores UAV, p. ej. ElSaid et al. 2019) ofrece antecedentes de duración de campaña de ensayos o tiempos de configuración de un banco similar.
+2. **Etapa de diseño preliminar (OE-2/OE-3):** ajustar todos los valores — incluidos los ya marcados **[preliminar]** en esta versión — una vez definido el actuador de referencia, el rango de cargas obtenido de las simulaciones CFD propias del proyecto, y los componentes COTS finalmente seleccionados (motor, reductor, sensor de torque).
