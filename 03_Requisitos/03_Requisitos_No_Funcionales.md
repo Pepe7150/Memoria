@@ -2,7 +2,7 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
-**Convención de ID:** `RNF-<CATEGORÍA>-<NN>`.
+**Convención de ID:** `RNF-<CATEGORÍA>-<NN>`. Categorías: REN (Desempeño), PRE (Precisión), CNF (Confiabilidad), SEG (Seguridad), USA (Usabilidad), MAN (Mantenibilidad), MOD (Modularidad), COS (Costo), DOC (Documentación), **CAR (Capacidad de carga)**.
 **Prioridad:** Alta / Media / Baja.
 **Método de verificación:** **I**nspección, **A**nálisis, **D**emostración, **P**rueba.
 **OE** = Objetivo específico trazado (ver `02_Requisitos_Funcionales.md` para la lista completa).
@@ -13,7 +13,8 @@
 
 | ID | Requisito | Categoría | Prioridad | Verificación | OE trazado |
 |---|---|---|---|---|---|
-| RNF-REN-01 | El lazo de control de aplicación de torque deberá ejecutarse a una frecuencia mínima de **[a definir, según ancho de banda del conjunto actuador + aleta]** para representar adecuadamente su dinámica. | Desempeño | Alta | P | OE-3 |
+| RNF-REN-01 | El lazo de control de aplicación de torque deberá ejecutarse a una frecuencia mínima de **[a definir, según ancho de banda del conjunto actuador + aleta]** para representar adecuadamente su dinámica. Referencia preliminar de literatura: el actuador debe sostener una velocidad de deflexión de hasta **~300 °/s bajo torque máximo** (Nalci & Kayran, 2014); la frecuencia del lazo debe ser suficiente para resolver esa dinámica sin degradarla. | Desempeño | Alta | P | OE-3 |
+| **RNF-CAR-01** | **El motor de carga y el sensor de torque deberán dimensionarse para un rango de torque continuo de referencia de ~0,5–1 N·m y un torque pico de hasta ~2 N·m, acorde a los candidatos comerciales identificados (actuador de referencia MG996R, ~1 N·m de bloqueo; motor de carga DS3218, ~1,8–2,1 N·m de bloqueo), dentro de los techos de presupuesto definidos (actuador ≤ $10.000 CLP, motor de carga ≤ $50.000 CLP). Rango revisado a la baja respecto a la estimación inicial de literatura (~5–8 N·m); el banco opera, por restricción de presupuesto, como demostrador a escala reducida y no como representación a escala real de una aleta de misil. A confirmar/ajustar con las simulaciones CFD propias del proyecto.** | **Capacidad de carga** | **Alta** | **A** | **OE-2 / OE-3** |
 | RNF-REN-02 | La latencia entre la medición de una variable y la actualización de la referencia de control no deberá superar **[a definir]**. | Desempeño | Media | P | OE-3 |
 | **RNF-REN-03** | **La frecuencia natural del conjunto motor de carga–sensor–actuador–aleta deberá mantener un margen mínimo respecto a la frecuencia de corte del lazo de control [a definir], para evitar acoplamiento dinámico o resonancia no deseada.** | **Desempeño** | **Alta** | **A** | **OE-3** |
 | RNF-PRE-01 | El error de interpolación de la tabla de carga respecto a los datos CFD originales no deberá superar **[a definir, p. ej. 5 %]** en el rango de validación. | Precisión | Alta | A | OE-2 |
@@ -47,10 +48,13 @@
 - **RNF-COS-01** responde directamente al **riesgo #5** ("Disponibilidad limitada de recursos para fabricación y validación"), cuya mitigación propuesta es priorizar componentes comerciales de bajo costo.
 - **RNF-PRE-xxx** deberá refinarse una vez seleccionados los sensores candidatos; la literatura del **Tema 5** (Ewald 2000; Yu et al. 2022; Jubair et al. 2025) da órdenes de magnitud típicos de incertidumbre en balanzas de torque/galgas extensométricas que sirven de referencia para fijar estos valores.
 - **RNF-REN-01/02/03** son los requisitos más dependientes del actuador finalmente seleccionado: el ancho de banda dinámico del conjunto actuador+aleta condiciona la frecuencia mínima de actualización del lazo de carga (ver Tema 2, en particular Yao et al. 2010 sobre compensación de torque excedente en tiempo real).
+- **RNF-CAR-01** fija el rango de torque para dimensionar el motor de carga y el actuador de referencia. La estimación inicial (5–8 N·m), triangulada desde literatura de escala misil/UAV (Nalci & Kayran 2014; Anastasopoulos & Hornung 2018), se **revisó a la baja (~0,5–2 N·m)** tras fijar los techos de presupuesto (actuador de referencia ≤ $10.000 CLP, motor de carga ≤ $50.000 CLP) y verificar candidatos comerciales reales disponibles en Chile (MG996R como actuador de referencia, ~$5.625 CLP; DS3218 como motor de carga, ~$20.526 CLP, dejando margen del presupuesto para sensor de torque, driver y acople mecánico). Esto implica que el banco es, en esta iteración, un **demostrador a escala reducida** — no representa magnitudes de carga de una aleta de misil a escala real — lo cual debe quedar explícito en la Especificación del Proyecto y en el informe final.
 
 ## Pendiente / a definir en próxima iteración
 
 Los campos marcados **[a definir]** requieren un valor numérico concreto. Se recomienda completarlos en dos etapas:
 
-1. **Etapa de estado del arte (OE-1):** usar rangos típicos reportados en la literatura de Temas 2 y 5 como primera aproximación (p. ej. frecuencias de lazo de control de simuladores de carga electrohidráulicos, incertidumbres típicas de balanzas de torque).
-2. **Etapa de diseño preliminar (OE-2/OE-3):** ajustar los valores una vez definido el actuador de referencia, el motor de carga y el rango de cargas obtenido de las simulaciones CFD propias del proyecto. La tolerancia de alineación (RNF-PRE-04) y el margen de resonancia (RNF-REN-03) requieren además conocer la inercia real de la aleta seleccionada.
+1. **Etapa de estado del arte (OE-1):** usar rangos típicos reportados en la literatura de Temas 2 y 5 como primera aproximación (p. ej. frecuencias de lazo de control de simuladores de carga electrohidráulicos, incertidumbres típicas de balanzas de torque). **Ya completado para el rango de torque y velocidad de referencia (RNF-CAR-01, RNF-REN-01)** — ver nota de trazabilidad arriba.
+2. **Etapa de diseño preliminar (OE-2/OE-3):** ajustar los valores una vez definido el actuador de referencia, el motor de carga y el rango de cargas obtenido de las simulaciones CFD propias del proyecto. La tolerancia de alineación (RNF-PRE-04) y el margen de resonancia (RNF-REN-03) requieren además conocer la inercia real de la aleta seleccionada. El rango preliminar de RNF-CAR-01 debe confirmarse o reemplazarse con datos propios en esta etapa.
+
+3. **Pendiente — decisión de estrategia de control de torque del motor de carga (a definir con el profesor guía):** los candidatos comerciales identificados (RNF-CAR-01) son servos RC de control de posición, no de torque. Queda pendiente decidir entre (a) intervenir el servo para acceder al motor DC crudo y comandarlo por corriente con un driver externo, o (b) usar el servo intacto en un esquema de comando de posición límite como aproximación de carga. Esta decisión condiciona el diseño del Controlador (sección 2.4 de `05_Arquitectura_del_Sistema.md`) y la interfaz I-03.

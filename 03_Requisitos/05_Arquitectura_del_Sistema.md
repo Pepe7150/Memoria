@@ -91,7 +91,7 @@ flowchart LR
 - **Interfaz externa:** el **actuador bajo prueba** es un componente intercambiable, fuera del alcance de desarrollo del proyecto (ver "No incluye" en `01_Especificacion_del_Proyecto.md`), montado mediante un acople mecánico normalizado.
 - **Aleta física:** elemento de prueba representativo (no vinculado a una plataforma o geometría específica), montado rígidamente en el mismo eje; no está sometida a carga aerodinámica real — su función es ser el punto de medición del ángulo real y aportar la inercia/dinámica que el actuador debe vencer bajo carga.
 - **RF relacionados:** RF-BAN-01, RF-BAN-05 (aplicación física del torque comandado y modo manual — la decisión de control, incluida la detección de atasco mutuo RF-BAN-06, se aloja en el Controlador, sección 2.4), RF-INS-01 a RF-INS-04, RF-SIS-02.
-- **RNF relacionados:** RNF-PRE-02, RNF-PRE-03, RNF-PRE-04, RNF-SEG-01, RNF-SEG-03, RNF-SEG-04.
+- **RNF relacionados:** RNF-PRE-02, RNF-PRE-03, RNF-PRE-04, RNF-SEG-01, RNF-SEG-03, RNF-CAR-01 (la decisión de detener ante atasco mutuo, RNF-SEG-04, se aloja en el Controlador, sección 2.4).
 
 ### 2.6 Adquisición de datos y registro
 
@@ -194,14 +194,14 @@ flowchart TB
 | Módulo de procesamiento (offline)   | RF-CFD-01, RF-CFD-02                                  | —                                                               |
 | Lectura e interpolación             | RF-CFD-03, RF-CFD-04, RF-PRO-01 a RF-PRO-06           | —                                                               |
 | Controlador                         | RF-BAN-01 a RF-BAN-04, RF-BAN-06, RF-SWC-02           | RNF-REN-01, RNF-REN-02, RNF-REN-03, RNF-SEG-02, RNF-SEG-04     |
-| Banco (motor de carga + actuador + aleta) + instrumentación | RF-BAN-05, RF-INS-01 a RF-INS-04, RF-SIS-02 | RNF-PRE-02, RNF-PRE-03, RNF-PRE-04, RNF-SEG-01, RNF-SEG-03     |
+| Banco (motor de carga + actuador + aleta) + instrumentación | RF-BAN-05, RF-INS-01 a RF-INS-04, RF-SIS-02 | RNF-PRE-02, RNF-PRE-03, RNF-PRE-04, RNF-CAR-01, RNF-SEG-01, RNF-SEG-03     |
 | Adquisición y registro              | RF-INS-05, RF-SWC-04, RF-SWC-05                       | RNF-DOC-01                                                      |
 | Software de operación               | RF-SWC-01, RF-SWC-03, RF-SWC-06                       | RNF-USA-01, RNF-USA-02                                          |
 | Arquitectura general                | RF-SIS-01                                             | RNF-MOD-01, RNF-MOD-02, RNF-MAN-01, RNF-MAN-02                 |
 
 ## 7. Pendiente / a definir en próxima iteración
 
-- Selección del tipo de motor de carga (eléctrico rotativo vs. hidráulico rotativo) — condiciona directamente la interfaz I-03 y el diseño del Controlador. Ver Tema 2 y 3 de la revisión de literatura para alternativas.
+- Selección del tipo de motor de carga (eléctrico rotativo vs. hidráulico rotativo) — condiciona directamente la interfaz I-03 y el diseño del Controlador. Ver Tema 2 y 3 de la revisión de literatura para alternativas. **Rango de torque preliminar ya estimado (RNF-CAR-01) para orientar la búsqueda de candidatos**; falta aún el actuador de referencia concreto, el presupuesto disponible y el protocolo de comunicación (I-03) para cerrar la selección.
 - Selección del bus/protocolo de comunicación entre Controlador e Instrumentación (I-03, I-04, I-05, I-06, I-10).
 - **Estrategia concreta de compensación del torque parásito** (feedforward de velocidad, sincronización de velocidad, control robusto — ver Tema 2: Yao et al. 2010/2012; Lee & Cho 2001; Nam 2001) a seleccionar antes del diseño detallado del Controlador.
 - **Criterio de detección de atasco mutuo (stall)** entre motor de carga y actuador bajo prueba (umbral de torque diferencial sostenido, timeout) — a definir junto con RNF-SEG-04.
