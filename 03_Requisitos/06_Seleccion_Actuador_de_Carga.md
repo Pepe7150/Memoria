@@ -96,13 +96,40 @@ Motor de carga: servo DS3218 (~$20.526 CLP), intervenido para acceder al motor D
 
 ## 6. Próximos pasos
 
-1. **Formalizar la interfaz I-03** en `05_Arquitectura_del_Sistema.md` (comando de corriente al driver del motor DC del DS3218 intervenido; definir si es señal analógica o vía bus digital).
-2. **Caracterizar o conseguir datasheet del motor DC crudo** dentro del DS3218 una vez intervenido (corriente nominal/de stall, curva torque–velocidad, constante eléctrica), necesario para cerrar RNF-REN-01/02 con valores propios.
-3. **Seleccionar celda de carga concreta** (rango, modelo COTS) coherente con el torque pico de RNF-CAR-01 (~2 N·m) y el radio del brazo de palanca (~4 cm → fuerza máxima a medir ~50 N).
-4. **Seleccionar driver de corriente** para el motor DC intervenido y **plataforma de microcontrolador** que cierre el lazo de control.
+1. ~~Formalizar la interfaz I-03~~ — **Completado.** Ver `05_Arquitectura_del_Sistema.md` §3 e I-03: PWM desde microcontrolador → driver H-bridge → motor DC intervenido, lazo de corriente cerrado en software.
+2. ~~Seleccionar driver de corriente y plataforma de microcontrolador~~ — **Completado.** Ver §6.1.
+3. **Caracterizar o conseguir datasheet del motor DC crudo** dentro del DS3218 una vez intervenido (corriente nominal/de stall, curva torque–velocidad, constante eléctrica), necesario para cerrar RNF-REN-01/02 con valores propios. El dato de corriente de stall a nivel de servo completo (~1,8–2 A a 6–7 V) ya está disponible por datasheet del fabricante y se usó para dimensionar el driver (§6.1); falta caracterizar el comportamiento específico una vez intervenido (bypaseado el potenciómetro/controlador interno).
+4. ~~Seleccionar celda de carga concreta~~ — **Completado.** Ver §6.2: Altronics LC-10KG-HX711.
 5. **Confirmar con el profesor guía** la estrategia de control de torque (corriente vía intervención del DS3218, opción (a)) frente a la alternativa de respaldo (posición límite del servo intacto, opción (b)).
 6. **Verificar resistencia mecánica** del brazo de torque y los collares impresos en 3D frente al torque pico (~2 N·m), antes de la validación experimental.
-7. Confirmar/ajustar el rango de torque de RNF-CAR-01 una vez disponibles resultados propios de CFD.
+7. **Verificar experimentalmente la incertidumbre de torque de extremo a extremo** (celda + brazo + calibración conjunta), ya que la precisión de 0,02% FE de la celda (§6.2) es solo la especificación del componente aislado.
+8. Confirmar/ajustar el rango de torque de RNF-CAR-01 una vez disponibles resultados propios de CFD.
+
+### 6.1 Preselección de componentes electrónicos (driver, sensor de corriente, microcontrolador)
+
+| Componente | Modelo seleccionado | Justificación |
+|---|---|---|
+| Driver H-bridge | **BTS7960** (módulo COTS, disponible en varias tiendas chilenas, ~$6.000–12.000 CLP) | Soporta hasta 43 A, muy por encima de la corriente de stall del DS3218 (~1,8–2 A a 6–7 V según datasheet de fabricante). El margen amplio protege específicamente ante la condición de atasco mutuo (RF-BAN-06): durante la ventana de detección de stall, el driver no se satura ni sufre daño térmico aunque el motor esté forzado de forma sostenida. Es además el driver más disponible/documentado a esta escala de corriente en el mercado chileno. |
+| Sensor de corriente | **INA219** (I2C, ADC de 12 bits, rango 0–3,2 A, resolución ~0,8 mA, 1 % de precisión), disponible en Altronics | Preferido sobre ACS712 porque los módulos ACS712 disponibles en Chile son típicamente de 20 A de rango, lo que da muy baja resolución efectiva a los ~2 A que maneja este motor. El INA219 está dimensionado para corrientes pequeñas y se integra por I2C (sin ocupar un canal ADC dedicado del microcontrolador). Al estar disponible en Altronics, consolida la compra con el DS3218 y el MG996R, reduciendo el riesgo de lead time de proveedores (riesgo #5 de la especificación del proyecto). |
+| Microcontrolador | **ESP32 DevKitC-V4** (Altronics, ~$7.990 CLP) | Doble núcleo a 240 MHz con periférico PWM por hardware (LEDC), con margen amplio sobre la frecuencia de lazo preliminar de RNF-REN-01 (~100–200 Hz). I2C nativo para el INA219, GPIO suficiente para encoder y celda de carga, bajo costo (permite tener unidad de respaldo sin impacto relevante en presupuesto), y ampliamente documentado. |
+
+**Nota:** esta preselección resuelve el "qué" (modelo/tecnología) pero no reemplaza la validación experimental del ancho de banda real del lazo de corriente en software (ver `05_Arquitectura_del_Sistema.md` §5, supuesto 10) ni la caracterización eléctrica del motor DC intervenido (ítem 3 de esta sección).
+
+### 6.2 Selección de celda de carga (sensor de torque, I-04)
+
+**Cálculo de fuerza requerida:** con el brazo de palanca de ~4 cm (RNF-CAR-01), el torque pico (~2 N·m) se traduce en F = T/r = 2/0,04 = **50 N ≈ 5,1 kgf**. El rango de operación continua (0,5–1 N·m) equivale a ~12,5–25 N (~1,3–2,5 kgf).
+
+Altronics ofrece celdas de carga tipo barra (75×12×12 mm, aluminio, montaje en voladizo) con módulo HX711 (ADC de 24 bits) incluido, al **mismo precio ($7.214 CLP) en los rangos de 1, 5, 10 y 20 kg** — sin penalización de costo por elegir un rango mayor, por lo que la decisión es puramente de margen mecánico y resolución efectiva:
+
+| Rango candidato | Fuerza pico (50 N) como % de fondo de escala | Evaluación |
+|---|---|---|
+| 5 kg (49 N) | ~102 % | Descartado: el torque pico ya excede la capacidad nominal; operar repetidamente ahí degrada la celda por fatiga, aunque la sobrecarga de seguridad (150%) la tolere puntualmente. |
+| **10 kg (98,1 N)** | **~51 %** | **Seleccionado.** Margen ~2× sobre el pico; la sobrecarga de seguridad (150% → 147 N ≈ 5,9 N·m) cubre transitorios antes de que actúe la protección de atasco mutuo (RF-BAN-06). |
+| 20 kg (196 N) | ~25 % | Descartado: diluye demasiado la señal en el rango de operación continua (12,5–25 N caería en solo ~6–13% de fondo de escala), empeorando la resolución efectiva justo donde el banco opera la mayor parte del tiempo. |
+
+**Modelo seleccionado: Altronics LC-10KG-HX711** (SKU 61740064, $7.214 CLP, con módulo HX711 incluido). Especificación de fábrica: precisión 0,02% FE, sobrecarga de seguridad 150%. Esto equivale a una incertidumbre nominal de ~0,0008 N·m (0,02% de 98,1 N × 0,04 m) — muy por debajo del objetivo preliminar de RNF-PRE-02 (≤0,5% FE) y mejor que el óptimo observado en Anastasopoulos & Hornung (2018), 0,1% FE. La geometría de barra en voladizo (un extremo fijo, el otro recibe la carga) es directamente compatible con la implementación ya descrita en `05_Arquitectura_del_Sistema.md` §2.5: celda fija al riel, presionada por el brazo de torque.
+
+**Advertencia:** la precisión de 0,02% FE es la especificación del componente aislado, no la incertidumbre de medición de torque de extremo a extremo. Esta última depende también de la tolerancia del radio efectivo del brazo de palanca (impreso en 3D, ver RNF-PRE-04) y de la calibración conjunta celda+brazo, que deben verificarse experimentalmente antes de reportar un valor definitivo de RNF-PRE-02.
 
 ---
 
