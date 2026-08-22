@@ -19,10 +19,11 @@
 | CU-003 | Ejecutar un ensayo | Operador, Sistema de Control | RF-BAN-01 a RF-BAN-03, RF-BAN-06, RF-INS-01 a RF-INS-05, RF-PRO-06, RF-SWC-02, RF-SWC-03, RF-SWC-05 |
 | CU-004 | Detener un ensayo (manual o por falla) | Operador, Sistema de Control | RF-BAN-04, RF-BAN-06, RF-SWC-05, RF-SWC-06 |
 | CU-005 | Exportar resultados de un ensayo | Operador | RF-SWC-04 |
-| CU-006 | Calibrar el banco (modo manual) | Operador | RF-BAN-05, RF-INS-01 |
+| CU-006 | Calibrar el banco (modo manual) | Operador | RF-BAN-05, RF-BAN-07(a), RF-INS-01 |
 | CU-007 | Sustituir la tabla de carga para una nueva aplicación | Operador | RF-CFD-03, RF-SIS-01 |
 | CU-008 | Cambiar el actuador bajo prueba | Operador | RF-SIS-02 |
 | CU-009 | Consultar la bitácora de eventos | Operador | RF-SWC-05 |
+| **CU-010** | **Caracterizar el actuador bajo prueba en modo manual (potenciómetros)** | **Operador, Sistema de Control** | **RF-BAN-07(b), RF-INS-01, RF-INS-02, RF-SEG-05 (RNF)** |
 
 ---
 
@@ -39,7 +40,7 @@
 **Flujo principal:**
 1. El operador selecciona la opción "Importar tabla de carga" en la interfaz.
 2. El operador indica el archivo a importar.
-3. El sistema valida la estructura del archivo (columnas de entrada: Mach, ángulo de ataque, deflexión de superficie; columna de salida: torque de charnela).
+3. El sistema valida la estructura del archivo (columnas de entrada: Mach, ángulo de ataque, deflexión de superficie, velocidad angular de deflexión; columna de salida: torque de charnela).
 4. El sistema informa el rango válido de variables (envolvente) contenido en la tabla.
 5. El sistema almacena la tabla como fuente disponible para el módulo de procesamiento.
 
@@ -62,10 +63,10 @@
 
 **Flujo principal:**
 1. El operador selecciona "Nuevo ensayo".
-2. El sistema solicita: tabla de carga a usar, escenario o maniobra (secuencia de condiciones Mach/ángulo/deflexión), duración del ensayo, límites de torque/velocidad/posición.
+2. El sistema solicita: tabla de carga a usar, escenario o maniobra (secuencia de condiciones Mach/ángulo/deflexión/velocidad angular de deflexión), duración del ensayo, límites de torque/velocidad/posición.
 3. El operador ingresa los parámetros solicitados.
 4. El sistema valida que los parámetros estén dentro del rango válido de la tabla de carga (CU-001) y de los límites de seguridad del banco.
-5. El sistema genera un perfil temporal de torque objetivo mediante interpolación, que sirve como **referencia inicial y envolvente de validación** — el valor efectivamente aplicado durante la ejecución (CU-003) se recalculará en tiempo real según la posición angular real de la aleta (RF-PRO-06) — y estima el error de interpolación asociado.
+5. El sistema genera un perfil temporal de torque objetivo mediante interpolación, que sirve como **referencia inicial y envolvente de validación** — el valor efectivamente aplicado durante la ejecución (CU-003) se recalculará en tiempo real según la posición y velocidad angular real de la aleta (RF-PRO-06) — y estima el error de interpolación asociado.
 6. El sistema confirma la configuración y deja el ensayo listo para su ejecución.
 
 **Flujo alternativo:**
@@ -81,7 +82,7 @@
 
 **Actor:** Operador, Sistema de Control
 
-**Descripción:** El operador lanza la ejecución de un ensayo previamente configurado. El motor de carga aplica sobre el eje el torque objetivo, recalculado continuamente a partir de la posición angular real de la aleta, mientras el actuador bajo prueba intenta llevarla al ángulo comandado. El sistema de instrumentación mide y registra las variables relevantes.
+**Descripción:** El operador lanza la ejecución de un ensayo previamente configurado. El motor de carga aplica sobre el eje el torque objetivo, recalculado continuamente a partir de la posición y velocidad angular real de la aleta, mientras el actuador bajo prueba intenta llevarla al ángulo comandado. El sistema de instrumentación mide y registra las variables relevantes.
 
 **Precondiciones:**
 - Ensayo configurado (CU-002).
@@ -90,11 +91,11 @@
 
 **Flujo principal:**
 1. El operador inicia la ejecución del ensayo.
-2. El sistema mide la posición angular real de la aleta y recalcula el torque objetivo correspondiente a partir de la tabla de carga (RF-PRO-06).
+2. El sistema mide la posición y velocidad angular real de la aleta y recalcula el torque objetivo correspondiente a partir de la tabla de carga (RF-PRO-06).
 3. El sistema de control comienza a aplicar, mediante el motor de carga, el torque objetivo recalculado sobre el eje, compensando el torque parásito inducido por el movimiento del actuador bajo prueba (RF-BAN-02).
-4. El sistema de instrumentación mide continuamente el torque aplicado, la posición angular real de la aleta y las variables eléctricas del actuador, sincronizando todas las señales adquiridas.
+4. El sistema de instrumentación mide continuamente el torque aplicado, la posición y velocidad angular real de la aleta y las variables eléctricas del actuador, sincronizando todas las señales adquiridas.
 5. El sistema registra las variables medidas junto con la referencia objetivo y una marca de tiempo.
-6. El operador visualiza en tiempo real el progreso del ensayo (torque objetivo vs. medido, posición real de la aleta, estado del sistema).
+6. El operador visualiza en tiempo real el progreso del ensayo (torque objetivo vs. medido, posición y velocidad real de la aleta, estado del sistema).
 7. Los pasos 2 a 5 se repiten en cada ciclo del lazo de control durante toda la duración del ensayo.
 8. Al completarse la duración programada, el sistema retira automáticamente el torque aplicado y marca el ensayo como completado.
 
@@ -103,7 +104,7 @@
 - **3b.** Si el sistema detecta una condición de atasco mutuo (stall) entre el motor de carga y el actuador bajo prueba —torque diferencial sostenido sin cambio de posición de la aleta, RF-BAN-06— el sistema activa la parada automática de carga y registra el evento → continúa en **CU-004** (detención por falla).
 - **6a.** El operador puede detener manualmente el ensayo en cualquier momento → continúa en **CU-004** (detención manual).
 
-**Resultado esperado:** Conjunto de datos del ensayo (torque objetivo, torque medido, posición real de la aleta, variables eléctricas, eventos) registrado y disponible para su exportación (CU-005).
+**Resultado esperado:** Conjunto de datos del ensayo (torque objetivo, torque medido, posición y velocidad real de la aleta, variables eléctricas, eventos) registrado y disponible para su exportación (CU-005).
 
 **RF relacionados:** RF-BAN-01, RF-BAN-02, RF-BAN-03, RF-BAN-06, RF-INS-01, RF-INS-02, RF-INS-03, RF-INS-04, RF-INS-05, RF-PRO-06, RF-SWC-02, RF-SWC-03, RF-SWC-05
 
@@ -161,20 +162,23 @@
 
 **Actor:** Operador
 
-**Descripción:** Antes de una campaña de ensayos, el operador opera el banco en modo manual (torque de referencia fijo aplicado por el motor de carga) para verificar la correcta respuesta del sistema de aplicación de carga y de los sensores.
+**Descripción:** Antes de una campaña de ensayos, el operador opera el banco en modo manual (torque de referencia fijo aplicado por el motor de carga, y opcionalmente condiciones de vuelo simuladas fijadas por potenciómetro) para verificar la correcta respuesta del sistema de aplicación de carga y de los sensores.
 
 **Precondiciones:** Banco energizado, sin ensayo automático en curso.
 
 **Flujo principal:**
 1. El operador selecciona "Modo manual / calibración".
-2. El operador ingresa un valor de torque de referencia fijo, dentro de los límites de seguridad del banco.
+2. El operador ingresa un valor de torque de referencia fijo, dentro de los límites de seguridad del banco — **o bien** fija las condiciones de vuelo simuladas (Mach, ángulo de ataque) mediante los potenciómetros correspondientes (I-11), dejando que el módulo de interpolación calcule el torque de referencia a partir de esos valores y de la deflexión real medida.
 3. El sistema aplica dicho torque mediante el motor de carga y muestra en tiempo real el torque medido.
 4. El operador compara la referencia aplicada con la medición y, si corresponde, ajusta la calibración del sensor de torque.
 5. El operador finaliza el modo manual.
 
+**Flujo alternativo:**
+- **2a.** Si el operador usa los potenciómetros de Mach/ángulo de ataque (I-11) en lugar de un torque fijo, el sistema muestra también los valores manuales activos junto con el torque calculado, para que quede claro que el torque no es una referencia arbitraria sino el resultado de la tabla de carga evaluada en esas condiciones.
+
 **Resultado esperado:** Sistema de aplicación de carga y sensores verificados/calibrados, en condiciones de iniciar ensayos automáticos.
 
-**RF relacionados:** RF-BAN-05, RF-INS-01
+**RF relacionados:** RF-BAN-05, RF-BAN-07(a), RF-INS-01
 **RNF relacionados:** RNF-PRE-02
 
 ---
@@ -243,9 +247,40 @@
 
 ---
 
+## CU-010 — Caracterizar el actuador bajo prueba en modo manual (potenciómetros)
+
+**Actor:** Operador, Sistema de Control
+
+**Descripción:** El operador fija, mediante el potenciómetro de ángulo objetivo (I-12), una deflexión que se comanda **directamente** al actuador bajo prueba, análogo a un probador de servo manual, mientras el motor de carga sigue aplicando el torque calculado por el módulo de interpolación (ya sea desde un escenario programado o desde los potenciómetros de condiciones de vuelo, I-11). El sistema mide si la aleta efectivamente alcanza el ángulo comandado y con qué error/retardo, generando el dato de caracterización central del actuador bajo prueba. A diferencia de CU-003, aquí el comando de posición no proviene de una maniobra precalculada (RF-PRO-03) sino de la acción manual y en tiempo real del operador sobre la perilla.
+
+**Precondiciones:**
+- Actuador bajo prueba montado y conectado al banco (CU-008), con la aleta física instalada en el mismo eje.
+- Banco en modo manual (ver CU-006), con el motor de carga aplicando un torque de referencia (fijo o calculado desde I-11).
+- Condiciones de seguridad verificadas (RNF-SEG-01 a RNF-SEG-03, RNF-SEG-05).
+
+**Flujo principal:**
+1. El operador gira el potenciómetro de ángulo objetivo (I-12) hasta el valor deseado.
+2. El sistema envía dicho valor como comando de posición directo al actuador bajo prueba, respetando los límites de RNF-SEG-02/RNF-SEG-05.
+3. El actuador bajo prueba intenta alcanzar el ángulo comandado, venciendo el torque de carga aplicado simultáneamente por el motor de carga.
+4. El sistema de instrumentación mide la posición angular real de la aleta (RF-INS-02) y la registra junto con el ángulo comandado por el potenciómetro y una marca de tiempo.
+5. El operador visualiza en tiempo real la comparación entre ángulo comandado (I-12) y ángulo logrado (I-10/RF-INS-02).
+6. El operador repite los pasos 1 a 5 para distintos ángulos objetivo y/o distintas condiciones de carga (variando I-11), construyendo así un conjunto de puntos de caracterización del actuador.
+
+**Flujo alternativo:**
+- **3a.** Si el sistema detecta una condición de atasco mutuo (stall) o de límite de seguridad, se activa la parada automática de carga (RF-BAN-06/RNF-SEG-04) → continúa en **CU-004**.
+
+**Resultado esperado:** Conjunto de datos (ángulo comandado por potenciómetro, ángulo real logrado, torque aplicado, variables eléctricas) que caracteriza la capacidad del actuador bajo prueba de alcanzar ángulos objetivo bajo distintas condiciones de carga, sin depender de una maniobra CFD precalculada.
+
+**RF relacionados:** RF-BAN-07(b), RF-INS-01, RF-INS-02, RF-INS-04, RF-INS-05
+**RNF relacionados:** RNF-SEG-02, RNF-SEG-05, RNF-PRE-03, RNF-PRE-06, RNF-DOC-01
+
+---
+
 ## Notas de cobertura
 
 - Los casos de uso cubren la totalidad de los RF definidos en `02_Requisitos_Funcionales.md`, con excepción de RF-CFD-01/02/04 (cubiertos íntegramente por CU-001) y RF-PRO-05 (interno al sistema, no visible como interacción directa del operador; se manifiesta como parte del flujo interno de CU-002/CU-003).
-- CU-003 es el caso de uso central del sistema: integra banco (RF-BAN), instrumentación (RF-INS), recálculo de torque por posición (RF-PRO-06) y software de control (RF-SWC) en una sola ejecución, reflejando el flujo completo de la arquitectura (`05_Arquitectura_del_Sistema.md`).
+- CU-003 es el caso de uso central del sistema en su modo **automático**: integra banco (RF-BAN), instrumentación (RF-INS), recálculo de torque por posición y velocidad (RF-PRO-06) y software de control (RF-SWC) en una sola ejecución, reflejando el flujo completo de la arquitectura (`05_Arquitectura_del_Sistema.md`).
+- **CU-010 (nuevo, acuerdos de Avance I)** es el caso de uso análogo en **modo manual**: cubre específicamente RF-BAN-07(b) (comando directo de ángulo objetivo vía potenciómetro I-12) y formaliza el mecanismo concreto por el cual el proyecto genera el dato "ángulo comandado vs. ángulo logrado" que sustenta la caracterización del actuador (OE-6). Se diferencia de CU-006 en que CU-006 cubre principalmente la calibración del sensor de torque y el uso de los potenciómetros de condiciones de vuelo (I-11); CU-010 se centra en el potenciómetro de ángulo objetivo (I-12) y en el ciclo repetido de comando-medición-registro que constituye una campaña de caracterización.
 - CU-007 y CU-008 son los casos de uso que demuestran explícitamente el **objetivo específico OE-3** (arquitectura modular) y forman parte de los criterios de validación (OE-6) que deberían incluirse en el informe final: mostrar que cambiar de aplicación o de actuador no requiere modificar el banco.
 - Queda pendiente definir si se requiere un caso de uso de **gestión de usuarios/perfiles** en caso de que el banco se destine también a uso docente (mencionado en el Alcance del proyecto); no se incluyó aquí por no existir un RF explícito que lo respalde todavía.
+- Queda pendiente definir, en el diseño detallado del Controlador, si el potenciómetro de ángulo objetivo (I-12, CU-010) puede activarse como *override* momentáneo durante un ensayo automático en curso (CU-003) o si es estrictamente exclusivo de una sesión en modo manual — ver `05_Arquitectura_del_Sistema.md` §7.

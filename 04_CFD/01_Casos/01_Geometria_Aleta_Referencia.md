@@ -2,9 +2,9 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
-**Estado:** Decisión de **perfil y planta cerrada** (doble cuña, trapezoidal, proporciones tomadas de literatura). **Escala absoluta (factor de escalado lineal) PENDIENTE** — a definir junto con la matriz de casos CFD (Fase B1 del cronograma), de modo que el torque de charnela resultante caiga dentro del rango objetivo de RNF-CAR-01 (~0,5–2 N·m).
+**Estado:** Decisión de **perfil y planta cerrada** (doble cuña, trapezoidal, proporciones tomadas de literatura). **Escala absoluta (factor de escalado lineal) PENDIENTE** — a definir junto con la matriz de casos CFD (Fase B1 del cronograma), de modo que el torque de charnela resultante caiga dentro del rango objetivo de RNF-CAR-01 (~0,5–2 N·m). **Actualización (acuerdos de Avance I):** la matriz de casos CFD de Fase B1 debe incorporar, además de Mach/ángulo de ataque/deflexión, un **rango de velocidades angulares de deflexión** como cuarta variable de entrada (ver `02_Requisitos_Funcionales.md`, RF-CFD-02).
 
-**Documentos relacionados:** `01_Especificacion_del_Proyecto.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01), `06_Seleccion_Actuador_de_Carga.md`, `07_Valores_Referencia_Literatura_Analoga.md`, `02_Literatura/resumen_referencias.md` (Tema 3, referencia 4).
+**Documentos relacionados:** `01_Especificacion_del_Proyecto.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-PRE-05), `06_Seleccion_Actuador_de_Carga.md`, `07_Valores_Referencia_Literatura_Analoga.md`, `02_Literatura/resumen_referencias.md` (Tema 3, referencia 4).
 
 ---
 
@@ -43,6 +43,8 @@ Se consultó el texto completo de la tesis (no solo el resumen ya incluido en `r
 | Envolvente de vuelo usada para dimensionar el actuador de la referencia | Mach 0,4–0,6, altitud 0–5000 m |
 | Rigidez torsional del eje de montaje (dato estructural de la referencia, no aplica al banco) | 120 N·m/rad |
 
+**Nota:** la referencia no reporta explícitamente un rango de velocidades angulares de deflexión utilizado en su propio análisis aeroservoelástico; el valor de ~300°/s adoptado preliminarmente en RNF-REN-01 proviene de la misma fuente pero como límite dinámico del actuador, no como variable de barrido de la base de datos aerodinámica. La matriz de casos CFD propia del proyecto (sección 5) deberá definir su propio rango de velocidad angular de deflexión, sin asumir que coincide con ese valor.
+
 ## 4. Decisión de perfil y planta (cerrada)
 
 Se adopta, para el modelo geométrico de la aleta del proyecto:
@@ -54,7 +56,7 @@ Se adopta, para el modelo geométrico de la aleta del proyecto:
   - Flecha del borde de ataque: ~27,5°.
   - Relación espesor/cuerda: ~2,4–2,8 %, decreciente de raíz a punta — **aplica al modelo usado en CFD**; la pieza física impresa puede apartarse de este valor por fabricabilidad (ver sección 1).
 
-## 5. Escala absoluta — PENDIENTE
+## 5. Escala absoluta y matriz de casos CFD — PENDIENTE
 
 El tamaño absoluto de la aleta (y por tanto de la geometría CFD) no se fija en esta decisión. Queda explícitamente abierto por la siguiente razón:
 
@@ -64,21 +66,28 @@ Esto significa que **escala geométrica y matriz de casos CFD están acopladas**
 
 **Se registra como hipótesis de trabajo no confirmada** (solo a modo de referencia para dimensionar el acople mecánico en paralelo, no como valor cerrado): un factor de escala del orden de 1/4 respecto a la referencia (envergadura ≈ 37,5 mm, cuerda de raíz ≈ 39 mm, cuerda de punta ≈ 19,5 mm) fue mencionado como punto de partida razonable por tamaño de banco, pero **no está validado contra ninguna matriz de casos CFD todavía**.
 
+**Cuarta dimensión de la matriz (nuevo, acuerdos de Avance I):** la matriz de casos CFD de Fase B1 ya no se limita a barrer Mach × ángulo de ataque × deflexión; debe incorporar también un barrido de **velocidad angular de deflexión**, dado que ésta pasó a ser una variable de entrada obligatoria de la tabla de carga (RF-CFD-02) y no solo un dato de caracterización del actuador. Esto tiene dos implicancias prácticas para la definición de la matriz (aún no resueltas):
+
+1. El número de simulaciones necesarias crece con la cuarta dimensión — refuerza la pertinencia de las estrategias de reducción de corridas ya identificadas en el Tema 1 de la literatura (Da Ronch et al. 2011; Allen & Ghoreyshi 2018; muestreo adaptativo), que ahora deben aplicarse sobre un espacio de 4 variables en vez de 3.
+2. El rango de velocidad angular a barrer no puede fijarse arbitrariamente: debe ser consistente con (a) el ancho de banda dinámico objetivo del banco (~10 Hz, ver `07_Valores_Referencia_Literatura_Analoga.md` §3) y (b) el rango que el actuador bajo prueba pueda efectivamente alcanzar bajo carga, dato que en parte se obtendrá empíricamente mediante CU-010 (caracterización manual vía potenciómetro de ángulo objetivo) una vez que el banco esté operativo — lo que sugiere que este rango podría requerir una primera estimación conservadora y un ajuste posterior, en lugar de quedar cerrado antes de tener datos propios del banco.
+
 ## 6. Impacto sobre otros documentos del proyecto
 
 | Documento | Estado |
 |---|---|
 | `03_Requisitos_No_Funcionales.md` (RNF-CAR-01) | Sin cambios por ahora; el rango de torque (~0,5–2 N·m) sigue siendo la restricción que la escala de la aleta deberá satisfacer una vez cerrada. |
-| `05_Arquitectura_del_Sistema.md` | Sin cambios; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3) — esta decisión aporta el perfil y planta concretos que llenan ese rol, sin contradecir la naturaleza genérica declarada. |
+| `03_Requisitos_No_Funcionales.md` (RNF-PRE-05, nuevo) | La resolución de medición de velocidad angular de la aleta debe ser consistente con el rango de velocidad angular que finalmente se adopte en la matriz de casos CFD (sección 5) — relación aún no cuantificada. |
+| `05_Arquitectura_del_Sistema.md` | Sin cambios de fondo; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3) — esta decisión aporta el perfil y planta concretos que llenan ese rol, sin contradecir la naturaleza genérica declarada. |
 | Diseño mecánico (CAD, Fase C del cronograma) | **Parcialmente desbloqueado**: perfil y proporciones ya permiten avanzar bocetos, pero el modelo dimensionado final de la aleta física depende de que se cierre la escala (sección 5). |
-| Metodología CFD (Fase B) | Esta geometría (con su escala aún pendiente) es el insumo directo para B1 ("Definición de casos de simulación"). |
+| Metodología CFD (Fase B) | Esta geometría (con su escala aún pendiente) es el insumo directo para B1 ("Definición de casos de simulación"), que ahora incluye explícitamente la dimensión de velocidad angular de deflexión. |
 
 ## 7. Próximos pasos
 
-1. **Definir la matriz de casos CFD** (Mach, ángulo de ataque, deflexión) — Fase B1 del cronograma.
+1. **Definir la matriz de casos CFD** (Mach, ángulo de ataque, deflexión **y velocidad angular de deflexión**) — Fase B1 del cronograma. Esta matriz creció de 3 a 4 dimensiones respecto a la versión previa de este documento.
 2. **Cerrar el factor de escala** en conjunto con el paso 1, verificando que el torque de charnela resultante caiga dentro de RNF-CAR-01 (~0,5–2 N·m).
 3. Una vez cerrada la escala, **confirmar la geometría física final** de la aleta impresa (espesor ajustado por fabricabilidad, punto de fijación del collar sobre el eje de 5 mm).
-4. Actualizar este documento y `06_Seleccion_Actuador_de_Carga.md` / `03_Requisitos_No_Funcionales.md` con el valor de escala confirmado, retirando la marca "PENDIENTE".
+4. **Definir el rango de velocidad angular de deflexión** a barrer en CFD, considerando el ancho de banda objetivo del banco (~10 Hz) y, si están disponibles, datos preliminares obtenidos mediante caracterización manual del actuador (CU-010) — puede requerir una primera estimación conservadora sujeta a ajuste posterior.
+5. Actualizar este documento y `06_Seleccion_Actuador_de_Carga.md` / `03_Requisitos_No_Funcionales.md` con el valor de escala y de rango de velocidad angular confirmados, retirando las marcas "PENDIENTE".
 
 ## 8. Referencias citadas en esta decisión
 
