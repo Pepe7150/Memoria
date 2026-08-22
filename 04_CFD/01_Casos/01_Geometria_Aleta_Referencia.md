@@ -27,21 +27,21 @@ Se consultó el texto completo de la tesis (no solo el resumen ya incluido en `r
 
 ## 3. Geometría extraída de la referencia
 
-| Parámetro | Valor (Nalci & Kayran, 2014) |
-|---|---|
-| Cuerda de raíz | 156 mm |
-| Cuerda de punta | 78 mm |
-| Envergadura | 150 mm |
-| Razón de estrechamiento (taper ratio) | 0,5 |
-| Borde de fuga | Recto (sin flecha) |
-| Flecha del borde de ataque | ~27,5° |
-| Perfil | Doble cuña (diamante), espesor variable en envergadura |
-| Espesor en la raíz | ~4 mm |
-| Espesor en la punta | ~2,2 mm |
-| Relación espesor/cuerda (t/c) | ~2,4–2,8 % |
-| Torque de charnela de diseño (máximo) | 6 N·m |
-| Envolvente de vuelo usada para dimensionar el actuador de la referencia | Mach 0,4–0,6, altitud 0–5000 m |
-| Rigidez torsional del eje de montaje (dato estructural de la referencia, no aplica al banco) | 120 N·m/rad |
+| Parámetro                                                                                   | Valor (Nalci & Kayran, 2014)                            |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Cuerda de raíz                                                                              | 156 mm                                                  |
+| Cuerda de punta                                                                              | 78 mm                                                   |
+| Envergadura                                                                                  | 150 mm                                                  |
+| Razón de estrechamiento (taper ratio)                                                       | 0,5                                                     |
+| Borde de fuga                                                                                | Recto (sin flecha)                                      |
+| Flecha del borde de ataque                                                                   | ~27,5°                                                 |
+| Perfil                                                                                       | Doble cuña (diamante), espesor variable en envergadura |
+| Espesor en la raíz                                                                          | ~4 mm                                                   |
+| Espesor en la punta                                                                          | ~2,2 mm                                                 |
+| Relación espesor/cuerda (t/c)                                                               | ~2,4–2,8 %                                             |
+| Torque de charnela de diseño (máximo)                                                      | 6 N·m                                                  |
+| Envolvente de vuelo usada para dimensionar el actuador de la referencia                      | Mach 0,4–0,6, altitud 0–5000 m                        |
+| Rigidez torsional del eje de montaje (dato estructural de la referencia, no aplica al banco) | 120 N·m/rad                                            |
 
 **Nota:** la referencia no reporta explícitamente un rango de velocidades angulares de deflexión utilizado en su propio análisis aeroservoelástico; el valor de ~300°/s adoptado preliminarmente en RNF-REN-01 proviene de la misma fuente pero como límite dinámico del actuador, no como variable de barrido de la base de datos aerodinámica. La matriz de casos CFD propia del proyecto (sección 5) deberá definir su propio rango de velocidad angular de deflexión, sin asumir que coincide con ese valor.
 
@@ -56,7 +56,18 @@ Se adopta, para el modelo geométrico de la aleta del proyecto:
   - Flecha del borde de ataque: ~27,5°.
   - Relación espesor/cuerda: ~2,4–2,8 %, decreciente de raíz a punta — **aplica al modelo usado en CFD**; la pieza física impresa puede apartarse de este valor por fabricabilidad (ver sección 1).
 
-## 5. Escala absoluta y matriz de casos CFD — PENDIENTE
+## 5. Escala absoluta — hipótesis λ≈1/4 DESCARTADA, nuevo rango en evaluación
+
+**Actualización:** se obtuvieron valores de referencia de flujo potencial (XFLR5) sobre la
+geometría a escala real (ver `04_CFD/02_Valores_Referencia_XFLR5.md` para la metodología
+completa). Aplicando la ley de escalado M_λ = λ³·M_referencia (Barlow, Rae & Pope, 1999) a la
+condición más exigente (β=15°, Mach 0.6, M_referencia=4.35 N·m):
+
+- La hipótesis de trabajo λ≈1/4 da un momento de bisagra de solo ~0.068 N·m — muy por debajo
+  del piso de RNF-CAR-01 (~0.5 N·m continuo). **Esta hipótesis queda descartada.**
+- El rango de λ consistente con RNF-CAR-01 (0.5–2 N·m) es **λ ≈ 0.49–0.77**.
+
+Este rango depende de haber usado β=15° (extremo del rango de Nalci & Kayran, pensado para un misil) como condición de diseño. Sigue **PENDIENTE** cerrar la escala definitiva, ahora condicionado a: (a) la matriz de casos CFD (Mach, ángulo de ataque, deflexión — Fase B1), y (b) la definición del contexto de aplicación final del banco (ver nota abierta sobre posible cambio de objeto de diseño hacia un UAV, que podría requerir rehacer este análisis con otra geometría/perfil/rango angular de referencia).
 
 El tamaño absoluto de la aleta (y por tanto de la geometría CFD) no se fija en esta decisión. Queda explícitamente abierto por la siguiente razón:
 
@@ -73,13 +84,13 @@ Esto significa que **escala geométrica y matriz de casos CFD están acopladas**
 
 ## 6. Impacto sobre otros documentos del proyecto
 
-| Documento | Estado |
-|---|---|
-| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01) | Sin cambios por ahora; el rango de torque (~0,5–2 N·m) sigue siendo la restricción que la escala de la aleta deberá satisfacer una vez cerrada. |
-| `03_Requisitos_No_Funcionales.md` (RNF-PRE-05, nuevo) | La resolución de medición de velocidad angular de la aleta debe ser consistente con el rango de velocidad angular que finalmente se adopte en la matriz de casos CFD (sección 5) — relación aún no cuantificada. |
-| `05_Arquitectura_del_Sistema.md` | Sin cambios de fondo; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3) — esta decisión aporta el perfil y planta concretos que llenan ese rol, sin contradecir la naturaleza genérica declarada. |
-| Diseño mecánico (CAD, Fase C del cronograma) | **Parcialmente desbloqueado**: perfil y proporciones ya permiten avanzar bocetos, pero el modelo dimensionado final de la aleta física depende de que se cierre la escala (sección 5). |
-| Metodología CFD (Fase B) | Esta geometría (con su escala aún pendiente) es el insumo directo para B1 ("Definición de casos de simulación"), que ahora incluye explícitamente la dimensión de velocidad angular de deflexión. |
+| Documento                                               | Estado                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01)        | Sin cambios por ahora; el rango de torque (~0,5–2 N·m) sigue siendo la restricción que la escala de la aleta deberá satisfacer una vez cerrada.                                                                                                               |
+| `03_Requisitos_No_Funcionales.md` (RNF-PRE-05, nuevo) | La resolución de medición de velocidad angular de la aleta debe ser consistente con el rango de velocidad angular que finalmente se adopte en la matriz de casos CFD (sección 5) — relación aún no cuantificada.                                            |
+| `05_Arquitectura_del_Sistema.md`                      | Sin cambios de fondo; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3) — esta decisión aporta el perfil y planta concretos que llenan ese rol, sin contradecir la naturaleza genérica declarada. |
+| Diseño mecánico (CAD, Fase C del cronograma)          | **Parcialmente desbloqueado**: perfil y proporciones ya permiten avanzar bocetos, pero el modelo dimensionado final de la aleta física depende de que se cierre la escala (sección 5).                                                                    |
+| Metodología CFD (Fase B)                               | Esta geometría (con su escala aún pendiente) es el insumo directo para B1 ("Definición de casos de simulación"), que ahora incluye explícitamente la dimensión de velocidad angular de deflexión.                                                          |
 
 ## 7. Próximos pasos
 

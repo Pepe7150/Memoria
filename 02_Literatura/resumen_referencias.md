@@ -7,13 +7,13 @@ Archivo consolidado con las referencias encontradas por tema. El archivo `refere
 ---
 
 **1. Simpson, C. D. (2016).** *Control Surface Hinge Moment Prediction Using Computational Fluid Dynamics.* Tesis de maestría, Utah State University.
-Compara métodos de predicción de momento de charnela (bisagra) para superficies de control: relaciones empíricas (Datcom), XFOIL y CFD viscoso con Fun3D (NASA), incluyendo adaptación de malla basada en adjunto. Útil como referencia metodológica directa para comparar niveles de fidelidad al generar las tablas de carga del banco.
+Compara métodos de predicción de momento de bisagra para superficies de control: relaciones empíricas (Datcom), XFOIL y CFD viscoso con Fun3D (NASA), incluyendo adaptación de malla basada en adjunto. Útil como referencia metodológica directa para comparar niveles de fidelidad al generar las tablas de carga del banco.
 
 **2. Solarte-Pineda, J., Bravo-Mosquera, P. D., Fernandino Westin, M., & Moura Castro, B. (2026).** *Unsteady Aerodynamics and Hinge Moment Calculations of Control Surfaces at Transonic Speeds.* Journal of Aircraft. DOI: 10.2514/1.C038573
-Metodología para calcular momento de charnela y sus derivadas en flujo transónico no estacionario usando el software de código abierto SU2, con movimiento de malla. Referencia reciente y directamente aplicable a la generación de cargas dinámicas para el banco.
+Metodología para calcular momento de bisagra y sus derivadas en flujo transónico no estacionario usando el software de código abierto SU2, con movimiento de malla. Referencia reciente y directamente aplicable a la generación de cargas dinámicas para el banco.
 
 **3. Grismer, M., Kinsey, D., & Grismer, D. (2000).** *Hinge Moment Predictions Using CFD.* 18th Applied Aerodynamics Conference, AIAA Paper 2000-4325. DOI: 10.2514/6.2000-4325
-Trabajo clásico sobre predicción de momentos de charnela mediante CFD; discute efectos de modelar las paredes del túnel de viento en las soluciones numéricas al comparar con datos experimentales. Buen antecedente histórico/metodológico.
+Trabajo clásico sobre predicción de momentos de bisagra mediante CFD; discute efectos de modelar las paredes del túnel de viento en las soluciones numéricas al comparar con datos experimentales. Buen antecedente histórico/metodológico.
 
 **4. Da Ronch, A., Ghoreyshi, M., & Badcock, K. J. (2011).** *On the Generation of Flight Dynamics Aerodynamic Tables by Computational Fluid Dynamics.* Progress in Aerospace Sciences, 47(8), 597–620. DOI: 10.1016/j.paerosci.2011.09.001
 Muy relevante para el proyecto: propone un método para generar tablas aerodinámicas multidimensionales (look-up tables) a partir de CFD usando un modelo sustituto tipo kriging, reduciendo el número de corridas de alta fidelidad necesarias. Es prácticamente el mismo problema que "CFD → tablas de carga" planteado en la arquitectura del banco.
@@ -64,7 +64,7 @@ Compara estrategias de muestreo y modelos de interpolación (kriging, cokriging 
 Revisión clásica y muy citada de algoritmos de control (lazo cerrado y abierto) usados en bancos de ensayo dinámicos que replican fuerzas/movimientos reales en laboratorio, principalmente con actuación electrohidráulica. Excelente punto de partida como marco conceptual para el diseño de control del banco.
 
 **2. Anastasopoulos, L., & Hornung, M. (2018).** *Design of a Real-Time Test Bench for UAV Servo Actuators.* AIAA AVIATION Forum, AIAA 2018-3735. DOI: 10.2514/6.2018-3735
-Banco de ensayos tipo dinamómetro para emular cargas aerodinámicas sobre servoactuadores de UAV, con motor de carga aplicando torque en el eje de charnela y sensores de torque/corriente. Es el antecedente más directo y cercano en escala/objetivo al banco propuesto en el proyecto.
+Banco de ensayos tipo dinamómetro para emular cargas aerodinámicas sobre servoactuadores de UAV, con motor de carga aplicando torque en el eje de bisagra y sensores de torque/corriente. Es el antecedente más directo y cercano en escala/objetivo al banco propuesto en el proyecto.
 
 **3. Yao, J., Jiao, Z., Shang, Y., & Huang, C. (2010).** *Adaptive Nonlinear Optimal Compensation Control for Electro-Hydraulic Load Simulator.* Chinese Journal of Aeronautics, 23(6), 720–733. DOI: 10.1016/S1000-9361(09)60274-3
 Propone un controlador adaptativo no lineal para compensar el "torque excedente" (extra torque) generado por el movimiento del actuador bajo prueba en un simulador de carga electrohidráulico. Relevante para el diseño de control del banco al aplicar torque objetivo mientras el actuador se mueve.
@@ -159,7 +159,7 @@ Artículo de panorama, muy citado, sobre la transición de sistemas hidráulicos
 Propone una metodología de modelado multidisciplinario (mecánico, eléctrico, térmico) de actuadores electromecánicos de control de vuelo, incluyendo flujos de potencia. Útil para plantear el modelo del actuador bajo prueba dentro de la arquitectura de control del banco.
 
 ### Notas del tema 3
-- Nalci & Kayran (2014) y Zhang, Wu & Yang (2015) son las referencias más cercanas al dominio específico del proyecto (misil/superficie de control + actuador + carga aerodinámica), mientras que las demás son en su mayoría del ámbito de aeronaves comerciales/militares "more electric" pero con metodologías directamente transferibles.
+- Nalci & Kayran (2014) y Zhang, Wu & Yang (2015) son las referencias más cercanas al dominio específico del proyecto (misil/superficie de control + actuador + carga aerodinámica) dentro de todo el eje temático 3, mientras que las demás son en su mayoría del ámbito de aeronaves comerciales/militares "more electric" pero con metodologías directamente transferibles.
 - Stephan et al. (2023), Budinger et al. (2012) y Chakraborty et al. (2013) forman un conjunto coherente de metodologías de dimensionamiento preliminar de actuadores, relevante para el objetivo específico "Diseñar la arquitectura mecánica, electrónica y de control" del proyecto.
 
 ---
@@ -191,7 +191,7 @@ Propone una técnica de muestreo multi-fidelidad que separa la selección de nue
 Trabajo clásico que usa polinomios de Chebyshev multivariables para comprimir bases de datos aerodinámicas tabulares (validado con datos del F-16), reduciendo tamaño de almacenamiento y horas-hombre de modelado. Alternativa de interpolación/aproximación distinta a kriging o splines.
 
 **9. Kuya, Y., Takeda, K., Zhang, X., & Forrester, A. I. J. (2011).** *Multifidelity Surrogate Modeling of Experimental and Computational Aerodynamic Data Sets.* AIAA Journal, 49(2), 289–298. DOI: 10.2514/1.J050384
-Combina datos experimentales y computacionales de distinta fidelidad en un único modelo sustituto aerodinámico. Relevante si el proyecto combina datos CFD con futuras mediciones experimentales del banco.
+Combina datos experimentales y computacionales de distinta fidelidad en un único modelo sustituto aerodinámico. Relevante si el proyecto combina datos CFD con futuras mediciones experimentales del propio banco.
 
 **10. Toal, D. J. J., & Keane, A. J. (2011).** *Efficient Multipoint Aerodynamic Design Optimization via Cokriging.* Journal of Aircraft, 48(5), 1685–1695. DOI: 10.2514/1.C031342
 Usa cokriging (variante de kriging que combina múltiples fuentes de datos correlacionadas) para optimización aerodinámica multipunto, reduciendo el número de evaluaciones CFD de alta fidelidad requeridas.
@@ -302,3 +302,12 @@ Libro de texto clásico sobre el diseño e implementación de sistemas de contro
 - Este tema es el que menos literatura académica específica tiene disponible en comparación con los otros cinco; la mayoría de la "literatura" real sobre software de bancos de ensayo vive en documentación de fabricantes (NI, Dewesoft) más que en papers, por lo que se priorizaron fuentes académicas con metodologías transferibles.
 - Bahari et al. (2025) y Zhang et al. (2024) son las referencias más técnicamente cercanas si el banco usará EtherCAT u otro bus de tiempo real para sincronizar sensores y actuador.
 - Con esto se completan 73 referencias en total entre los seis temas (15+15+15+15+15+8), con 3 referencias compartidas entre temas (Da Ronch et al. y Laurenceau & Sagaut entre CFD e Interpolación; ElSaid et al. entre Instrumentación y Software).
+
+---
+
+## Referencia adicional (post Avance I): Fundamentos de escalado aerodinámico
+
+Agregada fuera de los seis ejes temáticos originales (no forma parte del conteo de 73 referencias por tema), como apoyo puntual al análisis de valores de referencia de flujo potencial en XFLR5 (`04_CFD/02_Valores_Referencia_XFLR5.md`).
+
+**74. Barlow, J. B., Rae, W. H., & Pope, A. (1999).** *Low-Speed Wind Tunnel Testing* (3.ª ed.). John Wiley & Sons.
+Referencia clásica en ensayos con modelos a escala en túnel de viento: define los coeficientes adimensionales de fuerza y momento (`CL`, `CD`, `Cm = M/(q·S·c̄)`) y formaliza el argumento de que, a igual condición de flujo (mismo `q`), dichos coeficientes son invariantes con el tamaño del modelo, mientras que las fuerzas dimensionales escalan con `L²` y los momentos con `L³`. Sirvió de base para relacionar los resultados de XFLR5 obtenidos a escala real (geometría de Nalci & Kayran) con el factor de escala λ del banco, y para descartar la hipótesis preliminar λ≈1/4 (ver `Geometria_Aleta_Referencia.md`, §5).
