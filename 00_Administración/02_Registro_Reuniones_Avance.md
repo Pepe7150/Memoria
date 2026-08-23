@@ -1,4 +1,3 @@
-
 # Registro de Reuniones de Avance
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
@@ -16,8 +15,6 @@
 1. Se amplían los objetivos específicos de OE-1 a OE-6 (ver `01_Especificacion_del_Proyecto.md`, §5).
 2. Se agrega la **velocidad de deflexión angular** como una cuarta dimensión de la superficie de respuesta CFD (junto a Mach, ángulo, deflexión) — impacta directamente la definición de la matriz de casos CFD (Fase B1 del cronograma) y la lista de pendientes analíticamente resolubles del proyecto.
 3. Se agrega un **panel de potenciómetros manual** como interfaz de entrada: I-11 (condición de vuelo) e I-12 (comando del actuador bajo prueba) — ver `05_Arquitectura_del_Sistema.md`.
-4. Se especifica el **objeto de estudio**, de momento sería la aleta de Nalci & Kayran. Podría cambiar a uno que se esté trabajando en el laboratorio, propuesto por los profesores.
-5. Se inicia con **flujo potencial** como plan b. Lo cual deja de lado los efectos transientes, a preguntar en la siguiente reunión.
 
 ---
 
@@ -28,9 +25,14 @@
 **Preguntas a plantear:**
 
 1. **Degeneración AoA/deflexión en modelo de aleta aislada.** Al no incluir fuselaje ni otra geometría de referencia en el modelo (ni en XFLR5 ni, previsiblemente, en la CFD propia dado que el alcance del proyecto excluye modelar el vehículo/misil completo), el modelo no puede distinguir entre ángulo de ataque del vehículo y deflexión de la aleta — son la misma variable física vista desde dos marcos de referencia distintos, y solo se separan cuando existe un tercer objeto (el fuselaje) contra el cual medir cada ángulo por separado. ¿Confirman que la matriz de casos CFD debe parametrizarse con un **único ángulo total** (no AoA y deflexión por separado)?
+
 2. **Relacionado:** si en algún momento se requiere la separación real AoA/deflexión (p. ej. para un caso de uso específico del contexto de aplicación que estén evaluando), esto implicaría modelar el vehículo completo (fuselaje incluido), lo cual excede el alcance actual del proyecto (`01_Especificacion_del_Proyecto.md`, "No incluye": *"Diseño del misil o torpedo"*). ¿Se mantiene la aleta aislada como supuesto de modelado, o se prevé incorporar geometría de fuselaje en algún momento?
+
 3. **Confirmación sobre el posible cambio de objeto de diseño hacia un proyecto UAV del laboratorio** (mencionado informalmente por los profesores): de concretarse, ¿qué pasa con el trabajo ya avanzado sobre la geometría de referencia de Nalci & Kayran (perfil doble cuña, escala, valores de XFLR5)? ¿Se reemplaza íntegramente, o se mantiene como ejercicio metodológico documentado mientras se define la nueva geometría de referencia?
+
 4. **Alcance de XFLR5 como fuente de datos de contingencia.** Se confirmó que XFLR5 (análisis de polares estático/cuasi-estacionario) solo puede proveer 2 de las 4 dimensiones acordadas en el punto 2 del Avance I (Mach y ángulo total — no AoA/deflexión por separado, no velocidad de deflexión angular, que requiere CFD no estacionaria). ¿Es aceptable usar un dataset de XFLR5 con estas 2 dimensiones como plan de contingencia/prueba del pipeline de software, dejando explícito que no reemplaza la caracterización CFD completa?
+
+5. **Altitud como variable de entrada — ausente de la especificación actual.** Se detectó que la tabla de carga (RF-CFD-02) no incluye la altitud como variable de entrada (solo Mach, AoA, deflexión), aunque el momento de bisagra sí depende de la altitud a igual Mach (vía la presión dinámica). En el modelo de flujo potencial (XFLR5) esto se resuelve analíticamente sin necesidad de nuevas corridas — pero en la CFD viscosa propia (Fase B), el número de Reynolds sí depende de la altitud y podría introducir una dependencia real, no solo de escala, en el coeficiente de momento. **¿El banco debe representar múltiples altitudes de operación, o se fija una condición de referencia única (p. ej. nivel del mar) para todo el proyecto?** Respuesta preliminar propia: sí debería considerarse (al menos como verificación de que el efecto es solo de escala y no de forma), pero se quiere confirmar con los profesores antes de comprometer la arquitectura de la tabla de carga.
 
 **Respuestas / acuerdos (a completar después de la reunión):**
 

@@ -105,13 +105,39 @@ MAC = (2/3)·c_raíz·(1+λ_taper+λ_taper²)/(1+λ_taper)
 
 **Para regenerar con la escala definitiva:** una vez que λ se cierre (Fase B1 del cronograma), cambiar `LAMBDA_ESCALA` en el script y volver a correrlo — no requiere repetir ningún paso anterior.
 
-## 9. Qué NO resuelve este pipeline (siguiente trabajo, fuera de este documento)
+## 9. Extensión a otras altitudes (post-procesamiento, sin nuevas corridas)
+
+**Hallazgo:** a Mach fijo, `q = ½ρV² = ½·ρ·(Mach·a)²` depende únicamente de `K(altitud) = ½·ρ(altitud)·a(altitud)²` — una constante por condición atmosférica. Dado que `Cm` ya se verificó independiente de Mach (§6bis) y el método es inviscid (sin dependencia de Reynolds/densidad en el coeficiente), `Cm` tampoco depende de la altitud. Por lo tanto:
+
+```
+M(Mach, ángulo, altitud) = Cm(ángulo) · K(altitud) · Mach² · S · c̄
+```
+
+**Esto significa que la altitud NO requiere una nueva dimensión de corridas en XFLR5** — solo se necesita el par `(ρ, a)` que XFLR5 reporta para cada altitud/temperatura de interés (leído directamente del panel de condiciones de vuelo, sin correr ningún polar), y aplicar el factor `K(altitud)/K(0)` a la curva ya calculada a nivel del mar.
+
+**Verificación realizada (5000 m, T=-17.5°C ISA):**
+
+| Cantidad | Valor |
+|---|---|
+| ρ(5000m) | 0.843 kg/m³ |
+| a(5000m) | 320.5 m/s |
+| M calculado (Mach0.6, β=15°) vía K(altitud) | 2.6552 N·m |
+| M reportado por XFLR5 (corrida de verificación) | 2.66 N·m |
+| Diferencia | 0.18% — verificado |
+
+**Advertencia importante — corrección de un error propio:** inicialmente se intentó predecir este valor asumiendo que XFLR5 usa la fórmula barométrica ISA estándar de libro para `p(altitud)`. Esa predicción (2.320 N·m) **no coincidió** con el resultado real (2.66 N·m) — un 15% de diferencia. Al verificar, la presión que implican `ρ` y `T` reportados por XFLR5 a 5000 m (61864 Pa) difiere en 14.5% de la presión ISA de libro (54020 Pa), lo que indica que el modelo atmosférico interno de XFLR5 no sigue exactamente esa fórmula. **Conclusión metodológica: no asumir ninguna fórmula atmosférica externa — usar siempre los valores de `ρ` y `a` que XFLR5 reporta directamente** para la altitud/temperatura configurada, en vez de calcularlos de forma independiente.
+
+**Limitación (igual que con Mach):** esta simplificación depende de que el método sea inviscid (sin Reynolds). En la CFD viscosa propia del proyecto (Fase B), el número de Reynolds sí depende de la altitud a igual Mach, y `Cm` podría tener una dependencia real (aunque probablemente secundaria) de la altitud — no se debe asumir que este atajo aplica directamente a la CFD sin verificación.
+
+**Nota sobre el alcance del proyecto:** la altitud no aparece actualmente como variable de entrada en ningún documento del proyecto (`02_Requisitos_Funcionales.md`, RF-CFD-02 solo define Mach/AoA/deflexión). Ver pregunta 5 agregada en `00_Administración/02_Registro_Reuniones_Avance.md` (reunión 28/08/2026).
+
+## 10. Qué NO resuelve este pipeline (siguiente trabajo, fuera de este documento)
 
 - El **módulo de interpolación del software del banco** (RF-PRO-01/02) — este pipeline solo genera el archivo de entrada; el módulo que lo lee, interpola y lo sirve en tiempo real al Controlador es trabajo de la Fase D del cronograma, independiente de este documento.
 - La **CFD propia del proyecto** (Fase B) — este pipeline es un atajo de bajo costo, no un reemplazo.
 - La **matriz de casos CFD final** (Mach, ángulo, velocidad angular) — sigue pendiente de definir en Fase B1, informada pero no resuelta por este pipeline.
 
-## 10. Checklist rápido para repetir el pipeline con una geometría nueva
+## 11. Checklist rápido para repetir el pipeline con una geometría nueva
 
 - [ ] Extraer geometría de la nueva fuente (cuerdas, envergadura, flecha, perfil, t/c, posición del eje de bisagra).
 - [ ] Ajustar parámetros en `generar_perfil_doble_cuna.py` (o rehacer si el perfil no es doble cuña).
