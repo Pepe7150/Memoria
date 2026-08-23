@@ -305,9 +305,12 @@ Libro de texto clásico sobre el diseño e implementación de sistemas de contro
 
 ---
 
-## Referencia adicional (post Avance I): Fundamentos de escalado aerodinámico
+## Referencia adicional (post Avance I): Fundamentos de escalado aerodinámico y análisis viscoso
 
 Agregada fuera de los seis ejes temáticos originales (no forma parte del conteo de 73 referencias por tema), como apoyo puntual al análisis de valores de referencia de flujo potencial en XFLR5 (`04_CFD/02_Valores_Referencia_XFLR5.md`).
 
 **74. Barlow, J. B., Rae, W. H., & Pope, A. (1999).** *Low-Speed Wind Tunnel Testing* (3.ª ed.). John Wiley & Sons.
 Referencia clásica en ensayos con modelos a escala en túnel de viento: define los coeficientes adimensionales de fuerza y momento (`CL`, `CD`, `Cm = M/(q·S·c̄)`) y formaliza el argumento de que, a igual condición de flujo (mismo `q`), dichos coeficientes son invariantes con el tamaño del modelo, mientras que las fuerzas dimensionales escalan con `L²` y los momentos con `L³`. Sirvió de base para relacionar los resultados de XFLR5 obtenidos a escala real (geometría de Nalci & Kayran) con el factor de escala λ del banco, y para descartar la hipótesis preliminar λ≈1/4 (ver `Geometria_Aleta_Referencia.md`, §5).
+
+**75. Sebastia Saez, C., & Hornung, M. (2023).** *Numerical Analysis of Aerodynamic Flap Hinge Moment Under Unsteady Flow Conditions Considering Laminar-Turbulent Transition.* AIAA AVIATION Forum, AIAA 2023-3528. DOI: 10.2514/6.2023-3528
+Simulaciones estacionarias y no estacionarias con CFD (modelo de transición gamma en StarCCM+) sobre un perfil laminar de planeador con un flap articulado, con foco en el momento de bisagra durante el aleteo dinámico que puede ocurrir en flameo de superficie de control. Del mismo grupo de investigación que Anastasopoulos & Hornung (2018, Tema 2, ref. 2). Confirma que la transición laminar-turbulenta afecta el momento de bisagra de forma no despreciable — relevante si el proyecto llegara a adoptar un perfil de borde redondeado (tipo NACA) y modo viscoso en XFLR5, en vez del perfil doble cuña/modo inviscid usado hasta ahora (ver `04_CFD/04_Pipeline_XFLR5_Perfil_Redondeado_Viscoso.md`).
