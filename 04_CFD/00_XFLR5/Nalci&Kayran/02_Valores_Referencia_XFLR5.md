@@ -104,6 +104,18 @@ Es decir, una aleta entre **~49% y ~77%** del tamaño de la referencia de Nalci 
 | `07_Valores_Referencia_Literatura_Analoga.md` | Puede incorporarse esta comparación como tercer punto de referencia, junto a Anastasopoulos & Hornung (2018). |
 | `referencias_bibliograficas.bib` / `resumen_referencias.md` | Agregar Barlow, Rae & Pope (1999) — ver snippet BibTeX provisto en la conversación de origen de este documento. |
 
+## 6bis. Alcance dimensional de este dataset frente a la matriz de casos acordada
+
+Con el acuerdo del Avance I (21/08/2026, ver `00_Administración/02_Registro_Reuniones_Avance.md`) de incorporar la velocidad de deflexión angular como cuarta dimensión de la superficie de respuesta CFD, y con el hallazgo de que el modelo de aleta aislada (sin fuselaje) no distingue AoA de deflexión — mismo ángulo, dos nombres (ver `Geometria_Aleta_Referencia.md` §6) —, el dataset de este documento cubre:
+
+| Dimensión acordada | ¿Cubierta aquí? |
+|---|---|
+| Mach | Sí |
+| Ángulo (total; no AoA y deflexión por separado) | Sí |
+| Velocidad angular de deflexión | **No** — XFLR5 resuelve polares estáticos/cuasi-estacionarios; la tasa de deflexión es un efecto no estacionario fuera del alcance del método (requiere CFD no estacionaria, ver Tema 1: Solarte-Pineda et al. 2026; Yan et al. 2023). |
+
+**Este dataset es, como máximo, una referencia de contingencia en 2 dimensiones (Mach × ángulo total)** — útil para validar el pipeline de software de interpolación/control mientras no esté disponible la CFD propia, pero no reemplaza la caracterización completa de 3 dimensiones que exige el acuerdo del Avance I.
+
 ## 7. Pendiente / decisión abierta
 
 El rango de λ (0.49–0.77) se calculó usando **β=15° como condición de diseño** — el extremo del rango angular de Nalci & Kayran, pensado para un misil. Si la matriz de casos CFD del proyecto (Fase B1, aún pendiente) concentra los casos de uso reales en deflexiones menores (ej. ±5–8°), el torque requerido cae proporcionalmente y λ=1/4 podría volver a ser viable. **Esta decisión no se cierra en este documento** — depende de definir primero qué rango angular de operación es representativo del caso de uso real del banco, lo cual a su vez depende del contexto de aplicación final (ver nota de contexto en la conversación de origen: posible cambio del objeto de diseño de misil a UAV).
