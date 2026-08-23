@@ -86,11 +86,25 @@ MAC = (2/3)·c_raíz·(1+λ_taper+λ_taper²)/(1+λ_taper)
 
 ## 7. Limitaciones del método (declarar siempre junto con cualquier resultado)
 
-1. **Flujo potencial puro, sin viscosidad:** no captura separación (relevante en el borde de ataque agudo del doble cuña a ángulos altos) ni arrastre viscoso.
+1. **Flujo potencial puro, sin viscosidad:** no captura separación (relevante en el borde de ataque agudo del doble cuña a ángulos altos) ni arrastre viscoso. **Ver §7bis para la justificación de por qué se usó este modo — no fue una elección de fidelidad, sino la alternativa más honesta disponible dada la geometría.**
 2. **Sin corrección de compresibilidad:** verificado empíricamente (§6) — el `Cm` no cambia con Mach en esta configuración. A partir de M~0.3 esto empieza a ser una simplificación no despreciable.
 3. **Degeneración AoA/deflexión:** un modelo de aleta aislada sin fuselaje no distingue ángulo de ataque del vehículo de deflexión de la superficie — ambos son el mismo ángulo total (ver `01_Casos/01_Geometria_Aleta_Referencia.md` §6).
 4. **Sin velocidad angular de deflexión:** el método es estático/cuasi-estacionario; no puede proveer la cuarta dimensión de la superficie de respuesta acordada en el Avance I (ver `01_Casos/01_Geometria_Aleta_Referencia.md` §7).
 5. **Bordes agudos y límite de convergencia:** en perfiles de espesor delgado con LE/TE agudos, ángulos altos pueden requerir mallado más fino o toparse con no convergencia — no observado en este dataset, pero a vigilar si se cambia la geometría.
+
+## 7bis. Por qué se usó el modo inviscid (no es una ganancia de fidelidad, es pragmatismo)
+
+**Es importante no dejar la impresión de que "quitar viscosidad" mejora el modelo — no lo hace.** El modo inviscid se eligió porque, para esta geometría específica, el modo viscoso (XFoil, dentro de XFLR5) no habría dado un resultado más confiable, sino uno **igual de irreal pero disfrazado de preciso**.
+
+**El motivo físico:** el perfil doble cuña tiene un borde de ataque agudo, diseñado originalmente para régimen **supersónico** (donde un borde agudo es deseable, evita ondas de choque separadas). Tu punto de diseño es **subsónico** (M 0.4–0.6). En flujo subsónico real, un borde de ataque agudo provoca separación de la capa límite casi inmediatamente ante cualquier ángulo distinto de cero — no existe el radio de curvatura necesario para que la capa límite negocie el gradiente de presión, a diferencia de un perfil redondeado (tipo NACA).
+
+**La consecuencia práctica:** el solver de capa límite integral de XFoil está formulado asumiendo una capa límite delgada y adherida. Al intentar correrlo sobre esta geometría en este régimen, no falla por ser "numéricamente difícil" en abstracto — falla (o no converge, o converge a un resultado sin sentido) porque está tratando de resolver una condición física (capa límite adherida) que **no existe** para esta combinación de geometría y velocidad. Si lograra converger, el resultado no sería más preciso que el inviscid — sería una capa límite adherida forzada sobre un caso que en la realidad se separa, dando una falsa sensación de exactitud.
+
+**Por eso se prefirió el modo inviscid:** en vez de fingir capturar viscosidad que el método no puede modelar correctamente para esta geometría, se trabaja con una aproximación cuyas limitaciones se pueden declarar con precisión (sin separación, sin capa límite) — en vez de una aproximación viscosa con limitaciones que no se pueden cuantificar porque el propio método no converge o converge a algo físicamente inconsistente.
+
+**Consecuencia para la interpretación de resultados:** la separación de flujo en el borde de ataque, a estos ángulos y Mach, es muy probablemente un efecto real y no despreciable en la aleta física. Ni el modo viscoso (que no converge de forma confiable) ni el inviscid (que ignora el efecto por completo) dan una respuesta confiable sobre la magnitud de ese efecto — solo una CFD viscosa con un modelo de turbulencia apropiado para flujo separado (RANS) puede resolverlo. Esto refuerza, con más fundamento del que se le había dado antes, por qué este dataset es estrictamente de **contingencia** y no un sustituto de la CFD propia (Fase B).
+
+**Nota para geometrías futuras (perfil redondeado, p. ej. NACA):** esta limitación es específica del borde agudo del doble cuña. Con un perfil de borde de ataque redondeado, el análisis viscoso de XFoil sí podría converger de forma confiable en un rango de ángulos razonable — en ese caso, la elección de modo (viscoso vs. inviscid) debería revisarse desde cero, no asumir que "inviscid" sigue siendo la mejor opción por defecto. Ver conversación de origen de este documento para la discusión completa del trade-off (viscosidad vs. modelado de espesor) en ese escenario.
 
 ## 8. Generar la tabla de carga de contingencia (formato largo, para el software)
 
@@ -144,4 +158,6 @@ M(Mach, ángulo, altitud) = Cm(ángulo) · K(altitud) · Mach² · S · c̄
 - [ ] Reconstruir el `Wing` en XFLR5 con la nueva tabla de secciones (§3).
 - [ ] Definir rango angular según el límite físico de la nueva referencia (no asumir ±15° si la fuente no lo especifica).
 - [ ] Repetir verificaciones de §6 — no asumir que se cumplen igual con otra geometría.
+- [ ] **Reevaluar la elección de modo viscoso vs. inviscid (§7bis) — NO asumir que "inviscid" sigue siendo la mejor opción por defecto.** Si el nuevo perfil tiene borde de ataque redondeado (p. ej. NACA), el modo viscoso podría converger de forma confiable y aportar información que el inviscid no captura (arrastre de perfil, ángulo de pérdida, efecto de la capa límite sobre `Cm`) — evaluar el trade-off caso a caso, no por defecto.
 - [ ] Actualizar `LAMBDA_ESCALA` y volver a evaluar contra el RNF-CAR-01 vigente en ese momento.
+- [ ] **Chequeo rápido de robustez del modelo atmosférico (§9):** antes de confiar en el escalado por altitud, consultar `ρ` y `a` en el panel de condiciones de vuelo de XFLR5 (sin correr ningún polar) para 2-3 altitudes intermedias del rango de interés (p. ej. 2000 m, 5000 m, 8000 m) y confirmar que decrecen de forma monótona y sin saltos anómalos. Esto no valida la física (garantizada por la formulación del método, ver §9) — valida que el modelo atmosférico interno de XFLR5 no tenga un comportamiento inesperado en el rango específico que se vaya a usar. Costo: ~5 minutos, no requiere repetir ninguna corrida de polar.
