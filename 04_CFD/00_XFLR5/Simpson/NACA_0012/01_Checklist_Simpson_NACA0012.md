@@ -1,140 +1,120 @@
-# Simpson NACA 0012: hoja de entrada directa para XFLR5
+# Caso Simpson (2016) — NACA 0012, estabilizador con flecha 45°, elevador 25%
 
-Este documento sirve para **ingresar el caso en XFLR5**, no para rediseñar el banco. Copiar los números de una sola alternativa completa; no mezclar filas de las dos alternativas.
+**Este documento asume que ya leíste `03_Pipeline_General_XFLR5.md`.** Aquí solo se detalla lo específico de este caso — datos de geometría, valores exactos a ingresar, y las particularidades que solo aparecen con esta fuente. Para explicaciones generales (por qué usar `TE Flap` en vez de `isFin`, por qué el límite de 100 puntos, cómo consolidar resultados, etc.) ver el pipeline general.
 
-## Corrección de la geometría actualmente mostrada
+**Tipo de superficie:** flap parcial de cuerda (elevador, 25% de la cuerda) — usa el mecanismo `TE Flap` + `HMom` del pipeline general (§2.2, caso B), **no** el mecanismo `isFin` que se usó para la aleta de Nalci & Kayran.
 
-- El **offset de 0.8009 m es correcto** para el barrido de 45 grados de Simpson: `offset = semienvergadura * tan(45 grados) = 0.8009 m`.
-- Visualmente el desplazamiento hacia atrás es grande porque 45 grados es, efectivamente, un barrido muy grande. La imagen es coherente con esa geometría.
-- El perfil de toda la superficie es **NACA 0012**, de cuerda uniforme. El elevador no usa otro perfil: es el 25% final de la misma sección NACA 0012 al que se le aplica giro alrededor de su eje de bisagra.
-- La geometría de la captura **no reproduce Simpson**: usa `c = 0.318 m` pero mantiene `b/2 = 0.8009 m`. Por eso XFLR5 entrega `S ≈ 0.51 m²`, `MAC = 0.318 m` y `AR ≈ 5.038`.
-- Para Simpson sin escalar, los valores correctos son `c = 0.3810 m`, `S = 0.6103 m²`, `MAC = 0.3810 m` y `AR ≈ 4.204`.
+**Fuente:** Simpson, C. D. (2016). *Control Surface Hinge Moment Prediction Using Computational Fluid Dynamics.* Tesis de maestría, University of Alabama. Capítulo 4 (geometría en Tabla 4.1, Figuras 4.1–4.2). Basado a su vez en el ensayo experimental de Johnson & Thompson (1950), túnel de alta velocidad Langley 7×10 ft.
 
 ---
 
-# Alternativa A - Réplica geométrica de Simpson (usar primero)
+## 1. Geometría (Tabla 4.1 de la fuente — valores a ingresar tal cual)
 
-Usar esta alternativa para comparar en los mismos términos con Simpson. Es un estabilizador completo y simétrico, sin fuselaje; equivale a duplicar la semiala experimental alrededor del plano de simetría.
+| Cantidad | Símbolo | Valor |
+|---|---|---|
+| Cuerda de sección (normal al borde de ataque) | c | 15 in = **381 mm** |
+| Semi-envergadura | b/2 | 31.53 in = **800.9 mm** |
+| Flecha | Λ | **45°** |
+| Espesor relativo | t/c | 0.12 (NACA 0012) |
+| Cuerda del elevador (% de c) | cf/c | **25%** |
+| Eje de bisagra, coordenada x | xh/c | **0.75** |
+| Eje de bisagra, coordenada z | zh/c | **0.0** |
+| Reynolds | Re | **5.52×10⁶** |
+| Mach | M | **0.5** |
 
-## A1. Crear el perfil
+**Nota sobre el modelo real:** Johnson & Thompson ensayaron un modelo de **semi-envergadura** (una sola mitad, contra la pared del túnel), no un estabilizador completo. Por eso el wing en XFLR5 se construye con `Symmetric` activado (ver §3) — XFLR5 completa la otra mitad automáticamente para el cálculo, y el resultado por lado es directamente comparable al ensayo original (ver verificación en §6).
 
-1. Abrir `Direct Foil Design`.
-2. Elegir `Foil -> NACA Foils`.
-3. Escribir: `0012`.
-4. Guardar/comprobar que el nombre aparezca como `NACA 0012`.
+**Deflexiones ensayadas por la fuente** (ensayar las 4, incluida δ=0° — ver por qué en §4): `δ ∈ {0°, -1.7°, -3.7°, -7.8°}`
 
-## A2. Crear la superficie
-
-1. Crear un objeto de ala/estabilizador **simétrico**, no una aleta vertical.
-2. Seleccionar `Symmetric`.
-3. Seleccionar `Right Side`.
-4. En la tabla de secciones ingresar exactamente lo siguiente.
-
-|      Fila |            y (m) |        chord (m) |       offset (m) | dihedral (deg) | twist (deg) | foil                | X-panels | X-dist | Y-panels | Y-dist |
-| --------: | ---------------: | ---------------: | ---------------: | -------------: | ----------: | ------------------- | -------: | ------ | -------: | ------ |
-| 1 - raíz |           0.0000 | **0.3810** |           0.0000 |            0.0 |         0.0 | **NACA 0012** |       13 | Cosine |       19 | Sine   |
-| 2 - punta | **0.8009** | **0.3810** | **0.8009** |            0.0 |         0.0 | **NACA 0012** |       13 | Cosine |       19 | Sine   |
-
-**No dejar el perfil vacío en la fila de raíz.** Debe ser `NACA 0012` en las dos filas.
-
-## A3. Comprobación inmediata
-
-Después de aceptar la geometría, XFLR5 debe mostrar aproximadamente:
-
-| Magnitud                   |       Valor esperado |
-| -------------------------- | -------------------: |
-| Envergadura total          |             1.6018 m |
-| Área`S`                 | **0.6103 m²** |
-| MAC                        |   **0.3810 m** |
-| Aspect ratio`AR`         |      **4.204** |
-| Barrido de borde de ataque |            45 grados |
-
-Si aparece `S ≈ 0.51 m²`, `MAC = 0.318 m` o `AR ≈ 5.04`, detenerse: sigue ingresada una cuerda de 0.318 m y no se está reconstruyendo Simpson.
-
-## A4. Definir el elevador y el eje de bisagra
-
-| Campo                            |                                        Valor que ingresar |
-| -------------------------------- | --------------------------------------------------------: |
-| Tipo                             |                        Elevador / flap de borde de salida |
-| Extensión en semiala            |              Desde`y = 0.0000 m` hasta `y = 0.8009 m` |
-| Extensión total                 | Se replica automáticamente al otro lado por`Symmetric` |
-| Cuerda del elevador              |                                          25% de la cuerda |
-| Eje de bisagra                   |                   `x/c = 0.75` desde el borde de ataque |
-| Posición dimensional de bisagra |                `x = 0.28575 m` desde el borde de ataque |
-| Coordenada vertical del eje      |                                               `z/c = 0` |
-
-Revisar visualmente dos veces: elevador neutro y elevador con una deflexión de prueba de `-7.8 grados`.
+**Ángulos de ataque ensayados:** `α ∈ {-8°, -6°, -4°, -2°, 0°, 2°, 4°, 6°, 8°}` (9 puntos, paso 2°)
 
 ---
 
-# Alternativa B - Versión compacta de 50 cm de envergadura total
+## 2. Crear el perfil base y las 4 variantes deflectadas
 
-Usar **sólo** si el límite físico de 50 cm se refiere a la envergadura total de la pieza. Es una reducción geométrica uniforme de Simpson: `lambda = 0.5000 / 1.6018 = 0.3121`.
+1. `Direct Foil Design` → `Foil` → `NACA Foils` → ingresar `0012` → generar y guardar como `NACA 0012`.
+2. Para cada una de las 3 deflexiones no nulas, usar la herramienta de **`TE Flap`** sobre el perfil base:
+   - Seleccionar el perfil `NACA 0012`.
+   - En la tabla de perfiles (`Foil direct design`), completar las columnas:
 
-## B1. Tabla de entrada directa
+| Nombre a guardar | TE Flap (°) | TE XHinge | TE YHinge |
+|---|---|---|---|
+| `NACA 0012 1p7` | 1.70 | 75.00 | 0.00 |
+| `NACA 0012 3p7` | 3.70 | 75.00 | 0.00 |
+| `NACA 0012 7p8` | 7.80 | 75.00 | 0.00 |
 
-|      Fila |            y (m) |        chord (m) |       offset (m) | dihedral (deg) | twist (deg) | foil                | X-panels | X-dist | Y-panels | Y-dist |
-| --------: | ---------------: | ---------------: | ---------------: | -------------: | ----------: | ------------------- | -------: | ------ | -------: | ------ |
-| 1 - raíz |           0.0000 | **0.1189** |           0.0000 |            0.0 |         0.0 | **NACA 0012** |       13 | Cosine |       19 | Sine   |
-| 2 - punta | **0.2500** | **0.1189** | **0.2500** |            0.0 |         0.0 | **NACA 0012** |       13 | Cosine |       19 | Sine   |
+   - Este paso **hornea** la deflexión en la geometría (crea un perfil nuevo, permanentemente rotado desde el 75% de cuerda) y, crucialmente, **guarda el hinge como metadata del perfil** — es lo que permite que XFLR5 calcule `HMom` más adelante.
 
-## B2. Valores esperados
+3. **No te saltes la deflexión δ=0°.** Aunque geométricamente sea idéntica al `NACA 0012` base, hay que crear igual una variante con `TE Flap=0.00`, `TE XHinge=75.00`, `TE YHinge=0.00`, y guardarla como `NACA 0012 0p0`. Sin este paso, el perfil base no tiene el hinge asociado y XFLR5 no podrá calcular `HMom` para ese caso — el resultado será un `Cm` de ala completa, inútil para lo que necesitas (ver explicación completa en el pipeline general, §2.2).
 
-| Magnitud             |                            Valor esperado |
-| -------------------- | ----------------------------------------: |
-| Envergadura total    |                                  0.5000 m |
-| Área`S`           |                                0.0595 m² |
-| MAC                  |                                  0.1189 m |
-| `AR`               |                                     4.204 |
-| Cuerda del elevador  |                                  0.0297 m |
-| Posición de bisagra | `x = 0.0892 m` desde el borde de ataque |
+   **Por qué vale la pena igual (no es solo trámite):** incluso sin deflexión, el momento de bisagra no es cero para α≠0 — permite aislar `Ch_α` (sensibilidad a ángulo de ataque) de `Ch_δ` (sensibilidad a deflexión), ver verificación en §6.
 
-La alternativa B conserva perfil, forma, barrido y `AR`; cambia Reynolds y los momentos dimensionales. No se puede comparar directamente su momento con la tabla original de Simpson sin declarar esa diferencia.
+**Convención de nombres:** usar exactamente el patrón `_delta_<signo><entero>p<decimal>` en el nombre del `Wing`/`Plane` que uses más adelante (ej. `Simpson_NACA0012_delta_-7p8`) — el script de consolidación (pipeline general, §7.2) lo parsea automáticamente con esa convención, incluyendo el caso `_delta_0p0`.
 
 ---
 
-# Corridas del caso Simpson
+## 3. Polares 2D viscosas — Reynolds real, no un valor de prueba
 
-## Valores publicados por Simpson
+Para **cada uno de los 4 perfiles** (`NACA 0012 0p0`, `1p7`, `3p7`, `7p8`):
 
-| Variable                                 | Ingreso                                      |
-| ---------------------------------------- | -------------------------------------------- |
-| Mach                                     | `0.5`                                      |
-| Reynolds de referencia, basado en cuerda | `5.52e6`                                   |
-| AoA (deg)                                | `-8, -6, -4, -2, 0, 2, 4, 6, 8`            |
-| Deflexión de elevador (deg)             | `0, -1.7, -3.7, -7.8`                      |
-| Total                                    | 4 corridas de deflexión x 9 AoA = 36 puntos |
+1. `Direct Foil Design` → `Polars` → `Define an Analysis` → tipo viscoso (XFoil).
+2. **Re = 5,520,000** (o el valor exacto que reporte el log de la corrida 3D si difiere ligeramente, ej. 5,517,204).
+3. **Recomendación:** corre 2 polares que enmarquen ese Re (p. ej. 5,000,000 y 6,000,000) en vez de un único valor exacto — evita el error `Re is outside the flight envelope of polars` en el análisis 3D si el Reynolds local calculado no coincide dígito a dígito (ver pipeline general, §4).
+4. **Mach = 0.5**, con corrección de compresibilidad activada.
+5. Rango angular: -8° a 8°, refinando hasta que **converjan los 9 puntos** antes de pasar al wing 3D.
 
-## Orden exacto de trabajo
+---
 
-- [X] Elegir **A** o **B** y no mezclar valores.
-- [X] Crear NACA 0012 y asignarlo a raíz y punta.
-- [X] Ingresar la tabla de secciones.
-- [X] Verificar `S`, `MAC` y `AR` contra la tabla correspondiente.
-- [X] Crear el elevador: 25% final, desde la raíz a la punta de la semiala, eje al 75% de cuerda.
-- [X] Crear las cuatro configuraciones: `delta_0`, `delta_-1.7`, `delta_-3.7`, `delta_-7.8`.
-- [ ] En cada configuración barrer los nueve AoA publicados.
-- [ ] Exportar por separado ángulo, `Cm`, momento respecto de bisagra, `CL`, `CD` y `q`.
+## 4. Construir el wing (uno por deflexión)
 
-## Antes de correr las polares viscosas
+En `Wing and Plane Design`, crear **4 objetos `Wing`** (no `Plane`), uno por deflexión, cada uno con:
 
-**Pausa obligatoria:** Simpson publica `Mach = 0.5` y `Re = 5.52e6`, pero la tabla no fija una altitud, temperatura o presión de túnel suficiente para reconstruirlos automáticamente en XFLR5.
+| Fila | Y (mm) | Chord (mm) | Offset (mm) | Dihedral (°) | Foil |
+|---|---|---|---|---|---|
+| Raíz | 0 | 381 | 0 | 0 | `NACA 0012 <sufijo>` |
+| Punta | 800.9 | 381 | 800.9 × tan(45°) = **800.9** | — | `NACA 0012 <sufijo>` |
 
-- Para la alternativa A, definir una condición atmosférica equivalente que reproduzca simultáneamente Mach y Reynolds, o recuperar las condiciones del experimento de Johnson y Thompson.
-- Para la alternativa B, el Reynolds cambia por la escala; recalcularlo y generar nuevas polares viscosas NACA 0012.
-- XFLR5 queda como fallback estático: no añadir velocidad de deflexión a estas corridas.
+- **Symmetric:** activado, **Right Side** (ver nota de §1 — el modelo real es de semi-envergadura, XFLR5 completa la otra mitad automáticamente).
+- **Twist:** 0° en ambas secciones.
+- Nombrar el `Wing`: `Simpson_NACA0012_delta_<sufijo>` (ej. `Simpson_NACA0012_delta_-7p8`).
+- Método de análisis: **VLM2** (necesario para la corrección viscosa vía polares 2D — el método de paneles 3D no la incorpora, ver pipeline general §1).
 
-## Resultado que debe quedar guardado
+**Verificación rápida antes de correr:** el área de referencia que reporte XFLR5 debería ser `2 × 800.9mm × 381mm ≈ 0.6103 m²` (el ×2 es por la duplicación de `Symmetric`). Si no coincide, revisar la tabla de secciones antes de continuar.
 
-```text
-Simpson_NACA0012_A_o_B.xfl
-Simpson_NACA0012_delta_0.csv
-Simpson_NACA0012_delta_-1p7.csv
-Simpson_NACA0012_delta_-3p7.csv
-Simpson_NACA0012_delta_-7p8.csv
-Simpson_NACA0012_consolidado.csv
-```
+---
 
-## Fuente de los números
+## 5. Correr y exportar
 
-Simpson, C. D. (2016), *Control Surface Hinge Moment Prediction Using Computational Fluid Dynamics*, capítulo 4, tabla 4.1 y sección 4.3. Fuente pública: https://ir.ua.edu/items/b24e56da-42e8-45ef-861c-f32ff2a6d3e5
+1. Densidad y viscosidad cinemática consistentes con Re=5.52×10⁶ y M=0.5 a la condición atmosférica elegida (density=1.522 kg/m³ fue el valor usado en la corrida de referencia de este proyecto — no necesariamente el único válido, pero debe ser explícito y documentado).
+2. Type 1 (fixed speed), α de -8° a 8° — cabe en un solo polar (9 puntos, muy por debajo del límite de 100).
+3. **Exportar cada punto de operación (`OpPoint`) individualmente** — el export del polar completo no trae `HMom` (ver pipeline general, §5). Son 9 α × 4 δ = 36 archivos.
+4. Opcional pero recomendado: exportar también el polar completo de cada δ (para la hoja de verificación cruzada de `Cm` del script de consolidación).
+
+---
+
+## 6. Consolidar y verificar
+
+Usar el script de consolidación del pipeline general (§7.2) sobre la carpeta con los 36 `OpPoint` (+ 4 polares completos opcionales).
+
+**Verificaciones específicas de este caso, además de las generales del pipeline (§6):**
+
+- `Ch` en α=0°, δ=0° debería salir ≈0 (perfil simétrico, sin deflexión, sin ángulo → sin asimetría que produzca momento).
+- La pendiente `Ch_α` (ajuste lineal de `Ch` vs. α, por cada δ) debería salir muy similar entre las 4 deflexiones — confirma el modelo lineal `Ch ≈ Ch_α·α + Ch_δ·δ` de la literatura de superficies de control.
+- Los dos objetos de flap que reporta XFLR5 (uno por cada mitad simétrica del wing) deberían dar el mismo valor — es la firma esperada de un caso sin β ni deflexión diferencial, no un error.
+
+---
+
+## 7. Qué comparación es posible — y cuál no
+
+**No existe una tabla numérica exacta en la fuente para este caso 3D.** El Capítulo 4 de Simpson presenta los resultados solo como gráfico (Figura 4.6: `Ch` vs. α, una curva por δ, comparando el experimento de Johnson & Thompson contra su propio Fun3D estacionario) — no hay tabla de la que extraer números para comparar dígito a dígito.
+
+**Lo que sí se puede afirmar con el texto de la fuente:** el propio Fun3D de Simpson (RANS con modelo de turbulencia Spalart-Allmaras, más fidelidad que cualquier cosa que XFLR5 pueda dar) tiene errores de **~35% en δ=-7.8°** respecto al experimento, con buena concordancia en deflexiones pequeñas. Si tu resultado de XFLR5 se aleja bastante del orden de magnitud esperado en δ=-7.8°, no es necesariamente una falla de tu metodología — es la misma separación de flujo que ya le cuesta capturar a una CFD viscosa completa.
+
+**Si se necesita una validación numérica exacta:** el caso 2D GA(W)-1 de la misma fuente (Capítulo 3, Tablas 3.7–3.12) sí tiene números exactos — incluyendo el propio XFOIL de Simpson, comparable directamente contra un XFLR5 propio del mismo perfil. Es un ejercicio separado, no descrito en este documento (geometría: cuerda 24in, flap 20%, hinge en 80% de cuerda, Re=2.2×10⁶, M=0.13).
+
+---
+
+## 8. Referencias
+
+- Simpson, C. D. (2016). *Control Surface Hinge Moment Prediction Using Computational Fluid Dynamics.* Tesis de maestría, University of Alabama.
+- Johnson, J. L., & Thompson, F. L. (1950). Ensayo experimental citado como fuente primaria de la geometría y datos de referencia en el Capítulo 4 de Simpson (2016).
