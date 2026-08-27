@@ -1,0 +1,146 @@
+# Reevaluación de Alternativas — Arquitectura Física del Banco
+
+**Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
+
+**Propósito:** insumo para la reunión con los profesores guía (Bernardo Hernández, Frank Tinnap). Compara alternativas de aplicación de torque, medición de ángulo/velocidad angular y medición de corriente, con pros/contras explícitos, para que sirva de base a los diagramas que se dibujarán a mano.
+
+---
+
+## 0. Aclaración previa importante — reencuadre del problema de torque
+
+Antes de comparar motores, vale la pena precisar el argumento de "en motores DC no se controla el torque directamente", porque tal como está planteado es impreciso y puede llevar a una decisión equivocada:
+
+- En un motor DC (brushed o brushless), el torque en el **eje del motor** es proporcional a la corriente de armadura/fase (`T = Kt·I`). Controlar corriente **sí** es controlar torque, en ambas tecnologías — este principio es idéntico en DC brushed y en brushless (BLDC/PMSM con FOC). La diferencia no está ahí.
+- El problema real y específico de este banco es que el DS3218 tiene una **caja reductora (~236–250:1)** entre el motor crudo y el eje de salida. La fricción y el juego (backlash) de esa reductora rompen la relación limpia `corriente → torque de salida`, especialmente en inversión de sentido y a baja velocidad (stick-slip). **Esto aplica igual con un motor brushless si también lleva reductora** — no es un problema de "DC vs. brushless", es un problema de "motor con reductora vs. motor de accionamiento directo".
+- Además, el diseño actual **ya cierra el lazo con el torque medido** por la celda de carga (interfaz I-05, `05_Arquitectura_del_Sistema.md` §2.4), no solo con la corriente estimada. La corriente es el lazo *interno*; el torque real medido es el lazo *externo*. Esto ya compensa buena parte de la no linealidad de la reductora, siempre que el ancho de banda del lazo externo sea suficiente frente al backlash.
+
+**Conclusión de este punto:** la pregunta que realmente hay que resolver con los profesores no es "¿DC o brushless?", sino: *¿la fricción/backlash de la reductora del DS3218 limita el ancho de banda de torque alcanzable (~10 Hz, índice diez-diez) más de lo aceptable, y si es así, conviene resolverlo cambiando de motor, o cambiando de arquitectura de aplicación de carga (rotativa → lineal)?* Esa es la disyuntiva real, y así conviene presentarla.
+
+---
+
+## 1. Alternativas de aplicación de torque
+
+### Opción A — Motor DC (brushed) intervenido, antagónico en el mismo eje *(arquitectura actual)*
+
+**Principio:** DS3218 intervenido → motor DC crudo con reductora, comandado por corriente (BTS7960 + INA219), aplicando torque directamente sobre el eje compartido con el actuador bajo prueba.
+
+| Pros                                                                                                                                        | Contras                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ya seleccionado, cotizado y dentro de presupuesto (~$20.526 CLP, techo $50.000 CLP)                                                         | La reductora interna (~236–250:1) introduce fricción y backlash entre corriente y torque de salida — la causa real detrás de la objeción de los profesores |
+| Driver simple y barato (H-bridge COTS, BTS7960), sin electrónica de control propia                                                         | Backlash puede degradar el seguimiento dinámico cerca de 10 Hz e introducir retardo de fase, justo el criterio "índice diez-diez" que se busca cumplir        |
+| Sensor de corriente ya resuelto (INA219), consolidado en el mismo proveedor (Altronics)                                                     | Kt y resistencia de armadura no están caracterizados (requieren medición experimental post-intervención de todos modos)                                      |
+| El lazo externo ya cierra con torque medido (celda de carga), no solo con corriente — mitiga parcialmente la no linealidad de la reductora | Riesgo de fabricación: la intervención del servo (acceso al motor crudo) es en sí misma incierta/no reproducible fácilmente                                 |
+| Configuración antagónica en un solo eje ya modelada y con protección de atasco mutuo diseñada (RF-BAN-06)                               | Desgaste de escobillas en campañas de ensayo largas (aunque a esta escala de uso probablemente no es crítico)                                                 |
+
+### Opción B — Motor brushless (BLDC/PMSM)
+
+**Principio:** reemplazar el motor de carga por uno brushless, comandado por un driver con control de corriente de fase (FOC o trapezoidal), típicamente requiriendo sensor de posición del rotor (Hall o encoder) para la conmutación.
+
+| Pros                                                                                                         | Contras                                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sin escobillas → sin desgaste, sin fricción/arco de conmutación, Kt más estable y repetible en el tiempo | **No resuelve el problema real si sigue llevando reductora** — el argumento "brushless controla mejor el torque" no aplica a la interfaz motor↔reductora↔eje, que es donde está el problema                                                                                            |
+| Torque más suave (menos cogging), especialmente relevante a baja velocidad                                  | Requiere driver mucho más complejo: inversor trifásico + firmware FOC (ESC de hobby no sirve — la mayoría son de lazo de velocidad, no de torque/corriente accesible)                                                                                                                        |
+| Mayor densidad de potencia y eficiencia                                                                      | Controladores con corriente de fase accesible (VESC, ODrive) tienen costo y lead time más altos, y no están en el proveedor ya consolidado (Altronics) — reintroduce el riesgo#5 del proyecto (disponibilidad de componentes)                                                                 |
+| —                                                                                                           | Requiere sensor de conmutación (Hall/encoder) adicional, más partes móviles en la cadena de instrumentación                                                                                                                                                                                  |
+| —                                                                                                           | Se pierde todo el trabajo ya avanzado de caracterización, datasheets y selección del DS3218 (`08_Datasheet_Motor_DS3218.md`, `06_Seleccion_Actuador_de_Carga.md`) — hay que rehacer la selección de componentes desde cero, con impacto directo en el cronograma (Fase C, ruta crítica) |
+| —                                                                                                           | A esta escala de torque (~0,5–2 N·m) es difícil encontrar un brushless COTS de bajo costo con reductora apropiada y acceso al lazo de corriente — normalmente estos motores están pensados para drones/RC, orientados a velocidad, no a torque controlado con precisión                    |
+
+### Opción C — Actuador lineal + brazo de palanca (aplicando la carga, no solo midiéndola)
+
+**Principio:** un actuador lineal empuja sobre un brazo de palanca rígidamente unido al eje, a un radio conocido (`T = F·r`), con la fuerza controlada en lazo cerrado (celda de carga en la propia cadena de fuerza).
+
+| Pros                                                                                                                                | Contras                                                                                                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fuerza medida directamente en la cadena de aplicación, sin depender de la relación corriente↔torque del motor ni de su reductora | **Esta es, en esencia, la misma configuración que el Actuonix L16-P ya evaluado y descartado** (`06_Seleccion_Actuador_de_Carga.md` §3.2a) — la razón del descarte (8 mm/s insuficiente para ~10 Hz) aplica igual salvo que se elija un actuador lineal distinto y más rápido |
+| Conceptualmente más simple de modelar (sin gearbox, sin conmutación) si se usa un actuador de accionamiento directo (voice coil)  | Un actuador lineal con suficiente fuerza (~50 N pico), carrera adecuada y ancho de banda ≥10 Hz (tipo voice coil) es considerablemente más caro que el DS3218/BTS7960 actual — riesgo de exceder el techo de $50.000 CLP                                                                 |
+| —                                                                                                                                  | Geometría no lineal: si el brazo gira, el ángulo de la línea de acción del actuador lineal respecto al brazo cambia (`T = F·r·cos θ`), a menos que se agregue una rótula/guía — complejidad de diseño y de control adicional no presente en la opción rotativa                |
+| —                                                                                                                                  | Persiste el mismo riesgo de atasco mutuo con el actuador bajo prueba (RF-BAN-06 sigue siendo necesario)                                                                                                                                                                                     |
+| —                                                                                                                                  | Más partes mecánicas (riel lineal, rótula de acople) → más fuentes de fricción/holgura propias, no necesariamente menos que la reductora que se quiere evitar                                                                                                                         |
+
+---
+
+## 1bis. Medición de torque — ¿es igual en las tres opciones?
+
+No exactamente. Depende de si el motor de carga es rotativo (A, B) o lineal (C).
+
+**Opciones A y B (motor DC / brushless, rotativos): medición idéntica.**
+En ambas, la medición ya está **desacoplada del motor por diseño**: un brazo de palanca rígido (~4 cm) en otro punto del eje presiona una celda de carga fija al riel (`torque = F·r`). Esa celda mide lo que efectivamente llega al eje, independientemente de qué motor generó el torque o de las pérdidas de la reductora. Cambiar de A a B **no obliga a modificar la instrumentación de torque**.
+
+**Opción C (lineal + brazo): hay dos sub-variantes con implicancias distintas**, que conviene distinguir explícitamente en el diagrama:
+
+|                                     | C1 — Brazo de medición separado (mismo esquema que A/B)                                                                 | C2 — Celda de carga integrada en la varilla del actuador lineal                                                                                                                                                                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Qué mide**                 | Reacción en un punto del eje distinto de donde se aplica la carga, igual que en A/B                                      | Fuerza empujada directamente en la línea de acción del actuador lineal                                                                                                                                                                                                                                                                                             |
+| **Ventaja**                   | Reutiliza el esquema de medición ya diseñado (celda Altronics LC-10KG-HX711 + brazo); sin conversión angular adicional | Mide fuerza en el punto de aplicación, sin depender de un brazo de medición aparte                                                                                                                                                                                                                                                                                 |
+| **Complicación específica** | Ninguna adicional a las ya listadas para C en general                                                                     | Requiere conocer el ángulo instantáneo entre la línea de acción y el brazo para convertir fuerza→torque (`T = F·r·cos θ`, no `T = F·r` fijo) — fuente de error/calibración nueva; además la fricción de la rótula/guía del actuador queda *antes* del punto de medición, cambiando qué se está midiendo realmente respecto al esquema actual |
+| **Recomendación**            | Si se explora C, esta variante es más directa de implementar y de comparar contra A/B                                    | Solo se justifica si el objetivo explícito es evitar cualquier dependencia del motor/reductora en la fidelidad de la medición — evaluar si el costo de la conversión angular vale la pena frente a esa ganancia                                                                                                                                                  |
+
+---
+
+## 1ter. Otras diferencias que cambian entre opciones (más allá de torque/ángulo/corriente)
+
+Corriente, torque (aplicado y medido) y ángulo/velocidad angular ya quedaron cubiertos arriba. Lo que cambia adicionalmente entre A/B (motor rotativo coaxial) y C (actuador lineal + brazo) es la **arquitectura mecánica alrededor** de esos tres puntos:
+
+### a) Tolerancia de alineación y cargas parásitas (afecta RNF-PRE-04 / RNF-REN-03)
+
+- **A/B:** motor coaxial con el eje del actuador bajo prueba — la tolerancia de concentricidad ya definida (eje de 5 mm, acoples flexibles) sigue aplicando sin cambios.
+- **C:** el actuador lineal empuja perpendicular al brazo, fuera del eje. Si esa línea de empuje no queda exactamente perpendicular, introduce **cargas laterales/axiales parásitas** sobre el eje y los rodamientos — un tipo de error mecánico distinto al que hoy cubre RNF-PRE-04, no modelado todavía.
+
+### b) Comportamiento sin energía / estado seguro (RNF-SEG-01, RNF-CNF-02)
+
+La reductora del DS3218 probablemente ofrece suficiente fricción pasiva como para **resistir el retroaccionamiento (backdriving)** incluso sin corriente — es decir, "sin torque aplicado" no es necesariamente lo mismo que "eje libre". Un actuador lineal o un brushless de accionamiento directo típicamente liberan el eje de forma más limpia al cortar la energía. **Esto no tiene un ganador obvio**: depende de si el estado seguro deseado es "eje bloqueado" o "eje libre" — pendiente de verificar experimentalmente en cualquiera de las opciones antes de puntuarlo con confianza.
+
+### c) Rango angular geométricamente alcanzable (solo crítico para C)
+
+Con un brazo + actuador lineal de carrera fija, el rango de ángulo cubierto está limitado por la geometría (carrera del actuador, largo del brazo, oblicuidad del empuje en los extremos del recorrido) — es una restricción de **diseño**, distinta del error de conversión F→T de la sección 1bis. Antes de avanzar con C conviene verificar si el rango objetivo (±15°, o el que finalmente se use) es alcanzable sin un mecanismo adicional. En A/B, al ser rotativos, esta restricción no existe.
+
+### d) Espacio físico / layout del banco
+
+A/B son compactos (todo en línea sobre un solo eje). C necesita espacio perpendicular al eje para el riel/actuador lineal — no es un requisito formal todavía, pero condiciona el tamaño físico y el diseño de la bancada.
+
+### e) Sensor de posición adicional para C2 — resuelto, no es un punto nuevo
+
+Si se usa la variante C2 (celda en la varilla, con corrección `T=F·r·cosθ`), se necesita el ángulo/posición instantánea del brazo — pero eso ya lo entrega el sensor de ángulo de la aleta (encoder o IMU, sección 3) que de todas formas está presente en cualquier opción. **No se requiere un sensor adicional**; solo hay que confirmarlo explícitamente al implementar C2, para no asumirlo por descuido.
+
+---
+
+## 2. Tabla resumen (para armar el diagrama de decisión)
+
+| Criterio                                                    | A: DC + reductora (actual)                             | B: Brushless                                  | C: Lineal + brazo                                                 |
+| ----------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------- | ----------------------------------------------------------------- |
+| Resuelve el problema real (fricción/backlash de reductora) | No, pero mitigado por lazo de torque medido            | No (si mantiene reductora)                    | Sí, si es accionamiento directo                                  |
+| Costo / presupuesto (≤$50.000 CLP)                         | ✅ Ya dentro                                           | ⚠️ Riesgo de exceder (driver FOC)           | ⚠️ Riesgo de exceder (actuador rápido)                         |
+| Complejidad de driver/control                               | Baja (H-bridge simple)                                 | Alta (FOC, conmutación)                      | Media (control de fuerza en lazo cerrado)                         |
+| Riesgo de cronograma (reinicio de selección/compra)        | Ninguno (ya seleccionado)                              | Alto                                          | Medio-alto                                                        |
+| Compatibilidad con ancho de banda ~10 Hz                    | Por validar experimentalmente                          | Por validar (mismo problema si hay reductora) | Depende del actuador elegido                                      |
+| Precedente en literatura del proyecto                       | Anastasopoulos & Hornung (2018) — antecedente directo | Sin antecedente directo en las 73 referencias | Yao et al., Nam (2001) — línea hidráulica/lineal, escala mayor |
+
+---
+
+## 3. Medición de ángulo y velocidad angular — encoder vs. IMU en la aleta
+
+|                                                  | Encoder en el eje (implementación por defecto hasta ahora)                                                                              | IMU en la aleta física (propuesta de los profesores)                                                                                                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Qué mide realmente**                    | Posición angular en el punto del eje donde está montado — puede no capturar exactamente la holgura/compliance entre el eje y la aleta | Orientación real de la propia aleta física — captura directamente la holgura mecánica que RNF-PRE-03 busca detectar ("distinguir el ángulo real del ángulo comandado ante holgura o compliance") |
+| **Velocidad angular**                      | Se deriva numéricamente de la posición (amplifica ruido a baja frecuencia de muestreo, riesgo ya señalado en RNF-PRE-05)              | El giróscopo entrega velocidad angular**directamente**, sin derivar — ventaja concreta para RNF-PRE-05                                                                                         |
+| **Precisión/drift**                       | Sin drift, resolución angular fija y conocida (según encoder elegido)                                                                  | Drift de integración del giróscopo; requiere fusión sensorial (complementario/Kalman) con el acelerómetro para corregir — complejidad de software adicional                                       |
+| **Costo**                                  | Encoders ópticos de calidad pueden ser más caros                                                                                       | Módulos IMU (MPU6050 y similares) son muy económicos y están en Altronics — buena consolidación de compra                                                                                         |
+| **Antecedente en literatura del proyecto** | ElSaid et al. (2019), Anastasopoulos & Hornung (2018) usan encoder óptico — antecedente directo                                        | Sin antecedente directo en las 73 referencias revisadas                                                                                                                                                |
+| **Latencia**                               | Prácticamente nula (señal digital directa)                                                                                             | Latencia adicional por el filtro de fusión — a validar contra el lazo de ~100–200 Hz preliminar (RNF-REN-01)                                                                                        |
+
+**Nota:** no son mutuamente excluyentes — podría valer la pena presentar la IMU como complemento (verificación de holgura eje–aleta) más que como reemplazo total del encoder, si el presupuesto y tiempo lo permiten.
+
+---
+
+## 4. Corriente
+
+Sin disyuntiva real: el INA219 ya seleccionado (I2C, 0–3,2 A, Altronics) es adecuado independientemente de qué alternativa de torque se elija (A o B), y sigue siendo la medición más directa y menos discutible de las tres. Si se opta por brushless (B), el sensor de corriente debería medirse por fase (más de un canal), lo que sí es un cambio de instrumentación no trivial a mencionar en el diagrama.
+
+---
+
+## 5. Preguntas concretas para llevar a la reunión
+
+1. ¿El punto de los profesores es específicamente la reductora del DS3218 (fricción/backlash), o genuinamente creen que hay una limitación fundamental de control de torque en motores DC brushed que no aplicaría a un brushless *con la misma reductora*?
+2. Si se justifica cambiar de tecnología, ¿el criterio decisivo es ancho de banda dinámico (10 Hz) o vida útil/desgaste (escobillas)? — cada uno apunta a una solución distinta (brushless resuelve desgaste; accionamiento directo sin reductora resuelve backlash).
+3. ¿Vale la pena, antes de cambiar de arquitectura, medir experimentalmente el ancho de banda real alcanzable con la Opción A actual (ya identificado como pendiente en `05_Arquitectura_del_Sistema.md` §7, supuesto 10) para tener un dato concreto en vez de decidir sobre una hipótesis?
+4. Para la IMU: ¿se evalúa como reemplazo del encoder o como sensor complementario para verificar holgura eje–aleta?
