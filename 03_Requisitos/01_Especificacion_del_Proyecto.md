@@ -30,11 +30,11 @@ La arquitectura propuesta desacopla la simulación numérica del ensayo físico,
 
 ## 4. Objetivo general
 
-Diseñar e implementar un banco de ensayos para el dimensionamiento y caracterización de actuadores de superficies de control utilizando cargas fluidodinámicas obtenidas mediante simulación CFD.
+Diseñar e implementar un banco de ensayos para el **verificación** **y** **selección** dimensionamiento y caracterización de actuadores **COTS** de superficies de control utilizando cargas fluidodinámicas obtenidas mediante simulación **Computacional**.
 
 ## 5. Objetivos específicos
 
-* **Analizar** el estado del arte de los actuadores electromecánicos para superficies de control y de los bancos de ensayo tipo dinamómetro de escala comparable (motor de carga + sensor de torque + actuador bajo prueba), así como las metodologías de obtención de cargas mediante CFD —incluyendo métodos de predicción de momento de charnela, estrategias de reducción del número de simulaciones necesarias (muestreo adaptativo, modelos sustitutos tipo kriging/splines) y técnicas de interpolación multidimensional—, con el fin de establecer los requisitos de diseño de la plataforma experimental.
+* **Analizar** el estado del arte de los actuadores electromecánicos para superficies de control y de los bancos de ensayo tipo dinamómetro de escala comparable (motor de carga + sensor de torque + actuador bajo prueba), así como las metodologías de obtención de cargas mediante CFD —incluyendo métodos de predicción de momento de bisagra, estrategias de reducción del número de simulaciones necesarias (muestreo adaptativo, modelos sustitutos (surrogate models) tipo kriging/splines) y técnicas de interpolación multidimensional—, con el fin de establecer los requisitos de diseño de la plataforma experimental.
 * **Desarrollar** una metodología para obtener y procesar cargas fluidodinámicas mediante simulaciones CFD, considerando explícitamente como variables de entrada el número de Mach, el ángulo de ataque, la deflexión angular de la superficie de control **y su velocidad angular de deflexión**, y como variable de salida el torque de bisagra resultante, generando tablas aerodinámicas multidimensionales utilizables en el banco de ensayos.
 * **Diseñar** la arquitectura mecánica, electrónica y de control de la plataforma experimental para aplicar las cargas equivalentes sobre actuadores de superficies de control, incluyendo (a) la instrumentación necesaria para medir en tiempo real tanto la posición angular como la velocidad angular real de la aleta, y (b) una interfaz de entradas manuales mediante potenciómetros físicos que permita al operador fijar, en modo manual, los valores de las variables de entrada de la tabla de carga (p. ej. velocidad de flujo/Mach, ángulo de ataque) de forma independiente del lazo de realimentación automático.
 * **Implementar** el software de procesamiento e integración encargado de interpretar las tablas de carga multidimensionales (Mach, ángulo de ataque, deflexión, velocidad angular de deflexión), leer las entradas provistas por el panel de potenciómetros en modo manual, y suministrar las referencias de torque necesarias para la ejecución de los ensayos.
@@ -65,7 +65,7 @@ La arquitectura propuesta se concibe como un sistema modular, permitiendo su ada
 ### No incluye
 
 * Desarrollo del actuador.
-* Diseño del misil o torpedo.
+* Diseño del avión/misil/torpedo/drone.
 * Desarrollo de algoritmos de guiado y navegación.
 * Simulación de vuelo en tiempo real.
 * Acoplamiento directo entre CFD y el banco de ensayos, entendido como: **no se ejecutan simulaciones CFD durante el ensayo**; la interpolación en tiempo real sobre la tabla de carga ya generada (recálculo según la posición real de la aleta, dentro del dominio ONLINE) no constituye un incumplimiento de esta exclusión.

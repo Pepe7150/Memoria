@@ -30,8 +30,8 @@
 3. **Confirmación sobre el posible cambio de objeto de diseño hacia un proyecto UAV del laboratorio** (mencionado informalmente por los profesores): de concretarse, ¿qué pasa con el trabajo ya avanzado sobre la geometría de referencia de Nalci & Kayran (perfil doble cuña, escala, valores de XFLR5)? ¿Se reemplaza íntegramente, o se mantiene como ejercicio metodológico documentado mientras se define la nueva geometría de referencia?
 4. **Alcance de XFLR5 como fuente de datos de contingencia.** Se confirmó que XFLR5 (análisis de polares estático/cuasi-estacionario) solo puede proveer 2 de las 4 dimensiones acordadas en el punto 2 del Avance I (Mach y ángulo total — no AoA/deflexión por separado, no velocidad de deflexión angular, que requiere CFD no estacionaria). ¿Es aceptable usar un dataset de XFLR5 con estas 2 dimensiones como plan de contingencia/prueba del pipeline de software, dejando explícito que no reemplaza la caracterización CFD completa?
 5. **Altitud como variable de entrada — ausente de la especificación actual.** Se detectó que la tabla de carga (RF-CFD-02) no incluye la altitud como variable de entrada (solo Mach, AoA, deflexión), aunque el momento de bisagra sí depende de la altitud a igual Mach (vía la presión dinámica). En el modelo de flujo potencial (XFLR5) esto se resuelve analíticamente sin necesidad de nuevas corridas — pero en la CFD viscosa propia (Fase B), el número de Reynolds sí depende de la altitud y podría introducir una dependencia real, no solo de escala, en el coeficiente de momento. **¿El banco debe representar múltiples altitudes de operación, o se fija una condición de referencia única (p. ej. nivel del mar) para todo el proyecto?** Respuesta preliminar propia: sí debería considerarse (al menos como verificación de que el efecto es solo de escala y no de forma), pero se quiere confirmar con los profesores antes de comprometer la arquitectura de la tabla de carga.
-6. **La corriente si controla el torque de motores DC.** En la reunión anterior se señaló que no se puede controlar el torque directamente de un motor DC, pero si se puede. Al aumentar el voltaje es que suben los rpm. 
-1. ```mermaid
+6. **La corriente si controla el torque de motores DC.** En la reunión anterior se señaló que no se puede controlar el torque directamente de un motor DC, pero si se puede. Al aumentar el voltaje es que suben los rpm.
+7. ```mermaid
    flowchart TD
        Iref["I_ref<br/>(corriente objetivo,<br/>desde el lazo externo de torque)"] --> Sum(("Σ"))
        Sum -->|error| PI["PI<br/>corriente"]
@@ -41,13 +41,17 @@
        Motor --> Sensor["Sensor de corriente<br/>INA219"]
        Sensor -->|"I_motor medido<br/>(I-04b, realimentación)"| Sum
    ```
-1.  **Diagramas de las alternativas de arquitectura física.** Se tienen los diagramas de ambas alternativas y sus variantes internas.
-
-
+8. **Diagramas de las alternativas de arquitectura física.** Se tienen los diagramas de ambas alternativas y sus variantes internas.
 
 **Respuestas / acuerdos (a completar después de la reunión):**
 
-_Pendiente — completar tras la reunión del 28/08/2026._
+1. A lo mejor es mejor que funcione a que funcione bien. Primero tiene que existir y después si se puede que funcione bien. Aquí calza bien lo del flujo potencial.
+2. Ala con flap, Aoa y deflexión separados.
+3. No casarse con CFD.
+4. Parece que la celda de carga no es viable porque no permite cambio de angulo, puede ser con torquimetro o strain gauges.
+5. Que cada OE tenga un entregable relacionado.
+6. Revisar los OE, quedaron muy largos y deben ser algo que se quiere lograr, no solo un plan de trabajo.
+7. Hablar con Tapia electrónicos, Lanziotti o vicuña.
 
 ---
 
