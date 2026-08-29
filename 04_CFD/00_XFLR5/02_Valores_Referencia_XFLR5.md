@@ -8,6 +8,11 @@
 
 **Documentos relacionados:** `Geometria_Aleta_Referencia.md` (geometría y escala pendiente), `07_Valores_Referencia_Literatura_Analoga.md` (comparación con literatura), `03_Requisitos_No_Funcionales.md` (RNF-CAR-01).
 
+> **Nota (28/08/2026):** este documento queda **archivado como referencia metodológica**
+> (técnica `isFin`, verificaciones de antisimetría/escalado con Mach), no como fuente de valores
+> de diseño vigente — la geometría de referencia del proyecto cambió a Simpson NACA 0012
+> (ala con flap), ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md`. Un documento análogo de "Valores de Referencia" para el caso NACA 0012, con tabla dimensional consolidada, queda como próximo paso pendiente (aún no existe un archivo de resultados consolidado equivalente a `momento_bisagra_consolidado.csv` para este caso).
+
 ---
 
 ## 1. Metodología
@@ -22,34 +27,34 @@
 
 ## 2. Verificaciones de sanidad realizadas
 
-| Verificación | Resultado | Evaluación |
-|---|---|---|
-| Antisimetría (M(-15°) ≈ -M(15°), M0.6) | -4.359 N·m vs. 4.351 N·m (diferencia 0.18%) | ✅ Ruido numérico normal de discretización, sin problema |
-| Escalado con Mach (M ∝ V², a igual β=15°) | Ver tabla §3 — coincidencia con predicción teórica <0.1% | ✅ Confirma consistencia de S, c̄, q y Cm entre corridas |
+| Verificación                                 | Resultado                                                    | Evaluación                                                |
+| --------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| Antisimetría (M(-15°) ≈ -M(15°), M0.6)    | -4.359 N·m vs. 4.351 N·m (diferencia 0.18%)                | ✅ Ruido numérico normal de discretización, sin problema |
+| Escalado con Mach (M ∝ V², a igual β=15°) | Ver tabla §3 — coincidencia con predicción teórica <0.1% | ✅ Confirma consistencia de S, c̄, q y Cm entre corridas  |
 
 ## 3. Resultados obtenidos (barrido completo -15° a 15°, escala real Nalci & Kayran)
 
 Barrido completo, Δβ=0.25°, 121 puntos por Mach (exportado de XFLR5 a Excel, columna `M` — momento dimensional ya calculado internamente por XFLR5 usando su S y c̄ de referencia). Tabla de puntos clave:
 
 | β (°) | M, Mach 0.4 [N·m] | M, Mach 0.5 [N·m] | M, Mach 0.6 [N·m] |
-|---:|---:|---:|---:|
-| -15 | -1.9366 | -3.0286 | -4.3595 |
-| -10 | -1.3243 | -2.0710 | -2.9811 |
-| -5  | -0.6721 | -1.0511 | -1.5131 |
-| 0   |  0.0000 |  0.0000 |  0.0000 |
-| 5   |  0.6717 |  1.0505 |  1.5121 |
-| 10  |  1.3226 |  2.0683 |  2.9772 |
-| 15  |  1.9328 |  3.0227 |  4.3510 |
+| ------: | -----------------: | -----------------: | -----------------: |
+|     -15 |            -1.9366 |            -3.0286 |            -4.3595 |
+|     -10 |            -1.3243 |            -2.0710 |            -2.9811 |
+|      -5 |            -0.6721 |            -1.0511 |            -1.5131 |
+|       0 |             0.0000 |             0.0000 |             0.0000 |
+|       5 |             0.6717 |             1.0505 |             1.5121 |
+|      10 |             1.3226 |             2.0683 |             2.9772 |
+|      15 |             1.9328 |             3.0227 |             4.3510 |
 
 ![Momento de bisagra vs. deflexión](momento_bisagra_vs_beta.png)
 
 ### Verificaciones sobre el rango completo
 
-| Verificación | Resultado |
-|---|---|
-| Antisimetría (todo el rango, no solo endpoints) | Error relativo máx. 0.195% en los 121 puntos — consistente en toda la curva |
-| Monotonía | M(β) estrictamente creciente en los 3 Mach, sin quiebres — sin artefactos numéricos residuales del límite de convergencia detectado en pantalla (§1) |
-| Linealidad | Ajuste lineal con R² > 0.9998 en los 3 Mach; ligera curvatura (rigidez creciente hacia los extremos), coherente con efectos de envergadura finita en flujo potencial |
+| Verificación                                    | Resultado                                                                                                                                                             |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Antisimetría (todo el rango, no solo endpoints) | Error relativo máx. 0.195% en los 121 puntos — consistente en toda la curva                                                                                         |
+| Monotonía                                       | M(β) estrictamente creciente en los 3 Mach, sin quiebres — sin artefactos numéricos residuales del límite de convergencia detectado en pantalla (§1)             |
+| Linealidad                                       | Ajuste lineal con R² > 0.9998 en los 3 Mach; ligera curvatura (rigidez creciente hacia los extremos), coherente con efectos de envergadura finita en flujo potencial |
 
 ### Hallazgo: XFLR5 no aplica corrección de compresibilidad en esta configuración
 
@@ -57,11 +62,11 @@ Barrido completo, Δβ=0.25°, 121 puntos por Mach (exportado de XFLR5 a Excel, 
 
 ## 4. Comparación con el valor de diseño de la literatura
 
-| Fuente | Condición | Momento de bisagra |
-|---|---|---|
-| Nalci & Kayran (2014) — valor de diseño ("Maximum Load Torque") | M 0.4–0.6, envolvente de diseño con margen | 6 N·m |
-| XFLR5 (este documento) — flujo potencial puro | β=15°, M0.6, nivel del mar | 4.3510 N·m |
-| Diferencia | — | ~27% por debajo del valor de diseño |
+| Fuente                                                            | Condición                                   | Momento de bisagra                   |
+| ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------ |
+| Nalci & Kayran (2014) — valor de diseño ("Maximum Load Torque") | M 0.4–0.6, envolvente de diseño con margen | 6 N·m                               |
+| XFLR5 (este documento) — flujo potencial puro                    | β=15°, M0.6, nivel del mar                 | 4.3510 N·m                          |
+| Diferencia                                                        | —                                           | ~27% por debajo del valor de diseño |
 
 **Evaluación:** la diferencia es razonable y en la dirección esperada. El valor de diseño de la tesis es una *capacidad* de actuador con margen (no la carga aerodinámica real instantánea), consistente con la práctica reportada en Anastasopoulos & Hornung (2018) de dimensionar el motor de carga ~1.1–1.4× por sobre el torque continuo/pico del actuador bajo prueba (ver `07_Valores_Referencia_Literatura_Analoga.md`, §2.1). Un valor de flujo potencial ~25-30% por debajo del valor de diseño con margen es coherente con esa práctica, y confirma que la geometría, el punto de referencia del momento y la conversión dimensional (S, c̄, q) están correctamente implementados.
 
@@ -78,10 +83,10 @@ Ver Barlow, Rae & Pope (1999), *Low-Speed Wind Tunnel Testing*, para la formulac
 **Aplicando la hipótesis de trabajo λ≈1/4 (registrada como no confirmada en `Geometria_Aleta_Referencia.md`):**
 
 | Mach | M_referencia (156 mm) | M_λ=1/4 (λ³=1/64) |
-|---|---|---|
-| 0.4 | 1.93 N·m | 0.030 N·m |
-| 0.5 | 3.02 N·m | 0.047 N·m |
-| 0.6 | 4.35 N·m | **0.068 N·m** |
+| ---- | --------------------- | -------------------- |
+| 0.4  | 1.93 N·m             | 0.030 N·m           |
+| 0.5  | 3.02 N·m             | 0.047 N·m           |
+| 0.6  | 4.35 N·m             | **0.068 N·m** |
 
 **Resultado:** con λ=1/4, el momento de bisagra en la condición más exigente (β=15°, M0.6) queda en **0.068 N·m** — muy por debajo del piso de RNF-CAR-01 (~0.5 N·m continuo), un factor de ~7–30× por debajo del rango objetivo. **La hipótesis λ≈1/4 no es consistente con el rango de torque que el banco necesita reproducir.**
 
@@ -98,21 +103,21 @@ Es decir, una aleta entre **~49% y ~77%** del tamaño de la referencia de Nalci 
 
 ## 6. Impacto sobre otros documentos del proyecto
 
-| Documento | Impacto |
-|---|---|
-| `Geometria_Aleta_Referencia.md` §5 | La hipótesis λ≈1/4 debe marcarse como **descartada por este hallazgo** (no como confirmada ni como pendiente sin evidencia); el rango λ≈0.49–0.77 pasa a ser la nueva hipótesis de trabajo, sujeta a la definición de la matriz de casos CFD (Fase B1) — ver decisión pendiente en §7. |
-| `07_Valores_Referencia_Literatura_Analoga.md` | Puede incorporarse esta comparación como tercer punto de referencia, junto a Anastasopoulos & Hornung (2018). |
-| `referencias_bibliograficas.bib` / `resumen_referencias.md` | Agregar Barlow, Rae & Pope (1999) — ver snippet BibTeX provisto en la conversación de origen de este documento. |
+| Documento                                                       | Impacto                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Geometria_Aleta_Referencia.md` §5                           | La hipótesis λ≈1/4 debe marcarse como**descartada por este hallazgo** (no como confirmada ni como pendiente sin evidencia); el rango λ≈0.49–0.77 pasa a ser la nueva hipótesis de trabajo, sujeta a la definición de la matriz de casos CFD (Fase B1) — ver decisión pendiente en §7. |
+| `07_Valores_Referencia_Literatura_Analoga.md`                 | Puede incorporarse esta comparación como tercer punto de referencia, junto a Anastasopoulos & Hornung (2018).                                                                                                                                                                                         |
+| `referencias_bibliograficas.bib` / `resumen_referencias.md` | Agregar Barlow, Rae & Pope (1999) — ver snippet BibTeX provisto en la conversación de origen de este documento.                                                                                                                                                                                      |
 
 ## 6bis. Alcance dimensional de este dataset frente a la matriz de casos acordada
 
 Con el acuerdo del Avance I (21/08/2026, ver `00_Administración/02_Registro_Reuniones_Avance.md`) de incorporar la velocidad de deflexión angular como cuarta dimensión de la superficie de respuesta CFD, y con el hallazgo de que el modelo de aleta aislada (sin fuselaje) no distingue AoA de deflexión — mismo ángulo, dos nombres (ver `Geometria_Aleta_Referencia.md` §6) —, el dataset de este documento cubre:
 
-| Dimensión acordada | ¿Cubierta aquí? |
-|---|---|
-| Mach | Sí |
-| Ángulo (total; no AoA y deflexión por separado) | Sí |
-| Velocidad angular de deflexión | **No** — XFLR5 resuelve polares estáticos/cuasi-estacionarios; la tasa de deflexión es un efecto no estacionario fuera del alcance del método (requiere CFD no estacionaria, ver Tema 1: Solarte-Pineda et al. 2026; Yan et al. 2023). |
+| Dimensión acordada                               | ¿Cubierta aquí?                                                                                                                                                                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mach                                              | Sí                                                                                                                                                                                                                                              |
+| Ángulo (total; no AoA y deflexión por separado) | Sí                                                                                                                                                                                                                                              |
+| Velocidad angular de deflexión                   | **No** — XFLR5 resuelve polares estáticos/cuasi-estacionarios; la tasa de deflexión es un efecto no estacionario fuera del alcance del método (requiere CFD no estacionaria, ver Tema 1: Solarte-Pineda et al. 2026; Yan et al. 2023). |
 
 **Este dataset es, como máximo, una referencia de contingencia en 2 dimensiones (Mach × ángulo total)** — útil para validar el pipeline de software de interpolación/control mientras no esté disponible la CFD propia, pero no reemplaza la caracterización completa de 3 dimensiones que exige el acuerdo del Avance I.
 

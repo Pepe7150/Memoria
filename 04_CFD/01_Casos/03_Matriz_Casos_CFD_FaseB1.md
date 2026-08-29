@@ -2,7 +2,13 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
-**Estado:** Propuesta de trabajo, **no cerrada**. Depende de dos confirmaciones pendientes con los profesores guía (reunión 28/08/2026): (a) si el ángulo se parametriza como único o como AoA+deflexión separados, y (b) si se fija una única altitud de referencia o se representan varias. Este documento asume, como hipótesis de trabajo, la opción más simple de cada una (ángulo único, nivel del mar) — **no las da por confirmadas**.
+****Estado:** Propuesta de trabajo. Confirmado (28/08/2026): arquitectura ala con flap, AoA y
+deflexión como variables separadas. Geometría de referencia actualizada a Simpson NACA 0012
+(ver `01_Geometria_Aleta_Referencia.md`). **Decisión de alcance para esta primera iteración**
+(aplicando el principio de `00_Principios_Metodologicos.md`): se mantiene el tamaño de matriz
+ya propuesto (~23-24 corridas), fijando un único AoA nominal (0°) en vez de expandir a una
+grilla AoA×deflexión completa. El barrido de AoA queda diferido a una iteración posterior, una
+vez validado el pipeline completo con esta primera versión.Estado:** Propuesta de trabajo, **no cerrada**. Depende de dos confirmaciones pendientes con los profesores guía (reunión 28/08/2026): (a) si el ángulo se parametriza como único o como AoA+deflexión separados, y (b) si se fija una única altitud de referencia o se representan varias. Este documento asume, como hipótesis de trabajo, la opción más simple de cada una (ángulo único, nivel del mar) — **no las da por confirmada.**
 
 **Documentos relacionados:** `01_Cronograma.md` (Fase B, ruta crítica), `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md`, `04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-REN-01), `02_Requisitos_Funcionales.md` (RF-CFD-02), `00_Administración/02_Registro_Reuniones_Avance.md`.
 
@@ -33,13 +39,14 @@ Este paso (verificación de sensibilidad a Reynolds) es, en la práctica, el pri
 
 ## 3. Dimensiones de la matriz
 
-| Dimensión | Estado | Rango propuesto | Origen |
-|---|---|---|---|
-| Mach | Cerrado (alineado con XFLR5 ya validado) | 0,4 / 0,5 / 0,6 | Envolvente de diseño Nalci & Kayran (2014); mismos puntos que `02_Valores_Referencia_XFLR5.md`, permite comparación directa |
-| Ángulo total | **Hipótesis de trabajo, pendiente de confirmar 28/08** | 0°, ±5°, ±10°, ±15° | Rango de Nalci & Kayran (±15°); si se confirma que AoA y deflexión deben separarse, esta dimensión se duplica (ver §6) |
-| Velocidad angular de deflexión | Nueva (Avance I) — requiere CFD no estacionaria | 0°/s (cuasi-estático), ~100°/s, ~300°/s | ~300°/s es la referencia de diseño bajo torque máximo (Nalci & Kayran 2014, usado en RNF-REN-01) |
-| Altitud | **Pendiente (pregunta 5, reunión 28/08)** | Nivel del mar (hipótesis) | Ver `00_Administración/02_Registro_Reuniones_Avance.md` |
-| Reynolds / λ | **Pendiente**, ver §2 | λ nominal = 0,63 (a validar) | Acoplamiento con RNF-CAR-01 |
+| Dimensión                         | Estado                                           | Rango propuesto                                                                                        | Origen                                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mach                               | Cerrado (alineado con XFLR5 ya validado)         | 0,4 / 0,5 / 0,6                                                                                        | Envolvente de diseño Nalci & Kayran (2014); mismos puntos que`02_Valores_Referencia_XFLR5.md`, permite comparación directa                   |
+| Ángulo de ataque                  | **Diferido** a iteración 2                | Fijo en 0° por ahora                                                                                  | `Principio de 00_Principios_Metodologicos.md— evitar bloquear la Fase B por una dimensión adicional antes de validar el resto del pipeline` |
+| Deflexión del flap (AoA=0° fijo) | Confirmado como variable de esta iteración      | 0°, ±5°, ±10°, ±15° (a confirmar rango operativo real, distinto del rango ensayado por Simpson) | Reemplaza "ángulo total"; ver decisión de alcance arriba                                                                                       |
+| Velocidad angular de deflexión    | Nueva (Avance I) — requiere CFD no estacionaria | 0°/s (cuasi-estático), ~100°/s, ~300°/s                                                            | ~300°/s es la referencia de diseño bajo torque máximo (Nalci & Kayran 2014, usado en RNF-REN-01)                                              |
+| Altitud                            | **Pendiente (pregunta 5, reunión 28/08)** | Nivel del mar (hipótesis)                                                                             | Ver`00_Administración/02_Registro_Reuniones_Avance.md`                                                                                        |
+| Reynolds / λ                      | **Pendiente**, ver §2                     | λ nominal = 0,63 (a validar)                                                                          | Acoplamiento con RNF-CAR-01                                                                                                                      |
 
 ---
 
@@ -60,12 +67,12 @@ En vez de un punto fijo por combinación (Mach, ángulo, velocidad angular) — 
 
 ### 4.3 Total propuesto
 
-| Tipo | N° de corridas | Costo relativo por corrida |
-|---|---|---|
-| Estáticas (§4.1) | 15 | Bajo (RANS estacionario) |
-| Dinámicas (§4.2) | 6 | Alto (malla móvil, no estacionario) |
-| Verificación Reynolds/λ (§2) | 2–3 (solo en el caso más exigente) | Medio |
-| **Total** | **~23–24** | — |
+| Tipo                            | N° de corridas                      | Costo relativo por corrida           |
+| ------------------------------- | ------------------------------------ | ------------------------------------ |
+| Estáticas (§4.1)              | 15                                   | Bajo (RANS estacionario)             |
+| Dinámicas (§4.2)              | 6                                    | Alto (malla móvil, no estacionario) |
+| Verificación Reynolds/λ (§2) | 2–3 (solo en el caso más exigente) | Medio                                |
+| **Total**                 | **~23–24**                    | —                                   |
 
 Comparado con el factorial ingenuo (105 corridas), esta propuesta reduce el número en ~75%, concentrando el costo computacional en las 6 corridas dinámicas — que son, de todas formas, las que aportan la dimensión genuinamente nueva del proyecto (velocidad angular).
 
@@ -85,10 +92,10 @@ Si en la reunión se determina que el modelo de aleta aislada **sí** requiere d
 
 "Ángulo total" deja de ser un barrido en línea (5 puntos por Mach en las corridas estáticas) y pasa a ser una **grilla 2D** (AoA × deflexión):
 
-| Puntos de AoA agregados | Estáticas (3 Mach × AoA × 5 deflexión) | Dinámicas (3 Mach × AoA × 2 vel. angular) | Factor vs. matriz actual (§4.3) |
-|---|---|---|---|
-| 3 (p. ej. -5°, 0°, 5°) | 45 | 18 | ~×2,8 |
-| 5 (p. ej. -10° a 10°) | 75 | 30 | ~×4,5 |
+| Puntos de AoA agregados   | Estáticas (3 Mach × AoA × 5 deflexión) | Dinámicas (3 Mach × AoA × 2 vel. angular) | Factor vs. matriz actual (§4.3) |
+| ------------------------- | ------------------------------------------ | -------------------------------------------- | -------------------------------- |
+| 3 (p. ej. -5°, 0°, 5°) | 45                                         | 18                                           | ~×2,8                           |
+| 5 (p. ej. -10° a 10°)   | 75                                         | 30                                           | ~×4,5                           |
 
 ### 6.2 Agregar altitud como dimensión
 
@@ -98,11 +105,11 @@ A diferencia de XFLR5 (invíscido, donde la altitud se extiende analíticamente 
 
 ### 6.3 Escenarios combinados (referencia rápida para la reunión)
 
-| Escenario | Factor por AoA | Factor por altitud | Total aprox. (vs. ~23-24 de §4.3) |
-|---|---|---|---|
-| Mínimo — altitud absorbida analíticamente (verificada) | ×2,8 (3 pts. AoA) | ×1 (solo +2-3 corridas de chequeo) | ~65-68 |
-| Intermedio — altitud como 2 puntos completos | ×2,8 (3 pts. AoA) | ×2 | ~129 |
-| Máximo — altitud como 3 puntos completos | ×4,5 (5 pts. AoA) | ×3 | ~317 |
+| Escenario                                                 | Factor por AoA     | Factor por altitud                  | Total aprox. (vs. ~23-24 de §4.3) |
+| --------------------------------------------------------- | ------------------ | ----------------------------------- | ---------------------------------- |
+| Mínimo — altitud absorbida analíticamente (verificada) | ×2,8 (3 pts. AoA) | ×1 (solo +2-3 corridas de chequeo) | ~65-68                             |
+| Intermedio — altitud como 2 puntos completos             | ×2,8 (3 pts. AoA) | ×2                                 | ~129                               |
+| Máximo — altitud como 3 puntos completos                | ×4,5 (5 pts. AoA) | ×3                                 | ~317                               |
 
 La brecha entre "altitud absorbida" y "altitud completa" (65 vs. 317) es mucho mayor que la que introduce por sí sola la separación de AoA/deflexión — el resultado del chequeo de Reynolds extendido (§2/§6.2) es, en la práctica, la decisión individual que más determina el tamaño final de la matriz.
 
@@ -112,12 +119,12 @@ La brecha entre "altitud absorbida" y "altitud completa" (65 vs. 317) es mucho m
 
 ## 7. Impacto sobre otros documentos del proyecto
 
-| Documento | Impacto |
-|---|---|
-| `01_Cronograma.md` | Esta propuesta (~23–24 corridas) da un número concreto para validar o ajustar la duración de 21 días asignada a la Fase B |
-| `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5 | El paso de verificación de sensibilidad a Reynolds (§2 de este documento) es el primer paso concreto para cerrar λ |
-| `00_Administración/02_Registro_Reuniones_Avance.md` | Las preguntas 1, 2 y 5 ya registradas siguen siendo las que condicionan si esta matriz se mantiene o se extiende (§6) |
-| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01) | El resultado de la verificación de sensibilidad a Reynolds (§2) es la primera confirmación real de si λ=0,63 es válido |
+| Documento                                                | Impacto                                                                                                                       |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `01_Cronograma.md`                                     | Esta propuesta (~23–24 corridas) da un número concreto para validar o ajustar la duración de 21 días asignada a la Fase B |
+| `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5 | El paso de verificación de sensibilidad a Reynolds (§2 de este documento) es el primer paso concreto para cerrar λ         |
+| `00_Administración/02_Registro_Reuniones_Avance.md`   | Las preguntas 1, 2 y 5 ya registradas siguen siendo las que condicionan si esta matriz se mantiene o se extiende (§6)        |
+| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01)         | El resultado de la verificación de sensibilidad a Reynolds (§2) es la primera confirmación real de si λ=0,63 es válido   |
 
 ---
 

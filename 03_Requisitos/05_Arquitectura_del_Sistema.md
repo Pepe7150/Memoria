@@ -66,12 +66,7 @@ flowchart LR
 - **Fuera de alcance del banco:** este módulo se ejecuta de forma independiente y no forma parte del software entregable del proyecto; su salida es la única interfaz con el resto del sistema.
 - **RF relacionados:** ninguno directo (es la fuente externa que consume RF-CFD-01).
 
-> **Nota (28/08/2026, pendiente de confirmación con profesores guía):** en un modelo de aleta
-> aislada sin fuselaje, ángulo de ataque y deflexión de la aleta son indistinguibles (miden la
-> misma orientación relativa al flujo desde marcos de referencia distintos). Las "condiciones de
-> operación" de este módulo podrían simplificarse a (Mach, ángulo total, velocidad angular) en
-> vez de (Mach, ángulo de ataque, deflexión) por separado — ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md`
-> §6 y `00_Administración/02_Registro_Reuniones_Avance.md`.
+> **Nota (confirmado en Reunión de Avance 28/08/2026):** se adopta arquitectura de **ala con flap**, no superficie totalmente móvil. Ángulo de ataque (del ala) y deflexión (del flap) son variables físicamente distintas — no aplica la degeneración que sí ocurría en el modelo de aleta aislada sin fuselaje (ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §6, ahora superado). Las "condiciones de operación" de este módulo se mantienen en **4 variables separadas**: Mach, ángulo de ataque, deflexión, velocidad angular de deflexión.
 
 ### 2.2 Módulo de procesamiento (Python, offline)
 

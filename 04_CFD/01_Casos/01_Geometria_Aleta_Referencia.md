@@ -2,7 +2,13 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
-**Estado:** Decisión de **perfil y planta cerrada** (doble cuña, trapezoidal, proporciones tomadas de literatura). **Escala absoluta (factor de escalado lineal) PENDIENTE** — hipótesis inicial λ≈1/4 **descartada** tras análisis de flujo potencial en XFLR5 (ver §5 y `04_CFD/02_Valores_Referencia_XFLR5.md`); nuevo rango λ≈0.49–0.77 en evaluación, sujeto a la matriz de casos CFD (Fase B1) y a la posible revisión del objeto de diseño (ver §9).
+**Estado:** Geometría de referencia **actualizada** (Reunión de Avance 28/08/2026): se adopta el
+perfil/planta del caso Simpson (2016) — NACA 0012, ala en flecha 45° con elevador (flap) de 25%
+de cuerda — en reemplazo de la geometría Nalci & Kayran (2014). Motivo: decisión de arquitectura
+de superficie de control (ala con flap, no superficie totalmente móvil tipo canard), alineada con
+el trabajo del laboratorio. La geometría Nalci & Kayran queda archivada como referencia
+metodológica (ver `04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md`), no como geometría de diseño
+vigente. **Escala absoluta y ancla de torque de diseño: PENDIENTE de recalcular** (ver §5).
 
 **Documentos relacionados:** `01_Especificacion_del_Proyecto.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01), `06_Seleccion_Actuador_de_Carga.md`, `07_Valores_Referencia_Literatura_Analoga.md`, `04_CFD/02_Valores_Referencia_XFLR5.md`, `00_Administración/02_Registro_Reuniones_Avance.md`, `02_Literatura/resumen_referencias.md` (Tema 3, referencia 4).
 
@@ -27,29 +33,25 @@ Se consultó el texto completo de la tesis (no solo el resumen ya incluido en `r
 
 ## 3. Geometría extraída de la referencia
 
-| Parámetro | Valor (Nalci & Kayran, 2014) |
-|---|---|
-| Cuerda de raíz | 156 mm |
-| Cuerda de punta | 78 mm |
-| Envergadura | 150 mm |
-| Razón de estrechamiento (taper ratio) | 0,5 |
-| Borde de fuga | Recto (sin flecha) |
-| Flecha del borde de ataque | ~27,5° |
-| Perfil | Doble cuña (diamante), espesor variable en envergadura |
-| Espesor en la raíz | ~4 mm |
-| Espesor en la punta | ~2,2 mm |
-| Relación espesor/cuerda (t/c) | ~2,4–2,8 % |
-| Eje de bisagra (shaft del actuador) | 50% de la cuerda de raíz (x=78 mm desde el borde de ataque) — nodo medio de la cuerda de raíz según el modelo FEM de la tesis |
-| Límite de posición angular (deflexión) | ±15° |
-| Torque de bisagra de diseño (máximo) | 6 N·m |
-| Envolvente de vuelo usada para dimensionar el actuador de la referencia | Mach 0,4–0,6, altitud 0–5000 m |
-| Rigidez torsional del eje de montaje (dato estructural de la referencia, no aplica al banco) | 120 N·m/rad |
+| Parámetro                         | Valor (Simpson 2016 / Johnson & Thompson 1950)           |
+| ---------------------------------- | -------------------------------------------------------- |
+| Cuerda (constante, sin taper)      | 381 mm (15 in)                                           |
+| Semi-envergadura                   | 800,9 mm (31,53 in)                                      |
+| Flecha                             | 45°                                                     |
+| Perfil                             | NACA 0012 (t/c = 12%, simétrico)                        |
+| Tipo de superficie de control      | Elevador (flap parcial de cuerda)                        |
+| Cuerda del flap                    | 25% de la cuerda                                         |
+| Eje de bisagra (x/c)               | 0,75                                                     |
+| Deflexiones ensayadas en la fuente | 0°, -1,7°, -3,7°, -7,8°                              |
+| Reynolds de referencia             | 5,52×10⁶                                               |
+| Mach de referencia                 | 0,5                                                      |
+| Modelo                             | Semi-envergadura (pared de túnel),`Symmetric`en XFLR5 |
 
 ## 4. Decisión de perfil y planta (cerrada)
 
 Se adopta, para el modelo geométrico de la aleta del proyecto:
 
-- **Perfil aerodinámico:** doble cuña, típico de superficies supersónicas de misil.
+- **Perfil aerodinámico:** NACA 0012 (perfil redondeado, no doble cuña) / planta rectangular sin taper / ala con flap parcial de cuerda (elevador 25%), no superficie totalmente móvil.
 - **Forma en planta:** trapezoidal, con borde de ataque en flecha y borde de fuga recto.
 - **Proporciones a mantener** (adimensionales, independientes de la escala absoluta):
   - Razón de estrechamiento: 0,5 (cuerda de punta = mitad de la cuerda de raíz).
@@ -71,6 +73,8 @@ Este rango depende de haber usado β=15° (extremo del rango angular de Nalci & 
 
 ## 6. Hallazgo: degeneración entre ángulo de ataque y deflexión en el modelo de aleta aislada
 
+**SUPERADO, Arquitectura Canard superada.**
+
 Al definir la matriz de casos para XFLR5 surgió un punto conceptual relevante, también aplicable a la futura CFD propia del proyecto:
 
 **El modelo actual (aleta aislada, sin fuselaje ni otra geometría de referencia) no puede distinguir entre ángulo de ataque (AoA) del vehículo y deflexión de la aleta.** Ambos ángulos miden lo mismo — la orientación entre la cuerda de la aleta y la corriente libre — y solo son magnitudes distintas cuando existe un tercer objeto (el fuselaje) contra el cual referenciar cada uno por separado. Como el alcance del proyecto excluye explícitamente el diseño del vehículo/misil (`01_Especificacion_del_Proyecto.md`, "No incluye"), el modelo de aleta aislada no incluye ese marco de referencia adicional.
@@ -81,28 +85,30 @@ Al definir la matriz de casos para XFLR5 surgió un punto conceptual relevante, 
 
 Con el acuerdo del Avance I (21/08/2026) de incorporar la velocidad de deflexión angular como cuarta dimensión de la superficie de respuesta CFD, y con el hallazgo de §6, las dimensiones de la matriz de casos quedan así:
 
-| Dimensión | ¿Cubierta por XFLR5? | Motivo |
-|---|---|---|
-| Mach | Sí | Barrido directo de velocidad/densidad |
-| Ángulo (total, ver §6) | Sí | Barrido directo de deflexión |
-| Velocidad angular de deflexión | **No** | XFLR5 resuelve polares estáticos/cuasi-estacionarios; la tasa de deflexión es un efecto genuinamente no estacionario (requiere resolver la evolución de la estela durante el movimiento), fuera del alcance de este método. Requiere CFD no estacionaria (ver Tema 1: Solarte-Pineda et al. 2026; Yan et al. 2023). |
+| Dimensión                      | ¿Cubierta por XFLR5? | Motivo                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mach                            | Sí                   | Barrido directo de velocidad/densidad                                                                                                                                                                                                                                                                                   |
+| Ángulo (total, ver §6)        | Sí                   | Barrido directo de deflexión                                                                                                                                                                                                                                                                                           |
+| Velocidad angular de deflexión | **No**          | XFLR5 resuelve polares estáticos/cuasi-estacionarios; la tasa de deflexión es un efecto genuinamente no estacionario (requiere resolver la evolución de la estela durante el movimiento), fuera del alcance de este método. Requiere CFD no estacionaria (ver Tema 1: Solarte-Pineda et al. 2026; Yan et al. 2023). |
 
 **Conclusión:** XFLR5 puede proveer, a lo sumo, un dataset de **contingencia en 2 dimensiones** (Mach × ángulo total) — útil como prueba del pipeline de software de interpolación/control mientras no esté disponible la CFD propia, pero no reemplaza la caracterización completa de 3 dimensiones (Mach × ángulo × velocidad angular) que exige el acuerdo del Avance I.
 
 ## 8. Impacto sobre otros documentos del proyecto
 
-| Documento | Estado |
-|---|---|
-| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01) | Sin cambios por ahora; el rango de torque (~0,5–2 N·m) sigue siendo la restricción que la escala de la aleta deberá satisfacer una vez cerrada. |
-| `05_Arquitectura_del_Sistema.md` | Sin cambios estructurales; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3). **Nota agregada:** la descripción del Módulo CFD (§2.1) y la tabla de RF-CFD-02 (variables Mach/AoA/deflexión) quedan marcadas como pendientes de revisión por el hallazgo de §6 de este documento. |
-| `02_Requisitos_Funcionales.md` (RF-CFD-02) | Marcado como pendiente de revisión: la estructura de la tabla de carga (Mach, AoA, deflexión → torque) podría simplificarse a (Mach, ángulo total → torque) según el hallazgo de §6, sujeto a confirmación con los profesores guía. |
-| `04_CFD/02_Valores_Referencia_XFLR5.md` | Documento con la metodología y resultados completos que sustentan §5 y §7 de este documento. |
-| Diseño mecánico (CAD, Fase C del cronograma) | **Parcialmente desbloqueado**: perfil y proporciones ya permiten avanzar bocetos, pero el modelo dimensionado final de la aleta física depende de que se cierre la escala (§5) y de la posible revisión de contexto (§9). |
-| Metodología CFD (Fase B) | Esta geometría (con su escala aún pendiente) y el hallazgo de §6 son insumo directo para B1 ("Definición de casos de simulación"). |
+| Documento                                        | Estado                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01) | Sin cambios por ahora; el rango de torque (~0,5–2 N·m) sigue siendo la restricción que la escala de la aleta deberá satisfacer una vez cerrada.                                                                                                                                                                                                       |
+| `05_Arquitectura_del_Sistema.md`               | Sin cambios estructurales; la aleta física sigue descrita como "elemento representativo de prueba, de geometría genérica" (supuesto 3).**Nota agregada:** la descripción del Módulo CFD (§2.1) y la tabla de RF-CFD-02 (variables Mach/AoA/deflexión) quedan marcadas como pendientes de revisión por el hallazgo de §6 de este documento. |
+| `02_Requisitos_Funcionales.md` (RF-CFD-02)     | Marcado como pendiente de revisión: la estructura de la tabla de carga (Mach, AoA, deflexión → torque) podría simplificarse a (Mach, ángulo total → torque) según el hallazgo de §6, sujeto a confirmación con los profesores guía.                                                                                                             |
+| `04_CFD/02_Valores_Referencia_XFLR5.md`        | Documento con la metodología y resultados completos que sustentan §5 y §7 de este documento.                                                                                                                                                                                                                                                           |
+| Diseño mecánico (CAD, Fase C del cronograma)   | **Parcialmente desbloqueado**: perfil y proporciones ya permiten avanzar bocetos, pero el modelo dimensionado final de la aleta física depende de que se cierre la escala (§5) y de la posible revisión de contexto (§9).                                                                                                                       |
+| Metodología CFD (Fase B)                        | Esta geometría (con su escala aún pendiente) y el hallazgo de §6 son insumo directo para B1 ("Definición de casos de simulación").                                                                                                                                                                                                                   |
 
 ## 9. Nota abierta: posible cambio de objeto de diseño
 
 Los profesores guía mencionaron informalmente la posibilidad de que el objeto de diseño de referencia del proyecto pase de un misil (geometría actual, Nalci & Kayran 2014) a un UAV sobre el que ya trabaja el laboratorio, para dar mayor coherencia entre el banco de ensayos y las líneas de trabajo activas del grupo. **Esta posibilidad se registrará y confirmará formalmente en la reunión de avance del 28/08/2026** (ver pregunta 3, `00_Administración/02_Registro_Reuniones_Avance.md`). De concretarse, este documento (geometría, escala, hallazgos de §5–§7) se archivaría como referencia metodológica — el procedimiento (extracción de geometría de la fuente, generación de perfil, análisis XFLR5, verificación de escalado) seguiría siendo directamente reutilizable con la nueva geometría de referencia.
+
+Confirmado en Reunión de Avance 28/08/2026: no se adopta el objeto UAV del laboratorio como geometría; se mantiene un caso de literatura (ahora Simpson NACA 0012) como referencia.
 
 ## 10. Próximos pasos
 

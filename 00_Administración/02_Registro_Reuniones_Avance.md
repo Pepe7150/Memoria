@@ -21,7 +21,7 @@
 
 ## Reunión 28/08/2026
 
-**Estado:** Pendiente. Preguntas preparadas a partir del trabajo de la semana (análisis de flujo potencial en XFLR5).
+**Estado:** Completada. Acuerdos incorporados progresivamente en la documentación del proyecto (ver notas de propagación en cada punto).
 
 **Preguntas a plantear:**
 
