@@ -4,6 +4,8 @@
 
 **Estado:** Documenta las especificaciones **de fábrica, a nivel de servo completo** (después de la caja reductora) del DS3218, obtenidas de datasheets oficiales/de fabricante. **No resuelve** la caracterización del motor DC crudo una vez intervenido (ver §4), que sigue pendiente en `06_Seleccion_Actuador_de_Carga.md` §6, ítem 3.
 
+**Nota de estado (28/08/2026):** este documento describe especificaciones de fábrica del motor DS3218 y no se ve afectado por los acuerdos de la reunión de avance de esta fecha (reevaluación del sensor de torque, acuerdo #4; separación AoA/deflexión, acuerdo #2). Ambos acuerdos conciernen al sensor de medición y a la estructura de la tabla de carga, respectivamente — no al motor de carga en sí, cuya selección (DS3218 intervenido) no está en discusión. La reevaluación de arquitectura física en curso (`Comparacion_Alternativas_Arquitectura_Fisica.md`) sí podría eventualmente afectar la vigencia de este documento si se optara por un motor brushless en lugar del DS3218; mientras no se cierre esa reevaluación, el contenido aquí sigue siendo la referencia técnica válida.
+
 **Documentos relacionados:** `06_Seleccion_Actuador_de_Carga.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01), `05_Arquitectura_del_Sistema.md` (§2.5, §5 supuesto 10).
 
 ---
@@ -25,55 +27,55 @@ Los valores ya registrados en `03_Requisitos_No_Funcionales.md` (RNF-CAR-01: ~1,
 
 ### 2.1 Condiciones ambientales
 
-| Parámetro | Valor |
-|---|---|
-| Temperatura de almacenamiento | -20 °C a 60 °C |
-| Temperatura de operación | -10 °C a 50 °C |
-| Rango de voltaje de operación | 4,8–6,8 V |
+| Parámetro                     | Valor            |
+| ------------------------------ | ---------------- |
+| Temperatura de almacenamiento  | -20 °C a 60 °C |
+| Temperatura de operación      | -10 °C a 50 °C |
+| Rango de voltaje de operación | 4,8–6,8 V       |
 
 ### 2.2 Especificación mecánica
 
-| Parámetro | Valor |
-|---|---|
-| Dimensiones | 40 × 20 × 40,5 mm |
-| Peso | 60 g |
-| Relación de engranaje (gear ratio) | ~250:1 |
-| Rodamiento | Doble rodamiento (ball bearing) |
-| Motor | 3 polos (motor DC escobillado estándar, **no coreless** pese a lo indicado por algunos revendedores) |
-| Grado de protección | IP66 |
+| Parámetro                          | Valor                                                                                                      |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Dimensiones                         | 40 × 20 × 40,5 mm                                                                                        |
+| Peso                                | 60 g                                                                                                       |
+| Relación de engranaje (gear ratio) | ~250:1                                                                                                     |
+| Rodamiento                          | Doble rodamiento (ball bearing)                                                                            |
+| Motor                               | 3 polos (motor DC escobillado estándar,**no coreless** pese a lo indicado por algunos revendedores) |
+| Grado de protección                | IP66                                                                                                       |
 
 ### 2.3 Especificación eléctrica (a nivel de servo completo, post-reductora)
 
-| Parámetro | 5 V | 6,8 V |
-|---|---|---|
-| Corriente en vacío (idle, detenido) | 4 mA | 5 mA |
-| Velocidad sin carga | 0,16 s/60° (≈375 °/s) | 0,14 s/60° (≈429 °/s) |
-| **Torque de bloqueo (stall)** | 19 kgf·cm = **1,86 N·m** | 21,5 kgf·cm = **2,11 N·m** |
-| **Corriente de bloqueo (stall)** | 1,5 A | **1,8 A** |
+| Parámetro                             | 5 V                             | 6,8 V                             |
+| -------------------------------------- | ------------------------------- | --------------------------------- |
+| Corriente en vacío (idle, detenido)   | 4 mA                            | 5 mA                              |
+| Velocidad sin carga                    | 0,16 s/60° (≈375 °/s)        | 0,14 s/60° (≈429 °/s)          |
+| **Torque de bloqueo (stall)**    | 19 kgf·cm =**1,86 N·m** | 21,5 kgf·cm =**2,11 N·m** |
+| **Corriente de bloqueo (stall)** | 1,5 A                           | **1,8 A**                   |
 
 ### 2.4 Especificación de control
 
-| Parámetro | Valor |
-|---|---|
-| Sistema de control | PWM |
-| Ancho de pulso | 500–2500 µs |
-| Posición neutral | 1500 µs |
-| Rango de giro | 270° (con 500–2500 µs) |
-| Ancho de banda muerta (dead band) | 3 µs |
-| Frecuencia de operación | 50–330 Hz |
+| Parámetro                        | Valor                     |
+| --------------------------------- | ------------------------- |
+| Sistema de control                | PWM                       |
+| Ancho de pulso                    | 500–2500 µs             |
+| Posición neutral                 | 1500 µs                  |
+| Rango de giro                     | 270° (con 500–2500 µs) |
+| Ancho de banda muerta (dead band) | 3 µs                     |
+| Frecuencia de operación          | 50–330 Hz                |
 
 ## 3. Especificaciones — DS3218 PRO Red (variante alternativa, para contraste)
 
 **Fuente:** Dongguan City Dsservo Technology Co., Ltd, Product datasheet oficial ("DS3218 PRO Red — 6V 20kg High Speed Servo", www.dsservo.com).
 
-| Parámetro | 5 V | 6,8 V |
-|---|---|---|
-| Relación de engranaje | 236:1 | — |
-| Corriente en vacío | 4 mA | 5 mA |
-| Velocidad sin carga | 0,12 s/60° | 0,1 s/60° |
-| Torque de bloqueo | 21 kgf·cm = 2,06 N·m | 23,5 kgf·cm = **2,30 N·m** |
-| Corriente de bloqueo | 2,1 A | **2,9 A** |
-| Motor | 3 polos |
+| Parámetro             | 5 V                    | 6,8 V                             |
+| ---------------------- | ---------------------- | --------------------------------- |
+| Relación de engranaje | 236:1                  | —                                |
+| Corriente en vacío    | 4 mA                   | 5 mA                              |
+| Velocidad sin carga    | 0,12 s/60°            | 0,1 s/60°                        |
+| Torque de bloqueo      | 21 kgf·cm = 2,06 N·m | 23,5 kgf·cm =**2,30 N·m** |
+| Corriente de bloqueo   | 2,1 A                  | **2,9 A**                   |
+| Motor                  | 3 polos                |                                   |
 
 *(Condiciones ambientales, dimensiones y especificación de control son iguales a §2.1/§2.4 salvo temperatura de operación: -25 °C a 70 °C en esta variante.)*
 

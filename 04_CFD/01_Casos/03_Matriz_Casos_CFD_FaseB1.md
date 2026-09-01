@@ -2,146 +2,137 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
-****Estado:** Propuesta de trabajo. Confirmado (28/08/2026): arquitectura ala con flap, AoA y
-deflexión como variables separadas. Geometría de referencia actualizada a Simpson NACA 0012
-(ver `01_Geometria_Aleta_Referencia.md`). **Decisión de alcance para esta primera iteración**
-(aplicando el principio de `00_Principios_Metodologicos.md`): se mantiene el tamaño de matriz
-ya propuesto (~23-24 corridas), fijando un único AoA nominal (0°) en vez de expandir a una
-grilla AoA×deflexión completa. El barrido de AoA queda diferido a una iteración posterior, una
-vez validado el pipeline completo con esta primera versión.Estado:** Propuesta de trabajo, **no cerrada**. Depende de dos confirmaciones pendientes con los profesores guía (reunión 28/08/2026): (a) si el ángulo se parametriza como único o como AoA+deflexión separados, y (b) si se fija una única altitud de referencia o se representan varias. Este documento asume, como hipótesis de trabajo, la opción más simple de cada una (ángulo único, nivel del mar) — **no las da por confirmada.**
+**⚠️ Estado (actualizado 28/08/2026): matriz diseñada sobre la geometría superada (Nalci & Kayran) — pendiente de rehacer sobre la geometría vigente (Simpson 2016, NACA 0012 con flap).** La geometría de referencia del proyecto cambió (ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md`, reescrito 28/08/2026), lo que afecta directamente los supuestos numéricos de este documento: el rango angular (±15°), los Mach de referencia (0.4/0.5/0.6) y, sobre todo, el acoplamiento λ↔Reynolds de §2 fueron pensados para la aleta doble cuña de Nalci & Kayran. Con la geometría de Simpson, el problema de escala es distinto de fondo (ver §2bis, nueva) y **el λ nominal usado en este documento (0.63) ya no debe reutilizarse**. Este documento se conserva como referencia de la **estrategia de muestreo** (§4: cómo reducir el número de corridas mediante antisimetría y maniobras prescritas), que sigue siendo aplicable en principio a la nueva geometría, pero los valores numéricos concretos (§3, §5) deben rehacerse. Ver §9 (nueva) para el detalle de qué cambia y qué no.
 
-**Documentos relacionados:** `01_Cronograma.md` (Fase B, ruta crítica), `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md`, `04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md`, `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-REN-01), `02_Requisitos_Funcionales.md` (RF-CFD-02), `00_Administración/02_Registro_Reuniones_Avance.md`.
+Además, esta matriz asumía como hipótesis de trabajo que el ángulo se parametriza como único (no AoA y deflexión separados) — hipótesis que la reunión del 28/08/2026 (acuerdo #2, `00_Administración/02_Registro_Reuniones_Avance.md`) **descartó**: se confirmó ala con flap, con AoA y deflexión separados. Esto ya no es una posibilidad hipotética a evaluar en §6 de este documento — es la configuración vigente, y cambia la dimensionalidad de la matriz de partida (ver §9).
+
+**Documentos relacionados:** `01_Cronograma.md` (Fase B, ruta crítica), `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` (reescrito 28/08/2026 — geometría vigente), `04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md` (antecedente metodológico, geometría superada), `04_CFD/00_XFLR5/Simpson/NACA_0012/01_Checklist_Simpson_NACA0012.md` (geometría vigente, ya validada en XFLR5), `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-REN-01), `02_Requisitos_Funcionales.md` (RF-CFD-02), `00_Administración/02_Registro_Reuniones_Avance.md`.
 
 ---
 
 ## 1. Objetivo
 
-Definir el conjunto concreto de corridas CFD (Fase B, OpenFOAM) necesarias para generar la tabla de carga, minimizando el número de simulaciones sin dejar de cubrir las tres dimensiones acordadas en el Avance I (Mach, ángulo, velocidad angular de deflexión). Un factorial completo ingenuo (p. ej. 3 Mach × 7 ángulos × 5 velocidades angulares = 105 corridas) es inviable frente al presupuesto de 21 días de la Fase B (`01_Cronograma.md`) — la literatura de Tema 1 (Allen & Ghoreyshi 2018; Ghoreyshi et al. 2010) existe precisamente para evitar ese factorial.
+Definir el conjunto concreto de corridas CFD (Fase B, OpenFOAM) necesarias para generar la tabla de carga, minimizando el número de simulaciones sin dejar de cubrir las tres dimensiones acordadas en el Avance I (Mach, ángulo, velocidad angular de deflexión) — dimensión que en la geometría vigente (Simpson) se desagrega en cuatro (Mach, AoA, deflexión, velocidad angular), no en tres, dado que AoA y deflexión ya no colapsan en una sola variable (ver §9). Un factorial completo ingenuo (p. ej. 3 Mach × 7 ángulos × 5 velocidades angulares = 105 corridas, cifra calculada bajo el supuesto de ángulo único ya descartado) es inviable frente al presupuesto de 21 días de la Fase B (`01_Cronograma.md`) — la literatura de Tema 1 (Allen & Ghoreyshi 2018; Ghoreyshi et al. 2010) existe precisamente para evitar ese factorial.
 
----
+## 2. Punto crítico previo (geometría superada): acoplamiento entre la escala (λ) y el Reynolds de la CFD viscosa
 
-## 2. Punto crítico previo: acoplamiento entre la escala (λ) y el Reynolds de la CFD viscosa
+> **Esta sección corresponde al problema de escala tal como se planteaba bajo la geometría de Nalci & Kayran. Se conserva por trazabilidad metodológica del razonamiento (el acoplamiento λ↔Reynolds en CFD viscosa es un principio general reutilizable); el valor numérico de λ nominal (0.63) y el procedimiento de verificación descritos aquí NO deben usarse sobre la geometría de Simpson sin antes revisar §2bis.**
 
-A diferencia de XFLR5 (paneles 3D, flujo potencial invíscido — donde `Cm`/`Ch` son independientes del tamaño físico del modelo), la CFD propia es **viscosa**. Esto significa que el número de Reynolds de cada corrida depende de la cuerda física real, es decir, del factor de escala `λ` — que todavía está **pendiente** (rango de trabajo λ≈0.49–0.77, ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5).
+A diferencia de XFLR5 (paneles 3D, flujo potencial invíscido — donde `Cm`/`Ch` son independientes del tamaño físico del modelo), la CFD propia es **viscosa**. Esto significa que el número de Reynolds de cada corrida depende de la cuerda física real, es decir, del factor de escala `λ` — que todavía está **pendiente** (rango de trabajo λ≈0.49–0.77, valor calculado para la geometría de Nalci & Kayran, ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5, sección histórica).
 
-Hay un acoplamiento circular: no se puede fijar la matriz CFD (que necesita Reynolds, que depende de λ) sin antes tener un valor de λ; pero λ se termina de confirmar precisamente verificando que el torque resultante de la CFD caiga en el rango de RNF-CAR-01. **Propuesta para romper el ciclo sin bloquear el cronograma:**
+Hay un acoplamiento circular: no se puede fijar la matriz CFD (que necesita Reynolds, que depende de λ) sin antes tener un valor de λ; pero λ se termina de confirmar precisamente verificando que el torque resultante de la CFD caiga en el rango de RNF-CAR-01. **Propuesta para romper el ciclo sin bloquear el cronograma (registrada en su momento, bajo la geometría anterior):**
 
-1. Ejecutar la matriz completa a un **λ nominal de partida** = 0.63 (punto medio del rango 0.49–0.77).
+1. Ejecutar la matriz completa a un **λ nominal de partida** = 0.63 (punto medio del rango 0.49–0.77, geometría Nalci & Kayran).
 2. Verificar, con los primeros resultados, si el torque de bisagra cae dentro de RNF-CAR-01 (~0,5–2 N·m). Si sí, λ=0.63 se confirma y no hay que rehacer nada.
-3. Si no cae en rango, **no es necesario rehacer toda la matriz**: dado que a igual Mach el torque escala con `λ³` (Barlow, Rae & Pope, 1999, ya usado en `02_Valores_Referencia_XFLR5.md` §5), se puede reescalar analíticamente el resultado a un λ distinto **siempre que el Reynolds de la corrida original y del λ ajustado no difieran lo suficiente como para cambiar el coeficiente `Cm`/`Ch`** (a diferencia de XFLR5, aquí sí hay que verificar esto, no asumirlo).
+3. Si no cae en rango, **no es necesario rehacer toda la matriz**: dado que a igual Mach el torque escala con `λ³` (Barlow, Rae & Pope, 1999, ya usado en `02_Valores_Referencia_XFLR5.md`), se puede reescalar analíticamente el resultado a un λ distinto **siempre que el Reynolds de la corrida original y del λ ajustado no difieran lo suficiente como para cambiar el coeficiente `Cm`/`Ch`** (a diferencia de XFLR5, aquí sí hay que verificar esto, no asumirlo).
 4. Recomendación concreta: correr 2–3 puntos de control a distintos Reynolds (equivalentes a λ=0.49 y λ=0.77) **solo para el caso más exigente** (Mach 0.6, β=15°) antes de comprometer toda la matriz al λ nominal — si el coeficiente no cambia significativamente entre esos Reynolds, se valida que el atajo de escalado analítico (paso 3) es aplicable y el resto de la matriz puede correrse a λ=0.63 sin repetir.
 
-**Nota (ampliada tras discutir el efecto de agregar altitud, ver §6.2):** conviene extender este mismo chequeo de sensibilidad a Reynolds para que cubra también el rango de Reynolds asociado a la envolvente de altitud (0–5000 m, `01_Geometria_Aleta_Referencia.md` §3), no solo el rango de λ. Es la misma verificación física (¿`Cm`/`Ch` cambia con Reynolds en este régimen?), y resolverla una sola vez para el rango de Reynolds combinado (λ × altitud) evita tener que repetir el chequeo si la reunión del 28/08 agrega la altitud como variable — ver §6.2 para el impacto en el tamaño de la matriz si este chequeo **no** confirma insensibilidad a Reynolds.
+**Nota (ampliada tras discutir el efecto de agregar altitud, ver §6.2):** conviene extender este mismo chequeo de sensibilidad a Reynolds para que cubra también el rango de Reynolds asociado a la envolvente de altitud (0–5000 m, `01_Geometria_Aleta_Referencia.md` §3, versión histórica), no solo el rango de λ. Es la misma verificación física (¿`Cm`/`Ch` cambia con Reynolds en este régimen?), y resolverla una sola vez para el rango de Reynolds combinado (λ × altitud) evita tener que repetir el chequeo si la reunión del 28/08 agrega la altitud como variable — ver §6.2 para el impacto en el tamaño de la matriz si este chequeo **no** confirma insensibilidad a Reynolds.
 
-Este paso (verificación de sensibilidad a Reynolds) es, en la práctica, el primer conjunto de corridas a ejecutar, antes de la matriz completa.
+Este paso (verificación de sensibilidad a Reynolds) es, en la práctica, el primer conjunto de corridas a ejecutar, antes de la matriz completa — **este principio general (verificar sensibilidad a Reynolds antes de comprometer la matriz completa) sigue aplicando bajo la geometría de Simpson, ver §2bis.**
 
----
+## 2bis. El mismo problema, redefinido para la geometría vigente (Simpson)
 
-## 3. Dimensiones de la matriz
+Con la geometría de Simpson, el acoplamiento λ↔Reynolds sigue existiendo en principio (la CFD viscosa propia seguirá dependiendo de la cuerda física real), pero el punto de partida es distinto:
 
-| Dimensión                         | Estado                                           | Rango propuesto                                                                                        | Origen                                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mach                               | Cerrado (alineado con XFLR5 ya validado)         | 0,4 / 0,5 / 0,6                                                                                        | Envolvente de diseño Nalci & Kayran (2014); mismos puntos que`02_Valores_Referencia_XFLR5.md`, permite comparación directa                   |
-| Ángulo de ataque                  | **Diferido** a iteración 2                | Fijo en 0° por ahora                                                                                  | `Principio de 00_Principios_Metodologicos.md— evitar bloquear la Fase B por una dimensión adicional antes de validar el resto del pipeline` |
-| Deflexión del flap (AoA=0° fijo) | Confirmado como variable de esta iteración      | 0°, ±5°, ±10°, ±15° (a confirmar rango operativo real, distinto del rango ensayado por Simpson) | Reemplaza "ángulo total"; ver decisión de alcance arriba                                                                                       |
-| Velocidad angular de deflexión    | Nueva (Avance I) — requiere CFD no estacionaria | 0°/s (cuasi-estático), ~100°/s, ~300°/s                                                            | ~300°/s es la referencia de diseño bajo torque máximo (Nalci & Kayran 2014, usado en RNF-REN-01)                                              |
-| Altitud                            | **Pendiente (pregunta 5, reunión 28/08)** | Nivel del mar (hipótesis)                                                                             | Ver`00_Administración/02_Registro_Reuniones_Avance.md`                                                                                        |
-| Reynolds / λ                      | **Pendiente**, ver §2                     | λ nominal = 0,63 (a validar)                                                                          | Acoplamiento con RNF-CAR-01                                                                                                                      |
+- La geometría de Simpson **ya corresponde a un modelo físico real de escala conocida** (cuerda 381 mm), usado en un ensayo de túnel de viento a Reynolds 5.52×10⁶ y Mach 0.5. A diferencia de Nalci & Kayran (una geometría de misil hipotética que había que escalar desde el principio), aquí existe una condición de referencia con Reynolds ya documentado.
+- **Aún no se ha calculado el momento de bisagra dimensional (N·m) para esta geometría** a ninguna escala — ver `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5, pendiente. Sin ese cálculo, no es posible aún despejar el λ nominal de partida análogo al 0.63 usado con la geometría anterior.
+- El procedimiento de verificación de sensibilidad a Reynolds (§2, pasos 1–4) sigue siendo el enfoque correcto en principio, pero debe ejecutarse con el Reynolds de referencia de Simpson (5.52×10⁶) como punto de partida, no con el rango derivado de Nalci & Kayran.
 
----
+**Este documento no fija todavía un λ nominal de partida para la geometría de Simpson** — es, junto con el cálculo de §5 de `01_Geometria_Aleta_Referencia.md`, uno de los pendientes que bloquean cerrar esta matriz con valores numéricos concretos (ver §9).
 
-## 4. Estrategia de muestreo (para no explotar el número de corridas)
+## 3. Dimensiones de la matriz (valores bajo la geometría superada — pendientes de recalcular)
 
-### 4.1 Corridas estáticas (velocidad angular ≈ 0) — caracterizan Mach × ángulo
+> **Tabla conservada por trazabilidad; los valores de Mach, ángulo y λ corresponden a Nalci & Kayran y deben reemplazarse por los de Simpson antes de ejecutar cualquier corrida real. Ver §9 para el reemplazo pendiente.**
 
-- **Explotar la antisimetría** ya verificada en XFLR5 (`02_Valores_Referencia_XFLR5.md` §2: error relativo <0,2% en `M(-β)≈-M(β)`) como hipótesis de ahorro: correr solo el lado positivo (0°, 5°, 10°, 15°) por Mach, y verificar con **un único punto negativo de control** (β=-15°) por Mach — no asumir la antisimetría sin verificarla también en régimen viscoso, dado que la separación de flujo puede introducir asimetrías que el flujo potencial no captura.
-- Por Mach: 4 puntos principales + 1 punto de verificación = 5 corridas.
-- Total estático: **3 Mach × 5 = 15 corridas** (RANS estacionario).
+| Dimensión                      | Estado (geometría anterior)                                                                            | Rango propuesto (geometría anterior)                    | Origen                                                                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mach                            | Cerrado (alineado con XFLR5 ya validado, geometría anterior)                                           | 0,4 / 0,5 / 0,6                                          | Envolvente de diseño Nalci & Kayran (2014); mismos puntos que`02_Valores_Referencia_XFLR5.md` (geometría superada)                                                                                |
+| Ángulo total                   | Hipótesis de trabajo —**descartada** (acuerdo #2, 28/08/2026: AoA y deflexión separados)       | 0°, ±5°, ±10°, ±15°                               | Rango de Nalci & Kayran (±15°)                                                                                                                                                                      |
+| Velocidad angular de deflexión | Nueva (Avance I) — requiere CFD no estacionaria                                                        | 0°/s (cuasi-estático), ~100°/s, ~300°/s              | ~300°/s es la referencia de diseño bajo torque máximo (Nalci & Kayran 2014, usado en RNF-REN-01 — ver nota de esa fuente en`03_Requisitos_No_Funcionales.md`, marcada como geometría superada) |
+| Altitud                         | Pendiente (pregunta 5, reunión 28/08 — no fue respondida explícitamente en los acuerdos registrados) | Nivel del mar (hipótesis)                               | Ver`00_Administración/02_Registro_Reuniones_Avance.md`                                                                                                                                             |
+| Reynolds / λ                   | Pendiente, ver §2                                                                                      | λ nominal = 0,63 (geometría anterior, no reutilizable) | Acoplamiento con RNF-CAR-01                                                                                                                                                                           |
+
+## 4. Estrategia de muestreo (para no explotar el número de corridas) — principio reutilizable, valores a reconfirmar
+
+### 4.1 Corridas estáticas (velocidad angular ≈ 0) — caracterizan Mach × ángulo(s)
+
+> **El principio de esta subsección (explotar antisimetría, verificar con puntos de control en vez de correr el rango completo) sigue siendo aplicable a la geometría de Simpson. Sin embargo, un supuesto clave no se traslada automáticamente: la geometría de Simpson (NACA 0012, perfil simétrico, pero con flap parcial y flecha de 45°) no tiene garantizada la misma antisimetría verificada en XFLR5 para Nalci & Kayran — de hecho, el propio caso XFLR5 de Simpson NACA 0012 (`04_Lecciones_Metodologicas_XFLR5.md`, Hallazgo 3) encontró un signo invertido en el término de deflexión que debió corregirse explícitamente, señal de que la simetría de este caso concreto no debe darse por sentada sin verificación. Cualquier ahorro de corridas basado en antisimetría debe re-verificarse para la geometría de Simpson, no asumirse por analogía con el caso anterior.**
+
+- **Explotar la antisimetría** ya verificada en XFLR5 (`02_Valores_Referencia_XFLR5.md` §2, geometría superada: error relativo <0,2% en `M(-β)≈-M(β)`) como hipótesis de ahorro: correr solo el lado positivo (0°, 5°, 10°, 15°) por Mach, y verificar con **un único punto negativo de control** (β=-15°) por Mach — no asumir la antisimetría sin verificarla también en régimen viscoso, dado que la separación de flujo puede introducir asimetrías que el flujo potencial no captura. **(Bajo la geometría de Simpson, este chequeo de verificación pasa a ser aún más necesario, no opcional, por el hallazgo de signo mencionado arriba.)**
+- Por Mach: 4 puntos principales + 1 punto de verificación = 5 corridas (cifra calculada para el rango angular de la geometría anterior; a reconfirmar con el rango de AoA/deflexión de Simpson).
+- Total estático (geometría anterior): **3 Mach × 5 = 15 corridas** (RANS estacionario). **A recalcular para Simpson una vez definida la grilla AoA × deflexión (ver §9).**
 
 ### 4.2 Corridas dinámicas (maniobra forzada) — caracterizan la dependencia con la velocidad angular
 
-En vez de un punto fijo por combinación (Mach, ángulo, velocidad angular) — que sí sería un factorial caro — replicar el enfoque de **maniobra prescrita** de Allen & Ghoreyshi (2018) y Ghoreyshi et al. (2010): una sola corrida no estacionaria, con el ángulo variando en rampa/sinusoide a una tasa controlada, permite extraer la dependencia con la velocidad angular en todo el rango angular barrido, sin repetir una corrida estática por cada punto.
+En vez de un punto fijo por combinación (Mach, ángulo, velocidad angular) — que sí sería un factorial caro — replicar el enfoque de **maniobra prescrita** de Allen & Ghoreyshi (2018) y Ghoreyshi et al. (2010): una sola corrida no estacionaria, con el ángulo variando en rampa/sinusoide a una tasa controlada, permite extraer la dependencia con la velocidad angular en todo el rango angular barrido, sin repetir una corrida estática por cada punto. **Este principio es independiente de la geometría específica y sigue aplicando sin cambios conceptuales a Simpson.**
 
-- Por Mach: 2 corridas dinámicas — una a velocidad angular moderada (~100°/s) y una a la velocidad de referencia de diseño (~300°/s), cada una barriendo el rango angular completo (±15°) en una sola corrida tiempo-exacta.
-- Total dinámico: **3 Mach × 2 = 6 corridas** (malla móvil, más costosas por corrida que las estáticas).
+- Por Mach: 2 corridas dinámicas — una a velocidad angular moderada (~100°/s) y una a la velocidad de referencia de diseño (~300°/s, valor tomado de Nalci & Kayran — **a reconfirmar o reemplazar con un valor propio una vez disponible, dado que esta cifra proviene de la geometría superada**), cada una barriendo el rango angular completo en una sola corrida tiempo-exacta.
+- Total dinámico (geometría anterior): **3 Mach × 2 = 6 corridas** (malla móvil, más costosas por corrida que las estáticas). **A recalcular para Simpson (ver §9).**
 
-### 4.3 Total propuesto
+### 4.3 Total propuesto (geometría anterior — solo como referencia de orden de magnitud)
 
-| Tipo                            | N° de corridas                      | Costo relativo por corrida           |
-| ------------------------------- | ------------------------------------ | ------------------------------------ |
-| Estáticas (§4.1)              | 15                                   | Bajo (RANS estacionario)             |
-| Dinámicas (§4.2)              | 6                                    | Alto (malla móvil, no estacionario) |
-| Verificación Reynolds/λ (§2) | 2–3 (solo en el caso más exigente) | Medio                                |
-| **Total**                 | **~23–24**                    | —                                   |
+| Tipo                                   | N° de corridas (geometría anterior) | Costo relativo por corrida           |
+| -------------------------------------- | ------------------------------------- | ------------------------------------ |
+| Estáticas (§4.1)                     | 15                                    | Bajo (RANS estacionario)             |
+| Dinámicas (§4.2)                     | 6                                     | Alto (malla móvil, no estacionario) |
+| Verificación Reynolds/λ (§2/§2bis) | 2–3 (solo en el caso más exigente)  | Medio                                |
+| **Total**                        | **~23–24**                     | —                                   |
 
-Comparado con el factorial ingenuo (105 corridas), esta propuesta reduce el número en ~75%, concentrando el costo computacional en las 6 corridas dinámicas — que son, de todas formas, las que aportan la dimensión genuinamente nueva del proyecto (velocidad angular).
-
----
+Comparado con el factorial ingenuo bajo el supuesto de ángulo único (105 corridas, ya descartado — ver §9 para el factorial correcto bajo AoA/deflexión separados), esta propuesta reducía el número en ~75%, concentrando el costo computacional en las 6 corridas dinámicas. **Esta cifra total (~23–24) ya no es válida como estimación para la geometría de Simpson, dado que (a) el rango angular efectivo cambia, y (b) AoA y deflexión separados —confirmado, no hipotético— multiplican la dimensión angular en vez de mantenerla en una sola variable. Ver §9 para una estimación de reemplazo.**
 
 ## 5. Contraste con el cronograma
 
-El cronograma (`01_Cronograma.md`) asigna 21 días a "Ejecución de simulaciones CFD" y ya advierte que es una estimación optimista. Con ~24 corridas, de las cuales 6 son no estacionarias con malla móvil (las más lentas de converger), **21 días es razonable solo si las corridas estáticas convergen rápido** (horas, no días) y las 6 dinámicas no requieren más de 1–2 días cada una. Si el mallado o la convergencia toman más de lo esperado — el riesgo #2 ya identificado en el cronograma —, las 6 corridas dinámicas son las que primero absorberían el atraso. Vale la pena informar esto explícitamente al validar el cronograma con los profesores.
+El cronograma (`01_Cronograma.md`) asigna 21 días a "Ejecución de simulaciones CFD" y ya advierte que es una estimación optimista. Con ~24 corridas bajo la geometría anterior (cifra ya no vigente, ver §4.3 y §9), de las cuales 6 eran no estacionarias con malla móvil (las más lentas de converger), **21 días era razonable solo si las corridas estáticas convergían rápido (horas, no días) y las dinámicas no requerían más de 1–2 días cada una.** Con el número de corridas probablemente mayor bajo la geometría de Simpson (AoA y deflexión separados, ver §9), este contraste con el cronograma debe rehacerse una vez cerrada la matriz definitiva — es, en la práctica, más urgente ahora que antes, dado que el número de corridas probablemente sube, no baja.
 
----
+## 6. Qué pasa si se agrega altitud (28/08) — pregunta aún sin acuerdo registrado
 
-## 6. Qué pasa si se confirma que AoA y deflexión deben separarse, y/o se agrega altitud (28/08)
-
-Si en la reunión se determina que el modelo de aleta aislada **sí** requiere distinguir AoA de deflexión (lo que, según `01_Geometria_Aleta_Referencia.md` §6, exigiría modelar el fuselaje — fuera del alcance actual del proyecto), y/o que la altitud debe representarse como variable en vez de fijarse en nivel del mar (pregunta 5, reunión 28/08), esta matriz debe leerse como **provisional**. El efecto sobre el número de corridas es **multiplicativo, no aditivo**, en ambos casos:
-
-### 6.1 Separar AoA y deflexión
-
-"Ángulo total" deja de ser un barrido en línea (5 puntos por Mach en las corridas estáticas) y pasa a ser una **grilla 2D** (AoA × deflexión):
-
-| Puntos de AoA agregados   | Estáticas (3 Mach × AoA × 5 deflexión) | Dinámicas (3 Mach × AoA × 2 vel. angular) | Factor vs. matriz actual (§4.3) |
-| ------------------------- | ------------------------------------------ | -------------------------------------------- | -------------------------------- |
-| 3 (p. ej. -5°, 0°, 5°) | 45                                         | 18                                           | ~×2,8                           |
-| 5 (p. ej. -10° a 10°)   | 75                                         | 30                                           | ~×4,5                           |
+A diferencia de la pregunta sobre AoA/deflexión (ya resuelta, acuerdo #2), la pregunta 5 de la reunión del 28/08/2026 sobre representar múltiples altitudes de operación **no tiene una respuesta explícita registrada** en los acuerdos de `00_Administración/02_Registro_Reuniones_Avance.md` — sigue abierta. Esta sección se mantiene como estaba, con el análisis de impacto todavía vigente.
 
 ### 6.2 Agregar altitud como dimensión
 
-A diferencia de XFLR5 (invíscido, donde la altitud se extiende analíticamente sin nuevas corridas — `03_Pipeline_General_XFLR5.md` §9), en CFD viscosa **el Reynolds depende de la altitud a igual Mach**, por lo que en principio cada altitud nueva exige repetir toda la matriz — un multiplicador tan directo como el de AoA (§6.1).
+A diferencia de XFLR5 (invíscido, donde la altitud se extiende analíticamente sin nuevas corridas — `03_Pipeline_General_XFLR5.md` §9), en CFD viscosa **el Reynolds depende de la altitud a igual Mach**, por lo que en principio cada altitud nueva exige repetir toda la matriz — un multiplicador tan directo como el de AoA/deflexión.
 
-**Salida análoga a la ya propuesta para λ en §2:** si el chequeo de sensibilidad a Reynolds (§2) se extiende a cubrir también el rango de Reynolds que abarca la envolvente de altitud (0–5000 m, ya registrada en `01_Geometria_Aleta_Referencia.md` §3) y confirma que `Cm`/`Ch` no cambia significativamente en ese rango, la altitud se puede **absorber analíticamente** (igual que λ) con solo 2–3 corridas de verificación adicionales, en vez de duplicar/triplicar toda la matriz. Esto convierte el chequeo de §2 en una decisión que condiciona tanto λ como altitud — vale la pena ampliarlo desde ahora, no tratarlo como dos verificaciones separadas.
-
-### 6.3 Escenarios combinados (referencia rápida para la reunión)
-
-| Escenario                                                 | Factor por AoA     | Factor por altitud                  | Total aprox. (vs. ~23-24 de §4.3) |
-| --------------------------------------------------------- | ------------------ | ----------------------------------- | ---------------------------------- |
-| Mínimo — altitud absorbida analíticamente (verificada) | ×2,8 (3 pts. AoA) | ×1 (solo +2-3 corridas de chequeo) | ~65-68                             |
-| Intermedio — altitud como 2 puntos completos             | ×2,8 (3 pts. AoA) | ×2                                 | ~129                               |
-| Máximo — altitud como 3 puntos completos                | ×4,5 (5 pts. AoA) | ×3                                 | ~317                               |
-
-La brecha entre "altitud absorbida" y "altitud completa" (65 vs. 317) es mucho mayor que la que introduce por sí sola la separación de AoA/deflexión — el resultado del chequeo de Reynolds extendido (§2/§6.2) es, en la práctica, la decisión individual que más determina el tamaño final de la matriz.
-
-**Este documento no intenta anticipar la matriz extendida definitiva** — se actualizará con los valores concretos de AoA/altitud una vez resueltas ambas preguntas en la reunión del 28/08.
-
----
+**Salida análoga a la ya propuesta para λ en §2/§2bis:** si el chequeo de sensibilidad a Reynolds se extiende a cubrir también el rango de Reynolds que abarca la envolvente de altitud y confirma que `Cm`/`Ch` no cambia significativamente en ese rango, la altitud se puede **absorber analíticamente** con solo 2–3 corridas de verificación adicionales, en vez de duplicar/triplicar toda la matriz. Esto convierte el chequeo de §2/§2bis en una decisión que condiciona tanto λ como altitud — vale la pena ampliarlo desde ahora, no tratarlo como dos verificaciones separadas.
 
 ## 7. Impacto sobre otros documentos del proyecto
 
-| Documento                                                | Impacto                                                                                                                       |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `01_Cronograma.md`                                     | Esta propuesta (~23–24 corridas) da un número concreto para validar o ajustar la duración de 21 días asignada a la Fase B |
-| `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5 | El paso de verificación de sensibilidad a Reynolds (§2 de este documento) es el primer paso concreto para cerrar λ         |
-| `00_Administración/02_Registro_Reuniones_Avance.md`   | Las preguntas 1, 2 y 5 ya registradas siguen siendo las que condicionan si esta matriz se mantiene o se extiende (§6)        |
-| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01)         | El resultado de la verificación de sensibilidad a Reynolds (§2) es la primera confirmación real de si λ=0,63 es válido   |
-
----
+| Documento                                                | Impacto                                                                                                                                                                                                                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `01_Cronograma.md`                                     | La estimación de corridas (~23–24, geometría anterior) ya no es válida como base para validar la duración de 21 días asignada a la Fase B — debe recalcularse una vez cerrada §9 de este documento.                                                               |
+| `04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md` §5 | El paso de verificación de sensibilidad a Reynolds (§2bis de este documento) es el primer paso concreto para cerrar λ sobre la geometría de Simpson — este documento y ese quedan mutuamente dependientes hasta que se calcule el momento dimensional de referencia. |
+| `00_Administración/02_Registro_Reuniones_Avance.md`   | La pregunta 1 (AoA/deflexión) ya está resuelta (acuerdo#2); la pregunta 5 (altitud) sigue sin acuerdo registrado — sigue condicionando si esta matriz se extiende (§6).                                                                                               |
+| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01)         | El resultado de la verificación de sensibilidad a Reynolds (§2bis) sigue siendo la primera confirmación real de si algún λ propuesto para Simpson es válido — pendiente, ya que aún no hay λ nominal propuesto.                                                  |
 
 ## 8. Próximos pasos
 
-1. Confirmar con los profesores (28/08) las dos preguntas abiertas (ángulo único vs. AoA+deflexión; altitud única vs. múltiple) antes de comprometer la malla definitiva.
-2. Ejecutar las 2–3 corridas de verificación de sensibilidad a Reynolds (§2) como primer paso, antes de la matriz completa.
-3. Confirmar λ=0,63 como valor nominal, o ajustar según el resultado del paso anterior.
-4. Ejecutar las 15 corridas estáticas (§4.1).
-5. Ejecutar las 6 corridas dinámicas (§4.2), dejando margen en el cronograma dado que son las de mayor riesgo de atraso (§5).
-6. Actualizar este documento con el número final de corridas ejecutadas y cualquier ajuste al esquema de muestreo.
+1. ~~Confirmar con los profesores (28/08) las dos preguntas abiertas (ángulo único vs. AoA+deflexión; altitud única vs. múltiple) antes de comprometer la malla definitiva~~ — **Parcialmente completado:** AoA/deflexión ya se confirmó separado (acuerdo #2). Altitud sigue sin acuerdo registrado.
+2. **Calcular el momento de bisagra dimensional de la geometría de Simpson** (pendiente en `01_Geometria_Aleta_Referencia.md` §5, ítem 1) — bloquea todo lo demás en esta lista.
+3. Ejecutar las corridas de verificación de sensibilidad a Reynolds (§2bis) sobre la geometría de Simpson, una vez disponible el paso anterior.
+4. Confirmar un λ nominal para Simpson (análogo al 0,63 usado con la geometría anterior, pero calculado desde cero), o ajustar según el resultado del paso 3.
+5. **Rehacer la matriz de casos completa (§9)** con la geometría, rangos angulares (AoA y deflexión de la Tabla 4.1 de Simpson) y Reynolds/Mach de referencia (5.52×10⁶, M=0.5) correctos.
+6. Ejecutar las corridas estáticas y dinámicas resultantes de la matriz rehecha, dejando margen en el cronograma dado el probable aumento en el número de corridas frente a la estimación anterior (§4.3, §5).
+7. Actualizar este documento con el número final de corridas ejecutadas y cualquier ajuste al esquema de muestreo.
 
----
+## 9. Qué cambia con el reemplazo de geometría (resumen para rehacer la matriz)
 
-## 9. Referencias citadas en esta propuesta
+Esta sección reemplaza, a nivel de resumen, lo que las secciones §3, §4.3 y §6.1 (antigua, sobre separar AoA/deflexión como hipótesis) describían como pendiente o hipotético. No calcula la matriz definitiva (eso depende del paso 2 de §8, aún no resuelto) — deja explícito qué parámetros deben usarse una vez que se pueda.
+
+| Parámetro                   | Valor bajo geometría anterior (Nalci & Kayran)      | Valor a usar con geometría vigente (Simpson)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mach de referencia           | 0,4 / 0,5 / 0,6 (envolvente de diseño hipotética)  | 0,5 (condición de ensayo real de la fuente, Reynolds 5.52×10⁶ asociado) —**si se desea un barrido de Mach, debe definirse de nuevo; la fuente no reporta ensayos a otros Mach**                                                                                                                                                                                                                                                                                                                                                         |
+| AoA                          | No existía como variable separada                   | α ∈ {-8°, -6°, -4°, -2°, 0°, 2°, 4°, 6°, 8°} (rango ensayado por la fuente, Tabla 4.1)                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Deflexión                   | Colapsada con AoA en "ángulo total", ±15°         | δ ∈ {0°, -1.7°, -3.7°, -7.8°} (rango ensayado por la fuente) —**notablemente más acotado que el ±15° de la geometría anterior; el rango final de deflexión que necesita el banco debe revisarse contra este límite, no asumirse igual**                                                                                                                                                                                                                                                                                        |
+| Reynolds                     | Derivado de λ (pendiente)                           | 5.52×10⁶ a escala real (381 mm); a escala del banco (λ aún sin calcular), dependerá del λ que se determine                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Grilla estática (Mach fijo) | 3 Mach × 5 ángulos = 15 corridas                   | Con AoA y deflexión separados: 9 AoA × 4 deflexión = 36 combinaciones como máximo (igual a la matriz ya corrida en XFLR5 para este caso, ver`01_Checklist_Simpson_NACA0012.md` §5) — **considerablemente más que el factorial de la geometría anterior**; conviene evaluar si se requiere el barrido completo en CFD viscosa o si, análogo a §4.1, se puede reducir con verificación de linealidad `Ch(α,δ) ≈ Ch_α·α + Ch_δ·δ`, tal como ya se verificó en XFLR5 (`04_Lecciones_Metodologicas_XFLR5.md`, §3bis) |
+| Velocidad angular            | ~300°/s como referencia de diseño (Nalci & Kayran) | Sin valor propio aún — el ~300°/s no proviene de esta fuente y no debe asumirse válido sin revisión                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+
+**Conclusión de esta sección:** el cambio de geometría no solo cambia números — cambia la **estructura** de la matriz (de 3 dimensiones estáticas efectivas a potencialmente 4: Mach, AoA, deflexión, y luego velocidad angular como dinámica), por lo que la cifra de "~23–24 corridas" de §4.3 debe tratarse como obsoleta, no como un techo todavía válido. El paso 2 de §8 (calcular el momento dimensional de referencia) es el que debe resolverse primero para poder cuantificar el tamaño real de la nueva matriz.
+
+## 10. Referencias citadas en esta propuesta
 
 - Allen, J. D., Ghoreyshi, M., Jirasek, A., & Satchell, M. (2018). *Aerodynamic Loads Identification and Modeling of UCAV Configurations with Control Surfaces Using Prescribed CFD Maneuvers.* AIAA Paper 2018-2999. DOI: 10.2514/6.2018-2999
 - Ghoreyshi, M., Vallespin, D., Da Ronch, A., Badcock, K. J., Vos, J., & Hitzel, S. (2010). *Simulation of Aircraft Manoeuvres Based on Computational Fluid Dynamics.* AIAA Atmospheric Flight Mechanics Conference. DOI: 10.2514/6.2010-8239
 - Barlow, J. B., Rae, W. H., & Pope, A. (1999). *Low-Speed Wind Tunnel Testing* (3rd ed.). John Wiley & Sons.
-- Nalci, M. O., & Kayran, A. (2014). *Aeroservoelastic Modeling and Analysis of a Missile Control Surface with a Nonlinear Electromechanical Actuator.* AIAA 2014-2055. DOI: 10.2514/6.2014-2055
+- Nalci, M. O., & Kayran, A. (2014). *Aeroservoelastic Modeling and Analysis of a Missile Control Surface with a Nonlinear Electromechanical Actuator.* AIAA 2014-2055. DOI: 10.2514/6.2014-2055 *(geometría superada, referencia histórica)*
+- Simpson, C. D. (2016). *Control Surface Hinge Moment Prediction Using Computational Fluid Dynamics.* Tesis de maestría, University of Alabama. *(geometría vigente)*

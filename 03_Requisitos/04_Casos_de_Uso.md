@@ -2,28 +2,30 @@
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
+**Estado (28/08/2026):** la reunión de avance de esta fecha ya se realizó (ver `00_Administración/02_Registro_Reuniones_Avance.md`). La estructura de tabla de carga usada en CU-001 (Mach, ángulo de ataque, deflexión, velocidad angular de deflexión como variables separadas) es consistente con el acuerdo #2 de esa reunión — no requiere cambios. La reevaluación del sensor de torque (acuerdo #4) sí afecta la redacción de CU-006 (ver nota en esa sección).
+
 ## Actores
 
-| Actor | Descripción |
-|---|---|
-| **Operador** | Usuario principal del banco (investigador, estudiante o ingeniero). Configura, ejecuta y supervisa los ensayos, e interpreta los resultados. |
-| **Sistema de Control** | Actor de sistema: lazo de control automático que aplica y regula el torque objetivo sobre el actuador bajo prueba mediante el motor de carga, y ejecuta las protecciones de seguridad. |
+| Actor                                         | Descripción                                                                                                                                                                                              |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Operador**                            | Usuario principal del banco (investigador, estudiante o ingeniero). Configura, ejecuta y supervisa los ensayos, e interpreta los resultados.                                                              |
+| **Sistema de Control**                  | Actor de sistema: lazo de control automático que aplica y regula el torque objetivo sobre el actuador bajo prueba mediante el motor de carga, y ejecuta las protecciones de seguridad.                   |
 | **Analista CFD** *(externo, offline)* | Genera la tabla de carga aerodinámica mediante simulaciones CFD, fuera del alcance del banco propiamente dicho. Interactúa con el sistema únicamente a través del archivo de tabla de carga (CU-001). |
 
 ## Tabla resumen de trazabilidad
 
-| ID | Caso de uso | Actor principal | RF relacionados |
-|---|---|---|---|
-| CU-001 | Importar tabla de carga aerodinámica | Operador | RF-CFD-01, RF-CFD-02, RF-CFD-04 |
-| CU-002 | Configurar un ensayo | Operador | RF-PRO-01 a RF-PRO-04, RF-SWC-01 |
-| CU-003 | Ejecutar un ensayo | Operador, Sistema de Control | RF-BAN-01 a RF-BAN-03, RF-BAN-06, RF-INS-01 a RF-INS-05, RF-PRO-06, RF-SWC-02, RF-SWC-03, RF-SWC-05 |
-| CU-004 | Detener un ensayo (manual o por falla) | Operador, Sistema de Control | RF-BAN-04, RF-BAN-06, RF-SWC-05, RF-SWC-06 |
-| CU-005 | Exportar resultados de un ensayo | Operador | RF-SWC-04 |
-| CU-006 | Calibrar el banco (modo manual) | Operador | RF-BAN-05, RF-BAN-07(a), RF-INS-01 |
-| CU-007 | Sustituir la tabla de carga para una nueva aplicación | Operador | RF-CFD-03, RF-SIS-01 |
-| CU-008 | Cambiar el actuador bajo prueba | Operador | RF-SIS-02 |
-| CU-009 | Consultar la bitácora de eventos | Operador | RF-SWC-05 |
-| **CU-010** | **Caracterizar el actuador bajo prueba en modo manual (potenciómetros)** | **Operador, Sistema de Control** | **RF-BAN-07(b), RF-INS-01, RF-INS-02, RF-SEG-05 (RNF)** |
+| ID               | Caso de uso                                                                     | Actor principal                        | RF relacionados                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| CU-001           | Importar tabla de carga aerodinámica                                           | Operador                               | RF-CFD-01, RF-CFD-02, RF-CFD-04                                                                     |
+| CU-002           | Configurar un ensayo                                                            | Operador                               | RF-PRO-01 a RF-PRO-04, RF-SWC-01                                                                    |
+| CU-003           | Ejecutar un ensayo                                                              | Operador, Sistema de Control           | RF-BAN-01 a RF-BAN-03, RF-BAN-06, RF-INS-01 a RF-INS-05, RF-PRO-06, RF-SWC-02, RF-SWC-03, RF-SWC-05 |
+| CU-004           | Detener un ensayo (manual o por falla)                                          | Operador, Sistema de Control           | RF-BAN-04, RF-BAN-06, RF-SWC-05, RF-SWC-06                                                          |
+| CU-005           | Exportar resultados de un ensayo                                                | Operador                               | RF-SWC-04                                                                                           |
+| CU-006           | Calibrar el banco (modo manual)                                                 | Operador                               | RF-BAN-05, RF-BAN-07(a), RF-INS-01                                                                  |
+| CU-007           | Sustituir la tabla de carga para una nueva aplicación                          | Operador                               | RF-CFD-03, RF-SIS-01                                                                                |
+| CU-008           | Cambiar el actuador bajo prueba                                                 | Operador                               | RF-SIS-02                                                                                           |
+| CU-009           | Consultar la bitácora de eventos                                               | Operador                               | RF-SWC-05                                                                                           |
+| **CU-010** | **Caracterizar el actuador bajo prueba en modo manual (potenciómetros)** | **Operador, Sistema de Control** | **RF-BAN-07(b), RF-INS-01, RF-INS-02, RF-SEG-05 (RNF)**                                       |
 
 ---
 
@@ -34,10 +36,12 @@
 **Descripción:** El operador carga en el sistema una tabla de carga aerodinámica (CSV/JSON) generada previamente mediante simulaciones CFD, para que el módulo de procesamiento pueda usarla como fuente de datos.
 
 **Precondiciones:**
+
 - Existe un archivo de tabla de carga generado por el Analista CFD y disponible en el sistema de archivos.
 - No hay un ensayo en ejecución.
 
 **Flujo principal:**
+
 1. El operador selecciona la opción "Importar tabla de carga" en la interfaz.
 2. El operador indica el archivo a importar.
 3. El sistema valida la estructura del archivo (columnas de entrada: Mach, ángulo de ataque, deflexión de superficie, velocidad angular de deflexión; columna de salida: torque de charnela).
@@ -45,6 +49,7 @@
 5. El sistema almacena la tabla como fuente disponible para el módulo de procesamiento.
 
 **Flujo alternativo:**
+
 - **3a.** Si el archivo no cumple con el formato esperado, el sistema rechaza la importación y muestra un mensaje de error detallando el problema.
 
 **Resultado esperado:** La tabla de carga queda disponible como fuente de datos válida para la generación de referencias de torque.
@@ -62,6 +67,7 @@
 **Precondiciones:** Existe al menos una tabla de carga importada (CU-001).
 
 **Flujo principal:**
+
 1. El operador selecciona "Nuevo ensayo".
 2. El sistema solicita: tabla de carga a usar, escenario o maniobra (secuencia de condiciones Mach/ángulo/deflexión/velocidad angular de deflexión), duración del ensayo, límites de torque/velocidad/posición.
 3. El operador ingresa los parámetros solicitados.
@@ -70,6 +76,7 @@
 6. El sistema confirma la configuración y deja el ensayo listo para su ejecución.
 
 **Flujo alternativo:**
+
 - **4a.** Si algún parámetro está fuera de rango, el sistema lo señala y solicita su corrección antes de continuar.
 
 **Resultado esperado:** Ensayo configurado, con referencia de carga inicial generada y validada, listo para ejecución (CU-003).
@@ -85,11 +92,13 @@
 **Descripción:** El operador lanza la ejecución de un ensayo previamente configurado. El motor de carga aplica sobre el eje el torque objetivo, recalculado continuamente a partir de la posición y velocidad angular real de la aleta, mientras el actuador bajo prueba intenta llevarla al ángulo comandado. El sistema de instrumentación mide y registra las variables relevantes.
 
 **Precondiciones:**
+
 - Ensayo configurado (CU-002).
 - Actuador bajo prueba montado y conectado al banco, con la aleta física instalada en el mismo eje.
 - Condiciones de seguridad verificadas (RNF-SEG-01 a RNF-SEG-03).
 
 **Flujo principal:**
+
 1. El operador inicia la ejecución del ensayo.
 2. El sistema mide la posición y velocidad angular real de la aleta y recalcula el torque objetivo correspondiente a partir de la tabla de carga (RF-PRO-06).
 3. El sistema de control comienza a aplicar, mediante el motor de carga, el torque objetivo recalculado sobre el eje, compensando el torque parásito inducido por el movimiento del actuador bajo prueba (RF-BAN-02).
@@ -100,6 +109,7 @@
 8. Al completarse la duración programada, el sistema retira automáticamente el torque aplicado y marca el ensayo como completado.
 
 **Flujos alternativos:**
+
 - **3a.** Si el torque medido o algún parámetro supera los límites configurados, el sistema activa la parada automática de carga y registra el evento → continúa en **CU-004** (detención por falla).
 - **3b.** Si el sistema detecta una condición de atasco mutuo (stall) entre el motor de carga y el actuador bajo prueba —torque diferencial sostenido sin cambio de posición de la aleta, RF-BAN-06— el sistema activa la parada automática de carga y registra el evento → continúa en **CU-004** (detención por falla).
 - **6a.** El operador puede detener manualmente el ensayo en cualquier momento → continúa en **CU-004** (detención manual).
@@ -119,12 +129,14 @@
 **Precondiciones:** Existe un ensayo en ejecución (CU-003).
 
 **Flujo principal (detención manual):**
+
 1. El operador selecciona "Detener ensayo".
 2. El sistema de control reduce a cero el torque aplicado por el motor de carga, de forma controlada.
 3. El sistema detiene la adquisición y cierra el registro de datos del ensayo.
 4. El sistema informa al operador el estado final del ensayo (completo/incompleto).
 
 **Flujo alternativo (detención automática por falla o atasco mutuo):**
+
 - **1a.** El sistema de control detecta una condición fuera de rango, de falla, o de atasco mutuo (stall) entre el motor de carga y el actuador bajo prueba.
 - **2a.** El sistema retira automáticamente el torque aplicado y lleva el banco a un estado seguro.
 - **3a.** El sistema registra el evento/alarma correspondiente en la bitácora, indicando la causa específica (falla, saturación o atasco mutuo).
@@ -146,6 +158,7 @@
 **Precondiciones:** Existe al menos un ensayo completado o detenido (CU-003/CU-004) con datos registrados.
 
 **Flujo principal:**
+
 1. El operador selecciona el ensayo a exportar.
 2. El operador elige el formato de exportación (CSV).
 3. El sistema genera el archivo con las variables registradas, la referencia objetivo y la configuración utilizada en el ensayo.
@@ -164,9 +177,12 @@
 
 **Descripción:** Antes de una campaña de ensayos, el operador opera el banco en modo manual (torque de referencia fijo aplicado por el motor de carga, y opcionalmente condiciones de vuelo simuladas fijadas por potenciómetro) para verificar la correcta respuesta del sistema de aplicación de carga y de los sensores.
 
+> **Nota de estado (28/08/2026):** el paso 4 de este caso de uso ("ajustar la calibración del sensor de torque") se redactó asumiendo la celda de carga sobre brazo de palanca actualmente en reevaluación (ver acuerdo #4, `00_Administración/02_Registro_Reuniones_Avance.md`, y notas en `03_Requisitos_No_Funcionales.md`, RNF-CAR-01/RNF-PRE-02). El caso de uso en sí (calibrar comparando referencia aplicada vs. medida) es independiente de la tecnología de sensor final; solo el procedimiento físico de calibración (p. ej. cómo se aplica una carga conocida) podría cambiar si se adopta un torquímetro o strain gauges en vez de la celda + brazo actual.
+
 **Precondiciones:** Banco energizado, sin ensayo automático en curso.
 
 **Flujo principal:**
+
 1. El operador selecciona "Modo manual / calibración".
 2. El operador ingresa un valor de torque de referencia fijo, dentro de los límites de seguridad del banco — **o bien** fija las condiciones de vuelo simuladas (Mach, ángulo de ataque) mediante los potenciómetros correspondientes (I-11), dejando que el módulo de interpolación calcule el torque de referencia a partir de esos valores y de la deflexión real medida.
 3. El sistema aplica dicho torque mediante el motor de carga y muestra en tiempo real el torque medido.
@@ -174,6 +190,7 @@
 5. El operador finaliza el modo manual.
 
 **Flujo alternativo:**
+
 - **2a.** Si el operador usa los potenciómetros de Mach/ángulo de ataque (I-11) en lugar de un torque fijo, el sistema muestra también los valores manuales activos junto con el torque calculado, para que quede claro que el torque no es una referencia arbitraria sino el resultado de la tabla de carga evaluada en esas condiciones.
 
 **Resultado esperado:** Sistema de aplicación de carga y sensores verificados/calibrados, en condiciones de iniciar ensayos automáticos.
@@ -190,10 +207,12 @@
 **Descripción:** El operador reemplaza o añade una tabla de carga correspondiente a una nueva aplicación o plataforma (p. ej. otra geometría de superficie de control), aprovechando la arquitectura modular del banco, sin requerir modificaciones de hardware ni de software.
 
 **Precondiciones:**
+
 - Nueva tabla de carga generada y validada externamente mediante CFD.
 - Banco sin ensayo en ejecución.
 
 **Flujo principal:**
+
 1. El operador importa la nueva tabla de carga (CU-001).
 2. El sistema la registra como una fuente adicional disponible, sin afectar las tablas previamente importadas.
 3. El operador selecciona la nueva tabla al configurar un ensayo (CU-002).
@@ -214,6 +233,7 @@
 **Precondiciones:** Banco detenido y en estado seguro (sin torque aplicado).
 
 **Flujo principal:**
+
 1. El operador detiene cualquier ensayo en curso, si aplica (CU-004).
 2. El operador desmonta el actuador actual (y la aleta) del acople del banco.
 3. El operador monta el nuevo actuador bajo prueba y su aleta, y verifica sus conexiones eléctricas/mecánicas, la alineación del conjunto y la instrumentación asociada.
@@ -236,6 +256,7 @@
 **Precondiciones:** Existen eventos registrados en el sistema.
 
 **Flujo principal:**
+
 1. El operador selecciona "Ver bitácora".
 2. El sistema muestra la lista de eventos (marca de tiempo, tipo, descripción), filtrable por ensayo o rango de fechas.
 3. El operador revisa los eventos de interés.
@@ -254,11 +275,13 @@
 **Descripción:** El operador fija, mediante el potenciómetro de ángulo objetivo (I-12), una deflexión que se comanda **directamente** al actuador bajo prueba, análogo a un probador de servo manual, mientras el motor de carga sigue aplicando el torque calculado por el módulo de interpolación (ya sea desde un escenario programado o desde los potenciómetros de condiciones de vuelo, I-11). El sistema mide si la aleta efectivamente alcanza el ángulo comandado y con qué error/retardo, generando el dato de caracterización central del actuador bajo prueba. A diferencia de CU-003, aquí el comando de posición no proviene de una maniobra precalculada (RF-PRO-03) sino de la acción manual y en tiempo real del operador sobre la perilla.
 
 **Precondiciones:**
+
 - Actuador bajo prueba montado y conectado al banco (CU-008), con la aleta física instalada en el mismo eje.
 - Banco en modo manual (ver CU-006), con el motor de carga aplicando un torque de referencia (fijo o calculado desde I-11).
 - Condiciones de seguridad verificadas (RNF-SEG-01 a RNF-SEG-03, RNF-SEG-05).
 
 **Flujo principal:**
+
 1. El operador gira el potenciómetro de ángulo objetivo (I-12) hasta el valor deseado.
 2. El sistema envía dicho valor como comando de posición directo al actuador bajo prueba, respetando los límites de RNF-SEG-02/RNF-SEG-05.
 3. El actuador bajo prueba intenta alcanzar el ángulo comandado, venciendo el torque de carga aplicado simultáneamente por el motor de carga.
@@ -267,6 +290,7 @@
 6. El operador repite los pasos 1 a 5 para distintos ángulos objetivo y/o distintas condiciones de carga (variando I-11), construyendo así un conjunto de puntos de caracterización del actuador.
 
 **Flujo alternativo:**
+
 - **3a.** Si el sistema detecta una condición de atasco mutuo (stall) o de límite de seguridad, se activa la parada automática de carga (RF-BAN-06/RNF-SEG-04) → continúa en **CU-004**.
 
 **Resultado esperado:** Conjunto de datos (ángulo comandado por potenciómetro, ángulo real logrado, torque aplicado, variables eléctricas) que caracteriza la capacidad del actuador bajo prueba de alcanzar ángulos objetivo bajo distintas condiciones de carga, sin depender de una maniobra CFD precalculada.
@@ -284,3 +308,4 @@
 - CU-007 y CU-008 son los casos de uso que demuestran explícitamente el **objetivo específico OE-3** (arquitectura modular) y forman parte de los criterios de validación (OE-6) que deberían incluirse en el informe final: mostrar que cambiar de aplicación o de actuador no requiere modificar el banco.
 - Queda pendiente definir si se requiere un caso de uso de **gestión de usuarios/perfiles** en caso de que el banco se destine también a uso docente (mencionado en el Alcance del proyecto); no se incluyó aquí por no existir un RF explícito que lo respalde todavía.
 - Queda pendiente definir, en el diseño detallado del Controlador, si el potenciómetro de ángulo objetivo (I-12, CU-010) puede activarse como *override* momentáneo durante un ensayo automático en curso (CU-003) o si es estrictamente exclusivo de una sesión en modo manual — ver `05_Arquitectura_del_Sistema.md` §7.
+- **(Nuevo) Propagación pendiente del acuerdo #4 (28/08/2026):** si la reevaluación del sensor de torque (`03_Requisitos_No_Funcionales.md`, RNF-CAR-01/RNF-PRE-02) resulta en un cambio de tecnología (torquímetro o strain gauges en vez de celda + brazo), el procedimiento físico descrito en CU-006 (paso 4) y la precondición de CU-008 sobre alineación del conjunto (RNF-PRE-04) deben revisarse en consecuencia.
