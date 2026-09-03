@@ -36,27 +36,21 @@ Diseñar e implementar un banco de ensayos para el **verificación** **y** **sel
 
 ## 5. Objetivos específicos
 
-**Nota (28/08/2026):** los profesores guía indicaron que estos objetivos "quedaron muy largos y deben ser algo que se quiere lograr, no solo un plan de trabajo" y que "cada OE debe tener un entregable relacionado" (acuerdos #6 y #5, `00_Administración/02_Registro_Reuniones_Avance.md`). La versión de trabajo actual (abajo) sigue siendo la que trazan RF/RNF/CU en el resto de la documentación de requisitos; no se reemplaza unilateralmente aquí. Ver **§5bis** para una propuesta de redacción corta, pendiente de validar con los profesores antes de propagarla al resto de los documentos.
+* **Caracterizar** el estado del arte de actuadores, bancos de ensayo y metodologías de simulación computacional relevantes para el proyecto.
+* **Desarrollar** una metodología para obtener y procesar cargas fluidodinámicas mediante simulaciones computacionales.
+* **Diseñar** la arquitectura mecánica, electrónica, de software y de control de la plataforma experimental.
+* **Construir e instrumentar** el banco de ensayos.
+* **Validar** la plataforma experimental mediante ensayos con actuadores de superficies de control. 
 
-* **Analizar** el estado del arte de los actuadores electromecánicos para superficies de control y de los bancos de ensayo tipo dinamómetro de escala comparable (motor de carga + sensor de torque + actuador bajo prueba), así como las metodologías de obtención de cargas mediante CFD —incluyendo métodos de predicción de momento de bisagra, estrategias de reducción del número de simulaciones necesarias (muestreo adaptativo, modelos sustitutos (surrogate models) tipo kriging/splines) y técnicas de interpolación multidimensional—, con el fin de establecer los requisitos de diseño de la plataforma experimental.
-* **Desarrollar** una metodología para obtener y procesar cargas fluidodinámicas mediante simulaciones CFD, considerando explícitamente como variables de entrada el número de Mach, el ángulo de ataque, la deflexión angular de la superficie de control **y su velocidad angular de deflexión**, y como variable de salida el torque de bisagra resultante, generando tablas aerodinámicas multidimensionales utilizables en el banco de ensayos.
-* **Diseñar** la arquitectura mecánica, electrónica y de control de la plataforma experimental para aplicar las cargas equivalentes sobre actuadores de superficies de control, incluyendo (a) la instrumentación necesaria para medir en tiempo real tanto la posición angular como la velocidad angular real de la aleta, y (b) una interfaz de entradas manuales mediante potenciómetros físicos que permita al operador fijar, en modo manual, los valores de las variables de entrada de la tabla de carga (p. ej. velocidad de flujo/Mach, ángulo de ataque) de forma independiente del lazo de realimentación automático.
-* **Implementar** el software de procesamiento e integración encargado de interpretar las tablas de carga multidimensionales (Mach, ángulo de ataque, deflexión, velocidad angular de deflexión), leer las entradas provistas por el panel de potenciómetros en modo manual, y suministrar las referencias de torque necesarias para la ejecución de los ensayos.
-* **Construir e instrumentar** el banco de ensayos, incorporando los sensores (torque, posición y velocidad angular de la aleta, variables eléctricas del actuador) y los sistemas de adquisición de datos necesarios para la caracterización experimental de los actuadores, junto con el panel de potenciómetros de entrada manual.
-* **Validar** la plataforma experimental mediante ensayos con actuadores de superficies de control, evaluando su capacidad para reproducir las cargas objetivo —incluyendo condiciones con velocidad angular de deflexión variable— y generar información útil para el dimensionamiento.
+### 5bis. Propuesta de OE cortos, mapeados a entregable
 
-### 5bis. Propuesta de OE cortos, mapeados a entregable (pendiente de confirmar con profesores guía)
-
-| OE   | Redacción propuesta (corta, orientada a logro)                                                                                             | Entregable asociado (§11)                                 |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| OE-1 | Caracterizar el estado del arte de actuadores, bancos de ensayo y metodologías CFD relevantes para el proyecto.                            | 1. Documento de especificación y requisitos               |
-| OE-2 | Obtener una tabla de carga aerodinámica multidimensional (Mach, ángulo, deflexión, velocidad angular) válida para dimensionar el banco. | 2. Metodología CFD                                        |
-| OE-3 | Contar con una arquitectura mecánica, electrónica y de control del banco completamente definida y trazable a requisitos.                  | 3. Diseño conceptual y detallado                          |
-| OE-4 | Disponer de un software funcional que interprete la tabla de carga y genere referencias de torque en tiempo real.                           | 5. Software de operación, control y DAQ                   |
-| OE-5 | Tener el banco físico construido, instrumentado y calibrado.                                                                               | 4. Sistema experimental construido e instrumentado         |
-| OE-6 | Demostrar, mediante ensayos, que el banco reproduce cargas objetivo y genera datos útiles para caracterizar actuadores.                    | 6. Base de datos de resultados / 7. Informe de validación |
-
-**Estado:** propuesta de trabajo, no reemplaza la lista de §5 mientras no se confirme con los profesores guía. Si se confirma, esta tabla pasa a ser la única versión vigente y §5 se marca como histórica.
+| OE   | Redacción propuesta (corta, orientada a logro)                                                                                                        | Entregable asociado (§11)                                  |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| OE-1 | **Caracterizar** el estado del arte de actuadores, bancos de ensayo y metodologías de simulación computacional relevantes para el proyecto. | 1. Documento de especificación y requisitos                |
+| OE-2 | **Desarrollar** una metodología para obtener y procesar cargas fluidodinámicas mediante simulaciones computacionales.                          | 2. Metodología de simulación computacional.               |
+| OE-3 | **Diseñar** la arquitectura mecánica, electrónica, de software y de control de la plataforma experimental.                                    | 3. Diseño conceptual y detallado                           |
+| OE-4 | **Construir e instrumentar** el banco de ensayos.                                                                                                | 4. Sistema experimental construido e instrumentado          |
+| OE-5 | **Validar** la plataforma experimental mediante ensayos con actuadores de superficies de control.                                                | 5. Base de datos de resultados / 6. Informe de validación |
 
 ## 6. Alcance
 
@@ -70,7 +64,7 @@ La arquitectura propuesta se concibe como un sistema modular, permitiendo su ada
 
 ### Incluye
 
-* Diseño de la metodología CFD → banco.
+* Diseño de la metodología de simulación compurtacional→ banco.
 * Desarrollo de tablas de carga.
 * Diseño mecánico del banco, incluyendo el montaje del conjunto motor de carga–sensor–actuador bajo prueba–aleta física representativa.
 * Diseño electrónico e instrumentación.
