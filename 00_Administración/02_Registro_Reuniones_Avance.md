@@ -58,7 +58,7 @@
 5. **Cálculo del momento de bisagra dimensional para Simpson.** Es el paso que bloquea cerrar el factor de escala λ del banco (ver `01_Geometria_Aleta_Referencia.md` §5, pendiente ítems 1–2) y, en cascada, rehacer la matriz de casos CFD de Fase B1. ¿Se prioriza este cálculo antes de la próxima iteración, dado que bloquea varias otras tareas?
 6. **Altitud como variable de entrada (pregunta 5 de la reunión del 28/08, sin acuerdo registrado).** Se repite explícitamente porque quedó pendiente: ¿el banco debe representar múltiples altitudes de operación, o se fija una condición única (nivel del mar)?
 7. **Validación de la propuesta de OE cortos (§5bis de `01_Especificacion_del_Proyecto.md`).** Redactada conforme a los acuerdos #5 y #6 de la reunión anterior (cada OE con entregable asociado, redacción orientada a logro). ¿Se aprueba esta versión para reemplazar la redacción larga actual, o requiere ajustes?
-8. **Reunión con Tapia (electrónicos), Lanziotti o Vicuña** (acuerdo #7 de la reunión anterior) — ¿ya se coordinó o sigue pendiente?
+8. **Reunión con Tapia (electrónicos), Lanziotti o Vicuña** (acuerdo #7 de la reunión anterior) — ¿ya se coordinó o sigue pendiente? No pude porque estuve muy enfermo.
 
 **Respuestas / acuerdos (a completar después de la reunión):**
 
