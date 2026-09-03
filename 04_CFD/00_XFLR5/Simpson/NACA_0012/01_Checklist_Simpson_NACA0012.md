@@ -10,17 +10,17 @@
 
 ## 1. Geometría (Tabla 4.1 de la fuente — valores a ingresar tal cual)
 
-| Cantidad | Símbolo | Valor |
-|---|---|---|
-| Cuerda de sección (normal al borde de ataque) | c | 15 in = **381 mm** |
-| Semi-envergadura | b/2 | 31.53 in = **800.9 mm** |
-| Flecha | Λ | **45°** |
-| Espesor relativo | t/c | 0.12 (NACA 0012) |
-| Cuerda del elevador (% de c) | cf/c | **25%** |
-| Eje de bisagra, coordenada x | xh/c | **0.75** |
-| Eje de bisagra, coordenada z | zh/c | **0.0** |
-| Reynolds | Re | **5.52×10⁶** |
-| Mach | M | **0.5** |
+| Cantidad                                       | Símbolo | Valor                        |
+| ---------------------------------------------- | -------- | ---------------------------- |
+| Cuerda de sección (normal al borde de ataque) | c        | 15 in =**381 mm**      |
+| Semi-envergadura                               | b/2      | 31.53 in =**800.9 mm** |
+| Flecha                                         | Λ       | **45°**               |
+| Espesor relativo                               | t/c      | 0.12 (NACA 0012)             |
+| Cuerda del elevador (% de c)                   | cf/c     | **25%**                |
+| Eje de bisagra, coordenada x                   | xh/c     | **0.75**               |
+| Eje de bisagra, coordenada z                   | zh/c     | **0.0**                |
+| Reynolds                                       | Re       | **5.52×10⁶**         |
+| Mach                                           | M        | **0.5**                |
 
 **Nota sobre el modelo real:** Johnson & Thompson ensayaron un modelo de **semi-envergadura** (una sola mitad, contra la pared del túnel), no un estabilizador completo. Por eso el wing en XFLR5 se construye con `Symmetric` activado (ver §3) — XFLR5 completa la otra mitad automáticamente para el cálculo, y el resultado por lado es directamente comparable al ensayo original (ver verificación en §6).
 
@@ -37,13 +37,13 @@
    - Seleccionar el perfil `NACA 0012`.
    - En la tabla de perfiles (`Foil direct design`), completar las columnas:
 
-| Nombre a guardar | TE Flap (°) | TE XHinge | TE YHinge |
-|---|---|---|---|
-| `NACA 0012 1p7` | 1.70 | 75.00 | 0.00 |
-| `NACA 0012 3p7` | 3.70 | 75.00 | 0.00 |
-| `NACA 0012 7p8` | 7.80 | 75.00 | 0.00 |
+| Nombre a guardar  | TE Flap (°) | TE XHinge | TE YHinge |
+| ----------------- | ------------ | --------- | --------- |
+| `NACA 0012 1p7` | 1.70         | 75.00     | 0.00      |
+| `NACA 0012 3p7` | 3.70         | 75.00     | 0.00      |
+| `NACA 0012 7p8` | 7.80         | 75.00     | 0.00      |
 
-   - Este paso **hornea** la deflexión en la geometría (crea un perfil nuevo, permanentemente rotado desde el 75% de cuerda) y, crucialmente, **guarda el hinge como metadata del perfil** — es lo que permite que XFLR5 calcule `HMom` más adelante.
+- Este paso **hornea** la deflexión en la geometría (crea un perfil nuevo, permanentemente rotado desde el 75% de cuerda) y, crucialmente, **guarda el hinge como metadata del perfil** — es lo que permite que XFLR5 calcule `HMom` más adelante.
 
 3. **No te saltes la deflexión δ=0°.** Aunque geométricamente sea idéntica al `NACA 0012` base, hay que crear igual una variante con `TE Flap=0.00`, `TE XHinge=75.00`, `TE YHinge=0.00`, y guardarla como `NACA 0012 0p0`. Sin este paso, el perfil base no tiene el hinge asociado y XFLR5 no podrá calcular `HMom` para ese caso — el resultado será un `Cm` de ala completa, inútil para lo que necesitas (ver explicación completa en el pipeline general, §2.2).
 
@@ -69,10 +69,10 @@ Para **cada uno de los 4 perfiles** (`NACA 0012 0p0`, `1p7`, `3p7`, `7p8`):
 
 En `Wing and Plane Design`, crear **4 objetos `Wing`** (no `Plane`), uno por deflexión, cada uno con:
 
-| Fila | Y (mm) | Chord (mm) | Offset (mm) | Dihedral (°) | Foil |
-|---|---|---|---|---|---|
-| Raíz | 0 | 381 | 0 | 0 | `NACA 0012 <sufijo>` |
-| Punta | 800.9 | 381 | 800.9 × tan(45°) = **800.9** | — | `NACA 0012 <sufijo>` |
+| Fila  | Y (mm) | Chord (mm) | Offset (mm)                         | Dihedral (°) | Foil                   |
+| ----- | ------ | ---------- | ----------------------------------- | ------------- | ---------------------- |
+| Raíz | 0      | 381        | 0                                   | 0             | `NACA 0012 <sufijo>` |
+| Punta | 800.9  | 381        | 800.9 × tan(45°) =**800.9** | —            | `NACA 0012 <sufijo>` |
 
 - **Symmetric:** activado, **Right Side** (ver nota de §1 — el modelo real es de semi-envergadura, XFLR5 completa la otra mitad automáticamente).
 - **Twist:** 0° en ambas secciones.
@@ -111,6 +111,21 @@ Usar el script de consolidación del pipeline general (§7.2) sobre la carpeta c
 **Lo que sí se puede afirmar con el texto de la fuente:** el propio Fun3D de Simpson (RANS con modelo de turbulencia Spalart-Allmaras, más fidelidad que cualquier cosa que XFLR5 pueda dar) tiene errores de **~35% en δ=-7.8°** respecto al experimento, con buena concordancia en deflexiones pequeñas. Si tu resultado de XFLR5 se aleja bastante del orden de magnitud esperado en δ=-7.8°, no es necesariamente una falla de tu metodología — es la misma separación de flujo que ya le cuesta capturar a una CFD viscosa completa.
 
 **Si se necesita una validación numérica exacta:** el caso 2D GA(W)-1 de la misma fuente (Capítulo 3, Tablas 3.7–3.12) sí tiene números exactos — incluyendo el propio XFOIL de Simpson, comparable directamente contra un XFLR5 propio del mismo perfil. Es un ejercicio separado, no descrito en este documento (geometría: cuerda 24in, flap 20%, hinge en 80% de cuerda, Re=2.2×10⁶, M=0.13).
+
+---
+
+### 7bis. Resultado obtenido y cierre del caso (actualizado tras comparación contra Fig. 4.6)
+
+Al consolidar los 36 puntos (`OpPoint`, 4 deflexiones × 9 ángulos) y comparar contra la Fig. 4.6, se encontraron y corrigier<on dos problemas — ver el detalle completo en `04_Lecciones_Metodologicas_XFLR5.md`, Hallazgo 3 (§3bis):
+
+1. El caso **δ=0°** había quedado con `delta=NaN` en la tabla consolidada, por un desajuste entre el nombre del `Wing`/`Plane` de ese caso y la convención de nombre `_delta_0p0` que espera `consolidar_oppoints_xflr5.py`. Corregido manualmente tras confirmar que los datos sí correspondían a δ=0° (`Ch(α=0)≈0`).
+2. El término de respuesta a la deflexión (`Ch_δ`) salía con **signo invertido** respecto a la Fig. 4.6, mientras que el término de respuesta a α (`Ch_α`) ya era correcto desde el principio. Esto es consistente con que el `TE Flap` se haya ingresado en XFLR5 con signo contrario al documentado en §2 de este checklist (`TE Flap=+X` debería representar `δ=−X` de Simpson).
+
+**Corrección aplicada:** para un perfil simétrico como el NACA 0012, invertir el signo de la deflexión equivale a reflejar verticalmente todo el problema, lo que se corrige con `Ch_corregido(α) = −Ch_original(−α)` a δ fijo (script: `corregir_signo_delta_naca0012.py`).
+
+**Resultado tras la corrección:** el orden de las curvas y la tendencia coinciden con la Fig. 4.6 (δ=-7.8° arriba, δ=0° abajo, pendiente decreciente con α en las cuatro curvas). La diferencia absoluta remanente es del orden de **~0.01 en `Ch`**, comparando contra una lectura aproximada de la figura (no hay tabla numérica exacta disponible, a diferencia de GA(W)-1) — un margen razonable dado que la comparación es gráfica, no numérica.
+
+**Caso NACA 0012: verificado y cerrado.** Pendiente no bloqueante: confirmar en el archivo `.xfl` original si el signo del `TE Flap` de las variantes deflectadas se ingresó al revés de lo documentado en §2, para corregir en el origen antes de reutilizar este procedimiento en una geometría nueva.
 
 ---
 

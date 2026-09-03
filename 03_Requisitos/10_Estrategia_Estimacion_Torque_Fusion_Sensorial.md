@@ -128,3 +128,104 @@ Para estimar `T_actuador` vía corriente, se requiere un **segundo sensor de cor
 | `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-PRE-02, RNF-PRE-04) | Revisar una vez confirmada la tecnología de sensor; RNF-PRE-04 probablemente se relaje al eliminar la dependencia del radio efectivo de un brazo externo. |
 | `09_Verificacion_Mecanica_Brazo_Torque.md` | Si se confirma strain gauges, este documento (centrado en el brazo de palanca) deja de aplicar en su mayor parte — solo se mantiene reutilizable §4 (fijación de collares al eje), según ya lo anticipa su propia nota de estado. |
 | `01_Cronograma.md` | Evaluar si la caracterización de Kt, J y backlash debe adelantarse en la Fase C, dado que ahora bloquea explícitamente el diseño del filtro de fusión, no solo el ajuste fino del control de corriente. |
+
+---
+
+## 10. Estrategia de Estimación de Ángulo y Velocidad Angular por Fusión Sensorial
+
+**Motivación:** paralelo a la estimación de torque, el banco requiere una estimación robusta de **posición angular (θ)** y **velocidad angular (ω)** de la aleta. Esta estimación alimenta tanto el control de posición del actuador bajo prueba (RF-BAN-07(b), CU-010) como la diferenciación numérica para obtener aceleración angular (α) en el modelo dinámico de torque (§4). La arquitectura propuesta fusiona tres fuentes complementarias: encoder, IMU (giroscopio + acelerómetro) y modelo eléctrico (back-EMF).
+
+### 10.1 Diferencia fundamental respecto al caso de torque
+
+Existe una diferencia crítica entre la fusión sensorial para torque y para ángulo/velocidad angular:
+
+**El back-EMF, tal como está planteado, solo proporciona información del motor de carga (DS3218, intervenido) — no del actuador bajo prueba (MG996R, componente externo intercambiable, RF-SIS-02).**
+
+Esto cambia sustancialmente qué puede hacer esta tercera fuente en la fusión:
+- Para **torque**: las corrientes de ambos motores son accesibles (con instrumentación adicional en el MG996R), permitiendo estimar la contribución individual de cada actuador.
+- Para **ángulo/velocidad**: el back-EMF solo estima la velocidad del rotor del DS3218, requiriendo pasar por la reductora (~236–250:1) y el eje intermedio para llegar a la aleta. El backlash de esa reductora rompe la relación limpia ω_rotor/N ↔ ω_aleta, igual que rompía la relación corriente↔torque en el §2.
+
+Además, aplicar este mismo razonamiento al actuador bajo prueba (MG996R) exigiría acceso a sus terminales de motor — es decir, intervenirlo. Esto choca con que el actuador bajo prueba está definido como **componente externo e intercambiable** ("No incluye: desarrollo del actuador", RF-SIS-02). El back-EMF, tal como está disponible sin tocar el alcance del proyecto, **solo aplica al motor de carga**, no al actuador bajo prueba — que es, además, el motor cuya posición/velocidad de salida es la que más directamente te interesa comparar contra el ángulo comandado (RF-BAN-07(b), CU-010).
+
+### 10.2 Qué observa cada fuente, y qué no
+
+| Fuente | Mide directamente | Limitación |
+|---|---|---|
+| **Encoder** (en el eje, cerca de la aleta) | Posición angular absoluta, sin deriva | Resolución discreta; la velocidad derivada numéricamente amplifica ruido a alta frecuencia (riesgo ya señalado en RNF-PRE-05) |
+| **IMU — giroscopio** (en la aleta) | Velocidad angular directa, sin derivar | Deriva (bias) que se acumula al integrar para obtener ángulo — sin corrección externa, el ángulo integrado se aleja con el tiempo |
+| **IMU — acelerómetro** (en la aleta) | Aceleración específica (gravedad + centrípeta + tangencial, mezcladas) | Solo útil como referencia de orientación en reposo o cuasi-estático; si la IMU no está exactamente sobre el eje de giro, la componente centrípeta (ω²r) contamina la lectura — hay que conocer el radio de montaje |
+| **Modelo eléctrico (back-EMF)** | Velocidad angular del rotor del motor de carga | Ver limitación de fondo en §10.3 — no es directamente la velocidad de la aleta |
+
+### 10.3 La limitación de fondo del back-EMF: qué motor, y qué backlash arrastra
+
+La ecuación del motor DC da, despejando la velocidad del rotor:
+
+```
+ω_rotor = (V_terminal − I·R) / Ke
+```
+
+Esto requiere:
+- **R** (resistencia de armadura)
+- **Ke** (constante de back-EMF)
+
+Ambos parámetros siguen pendientes de caracterización experimental (`08_Datasheet_Motor_DS3218.md` §4, mismo pendiente ya señalado para Kt en el documento de torque). 
+
+**Dato útil:** para un motor DC ideal, **Kt y Ke son numéricamente iguales en unidades SI** — caracterizar uno con el ensayo de torque prácticamente resuelve el otro también. Vale la pena planear esa caracterización como una sola sesión experimental, no dos.
+
+Pero incluso con R y Ke bien caracterizados, **ω_rotor no es la velocidad de la aleta**: hay que pasar por la reductora (~236–250:1) y por el eje intermedio hasta llegar al punto donde está la aleta. El **backlash de esa reductora** —el mismo que ya rompía la relación limpia corriente↔torque en el §2— rompe igual de mal la relación ω_rotor/N ↔ ω_aleta. Es el mismo problema, ahora en el dominio cinemático en vez del dinámico.
+
+### 10.4 Qué rol le da esto al back-EMF en la fusión
+
+Dadas esas dos limitaciones, se propone tratar el back-EMF como **verificación cruzada / diagnóstico de backlash**, no como una entrada de igual peso que encoder e IMU en el filtro principal de ángulo/velocidad de la aleta:
+
+**La diferencia entre ω_rotor/N (predicha por back-EMF) y ω_aleta (medida por encoder/IMU) es, en sí misma, una estimación del backlash/compliance efectivo de la reductora del motor de carga en tiempo real** — un dato que hoy no tienes de otra forma sin desarmar el servo.
+
+Esto conecta directamente con:
+- **RNF-PRE-03** ("distinguir el ángulo real del ángulo comandado ante holgura o compliance")
+- La pregunta abierta de `Comparacion_Alternativas_Arquitectura_Fisica.md` §3 sobre si la IMU se usa como reemplazo o complemento del encoder — el back-EMF le da una tercera pata a esa verificación.
+
+### 10.5 Filtro principal — encoder + giroscopio (patrón bien establecido)
+
+Este es, en esencia, el problema clásico de fusión "ángulo absoluto ruidoso + velocidad angular con deriva" (equivalente a fusión encoder+IMU en robótica, o attitude estimation con giroscopio+referencia absoluta).
+
+**Estados propuestos:**
+```
+[θ, ω, b_gyro]
+```
+
+donde `b_gyro` es el sesgo del giroscopio, tratado como **estado a estimar y corregir** (no como ruido a ignorar) — es lo que evita que el ángulo integrado del giroscopio se aleje indefinidamente.
+
+**Mediciones:**
+- **θ_encoder**: absoluta, sin deriva, pero discreta y en el punto del eje, no necesariamente el mismo punto físico que la IMU en la aleta — la diferencia entre ambas lecturas es, otra vez, información de compliance mecánica entre el eje y la aleta física, no solo ruido a promediar.
+- **ω_giro**: usada como entrada de control en el modelo de proceso, con corrección de `b_gyro`.
+- **Opcional: el acelerómetro**, solo en tramos cuasi-estáticos (ω y α bajos), como referencia de inclinación para re-anclar la orientación absoluta si el rango de movimiento de la aleta lo justifica — probablemente de utilidad marginal si el encoder ya da la referencia absoluta; conviene decidir esto según cuánto confíes en la sincronía temporal encoder-IMU antes de sumar complejidad.
+
+### 10.6 Secuencia de implementación (mismo principio que en el filtro de torque)
+
+Consistente con el principio metodológico del proyecto ("que funcione antes de que funcione bien"):
+
+1. **Primero:** filtro complementario o Kalman simple encoder+giroscopio (2 fuentes) — resuelve ya el problema central de RNF-PRE-05 (velocidad angular sin amplificar ruido de derivada) y da θ, ω robustos.
+
+2. **Después:** agregar el back-EMF del motor de carga, **no como entrada al filtro de la aleta**, sino como señal paralela para diagnosticar backlash de esa reductora en tiempo real — requiere primero cerrar la caracterización de R/Ke (compartida con Kt del documento de torque).
+
+3. **Evaluar al final** si el acelerómetro aporta algo más allá de lo que ya entrega la comparación encoder-vs-IMU en la aleta — evitar sumarlo solo "porque está en el mismo chip", si no resuelve un problema que el sistema, corriendo con lo anterior, muestre como real.
+
+### 10.7 Puntos adicionales a presentar/preguntar en la reunión del viernes
+
+6. **Estrategia de fusión para ángulo/velocidad (§10):** presentar el enfoque de tres fuentes (encoder, giroscopio, back-EMF) con el back-EMF tratado como diagnóstico de backlash, no como entrada primaria al filtro. ¿Están de acuerdo con esta jerarquización de fuentes?
+
+7. **Caracterización conjunta Kt/Ke:** dado que Kt y Ke son numéricamente iguales en unidades SI para un motor DC ideal, proponer una única sesión experimental para caracterizar ambos parámetros simultáneamente. ¿Esto modifica la prioridad de tareas de caracterización en el cronograma?
+
+8. **Acelerómetro en la IMU:** consultar si el acelerómetro debe incluirse desde el inicio como referencia de orientación absoluta, o si se posterga su evaluación hasta tener operando el filtro encoder+giroscopio y verificar si existe un problema residual que justifique su complejidad adicional.
+
+### 10.8 Impacto adicional sobre otros documentos (ampliación de §9)
+
+| Documento | Impacto |
+|---|---|
+| `08_Datasheet_Motor_DS3218.md` §4 | Agregar la caracterización de Ke (constante de back-EMF) como pendiente conjunto con Kt — misma sesión experimental. |
+| `05_Arquitectura_del_Sistema.md` §2.4, §3 | Confirmar la ubicación física de la IMU en la aleta (ya considerada en `Comparacion_Alternativas_Arquitectura_Fisica.md` §3) y su interfaz con el sistema de adquisición. |
+| `03_Requisitos_No_Funcionales.md` (RNF-PRE-03, RNF-PRE-05) | RNF-PRE-03 se vincula directamente con el uso del back-EMF como diagnóstico de backlash; RNF-PRE-05 se mitiga con la fusión encoder+giroscopio en vez de derivación numérica pura. |
+| `Comparacion_Alternativas_Arquitectura_Fisica.md` §3 | Este documento cierra la pregunta abierta sobre el rol de la IMU: complemento del encoder para estimación de velocidad angular, no reemplazo. |
+| `01_Cronograma.md` | La caracterización de R/Ke (junto con Kt) se vuelve bloqueante explícito para el diseño del filtro de ángulo/velocidad, no solo del filtro de torque. |
+
+---
