@@ -62,7 +62,16 @@
 
 **Respuestas / acuerdos (a completar después de la reunión):**
 
-*(pendiente)*
+Respuestas:
+
+1. se medirá con strain gauges y con aproximación dinámica para estimar torque y pasarlo por un filtro de kalman. el filtro debe estar para el 11/09. Estimar torque a partir de aceleración y velocidad y deformación del strain gauge. Hay que hacer el ASD del eje.
+2. El motor de carga será un motor DC, arquitectura A.
+3. Hay dudas respecto al ancho de banda del motor, del controlador y del sistema de contro de torque en sí. Para eso se evaluará el filtro de kalman para saber si el sistema lograría controlar el torque de manera adecuada. La duda es si la frecuencia de actualización del torque que ejerce el motor de carga es suficiente para compensar el aumento de torque propio a la torsión del eje.
+4. La geometría de referencia es la NACA 0012
+5. El cálculo de momento de bisagra dimensional está listo
+6. No se realizó esta pregunta por falta de tiempo
+7. OEs validados pero faltan ajustes menores
+8. Ya no es necesaria la reunión.
 
 ## Cómo usar este documento
 

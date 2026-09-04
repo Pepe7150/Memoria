@@ -17,3 +17,8 @@
 * [ ] Faltaría lo que dijeron de tener una maqueta del sistema, tengo que ver como cresta voy a hacer eso.
 * [ ] Quiero tener un esquema ordenado como el de annastopoulos et al.
 * [X] Incorporar switches de fin de carrera para que el motor de carga no vaya a explotar si nada lo frena.
+* [ ] Hacer el ASD del eje y el filtro de kalman para torque.
+* [ ] revisar el ancho de banda de los componentes y el necesario.
+* [ ] Terminar de ajustar los OEs.
+* [ ] Hacer el informe con formato
+* [ ] Partir con las simulaciones en CFD cuanto antes.

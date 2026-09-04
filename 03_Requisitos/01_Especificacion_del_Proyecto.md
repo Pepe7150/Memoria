@@ -32,15 +32,16 @@ La arquitectura propuesta desacopla la simulación numérica del ensayo físico,
 
 ## 4. Objetivo general
 
-Diseñar e implementar un banco de ensayos para el **verificación** **y** **selección** dimensionamiento y caracterización de actuadores **COTS** de superficies de control utilizando cargas fluidodinámicas obtenidas mediante simulación **Computacional**.
+Diseñar e implementar un banco de ensayos para la **verificación/selección** y caracterización de actuadores **COTS** de superficies de control utilizando cargas fluidodinámicas obtenidas mediante simulación **Computacional**.
 
 ## 5. Objetivos específicos
 
 * **Caracterizar** el estado del arte de actuadores, bancos de ensayo y metodologías de simulación computacional relevantes para el proyecto.
+* (Concebir un diseño preliminar en base del esatdo del arte)
 * **Desarrollar** una metodología para obtener y procesar cargas fluidodinámicas mediante simulaciones computacionales.
 * **Diseñar** la arquitectura mecánica, electrónica, de software y de control de la plataforma experimental.
 * **Construir e instrumentar** el banco de ensayos.
-* **Validar** la plataforma experimental mediante ensayos con actuadores de superficies de control. 
+* **(Verificar** la plataforma experimental mediante ensayos con actuadores de superficies de control.)
 
 ### 5bis. Propuesta de OE cortos, mapeados a entregable
 

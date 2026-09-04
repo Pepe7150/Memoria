@@ -21,12 +21,12 @@ Ningún sensor único entrega esto de forma directa y confiable en todo el rango
 
 ## 2. Qué observa cada fuente, y qué no
 
-| Fuente | Mide directamente | Limitación principal |
-|---|---|---|
-| Corriente del motor de carga (INA219, ya seleccionado, I-04b) | Torque en el rotor del DS3218 crudo, vía `T = Kt·I` | La relación corriente↔torque de salida se degrada por la fricción/backlash de la reductora (~236–250:1) — problema ya documentado en `Comparacion_Alternativas_Arquitectura_Fisica.md` §0 |
-| Corriente del actuador bajo prueba (**sensor adicional, no instrumentado hoy**) | Torque en el rotor del MG996R | Mismo problema de reductora; además, hoy **no existe** un segundo INA219 asignado a este motor — RF-INS-03 lo deja como "cuando aplique", sin canal físico definido |
-| Strain gauges en el eje intermedio (entre motor de carga y actuador bajo prueba, topología cara a cara) | Torque **transmitido** en ese punto del eje — medición directa, sin depender de ningún modelo de motor | No distingue por sí solo cuánto aporta cada motor individualmente; da el neto en ese punto |
-| Encoder → aceleración angular (doble derivada de posición, o derivada simple si se usa IMU/giroscopio) | Torque inercial, vía `T = J·α` | La doble diferenciación numérica amplifica ruido más que la derivada simple ya señalada como riesgo en RNF-PRE-05 |
+| Fuente                                                                                                    | Mide directamente                                                                                                | Limitación principal                                                                                                                                                                            |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Corriente del motor de carga (INA219, ya seleccionado, I-04b)                                             | Torque en el rotor del DS3218 crudo, vía`T = Kt·I`                                                           | La relación corriente↔torque de salida se degrada por la fricción/backlash de la reductora (~236–250:1) — problema ya documentado en`Comparacion_Alternativas_Arquitectura_Fisica.md` §0 |
+| Corriente del actuador bajo prueba (**sensor adicional, no instrumentado hoy**)                     | Torque en el rotor del MG996R                                                                                    | Mismo problema de reductora; además, hoy**no existe** un segundo INA219 asignado a este motor — RF-INS-03 lo deja como "cuando aplique", sin canal físico definido                      |
+| Strain gauges en el eje intermedio (entre motor de carga y actuador bajo prueba, topología cara a cara)  | Torque **transmitido** en ese punto del eje — medición directa, sin depender de ningún modelo de motor | No distingue por sí solo cuánto aporta cada motor individualmente; da el neto en ese punto                                                                                                     |
+| Encoder → aceleración angular (doble derivada de posición, o derivada simple si se usa IMU/giroscopio) | Torque inercial, vía`T = J·α`                                                                               | La doble diferenciación numérica amplifica ruido más que la derivada simple ya señalada como riesgo en RNF-PRE-05                                                                            |
 
 **Observación relevante para el diseño:** al montar los strain gauges directamente en el eje entre ambos motores, esa lectura por sí sola ya satisface razonablemente bien RF-INS-01 (torque transmitido). El valor añadido real de la fusión sensorial no es "obtener un torque" — es **separar la contribución de cada motor**, que es lo que efectivamente exigen RF-BAN-02 y RF-BAN-06.
 
@@ -51,10 +51,10 @@ El costo elevado de un torquímetro rotativo inline (HBM T20WN, Futek TRS605, y 
 
 Con `d = 5 mm` (eje intermedio ya definido, RNF-PRE-04) y acero (`G ≈ 80 GPa`):
 
-| Torque | τ (esfuerzo cortante) | ε a 45° |
-|---|---|---|
-| 0,5 N·m (continuo mínimo, RNF-CAR-01) | ~20,4 MPa | ~127 µε |
-| 2 N·m (pico, RNF-CAR-01) | ~81,5 MPa | ~509 µε |
+| Torque                                  | τ (esfuerzo cortante) | ε a 45° |
+| --------------------------------------- | ---------------------- | --------- |
+| 0,5 N·m (continuo mínimo, RNF-CAR-01) | ~20,4 MPa              | ~127 µε |
+| 2 N·m (pico, RNF-CAR-01)               | ~81,5 MPa              | ~509 µε |
 
 Señal perfectamente medible con un puente completo (4 galgas a ±45°) y un amplificador de instrumentación estándar — del mismo orden de magnitud que la señal ya manejada con la celda de carga actual.
 
@@ -64,14 +64,14 @@ Señal perfectamente medible con un puente completo (4 galgas a ±45°) y un amp
 
 ### 3.3 Tabla comparativa
 
-| Criterio | Torquímetro inline COTS | Strain gauges DIY sobre el eje |
-|---|---|---|
-| Resuelve la objeción del acuerdo #4 (seguir el ángulo de la aleta) | Sí | Sí |
-| Requiere slip ring / telemetría | Sí (ahí concentra el costo) | **No**, por rango angular acotado |
-| Costo estimado | Alto — previsiblemente excede RNF-COS-01 | Bajo — galgas + amplificador, compatible con COTS de bajo costo |
-| Trabajo de instrumentación propio | Mínimo (producto llave en mano) | Requiere montar, pegar y calibrar el puente |
-| Rechazo de cargas parásitas (flexión/axial) | Sí, por diseño del transductor | Sí, si el montaje a 45° es correcto |
-| Riesgo técnico dominante | Bajo (producto terminado) | Medio — calidad del pegado/alineación de galgas |
+| Criterio                                                            | Torquímetro inline COTS                  | Strain gauges DIY sobre el eje                                   |
+| ------------------------------------------------------------------- | ----------------------------------------- | ---------------------------------------------------------------- |
+| Resuelve la objeción del acuerdo#4 (seguir el ángulo de la aleta) | Sí                                       | Sí                                                              |
+| Requiere slip ring / telemetría                                    | Sí (ahí concentra el costo)             | **No**, por rango angular acotado                          |
+| Costo estimado                                                      | Alto — previsiblemente excede RNF-COS-01 | Bajo — galgas + amplificador, compatible con COTS de bajo costo |
+| Trabajo de instrumentación propio                                  | Mínimo (producto llave en mano)          | Requiere montar, pegar y calibrar el puente                      |
+| Rechazo de cargas parásitas (flexión/axial)                       | Sí, por diseño del transductor          | Sí, si el montaje a 45° es correcto                            |
+| Riesgo técnico dominante                                           | Bajo (producto terminado)                 | Medio — calidad del pegado/alineación de galgas                |
 
 **Conclusión preliminar (a validar con los profesores):** dado el presupuesto ya fijado (RNF-COS-01) y que el rango angular del banco es acotado (no rotación continua), strain gauges sobre el eje intermedio es la opción más consistente con las restricciones ya cerradas del proyecto. El riesgo se traslada de "¿alcanza el presupuesto?" a "¿el laboratorio tiene la destreza de montaje/calibración de galgas?" — punto a confirmar antes de cerrar la decisión.
 
@@ -121,13 +121,13 @@ Para estimar `T_actuador` vía corriente, se requiere un **segundo sensor de cor
 
 ## 9. Impacto sobre otros documentos del proyecto (pendiente de propagar si se confirma esta dirección)
 
-| Documento | Impacto |
-|---|---|
-| `06_Seleccion_Actuador_de_Carga.md` §6.2 | Reemplazar la selección de celda de carga por la decisión de strain gauges (o mantener torquímetro si la reunión lo prioriza), incorporando el cálculo de §3.2 de este documento. |
-| `05_Arquitectura_del_Sistema.md` §2.4, §2.5, §3 | Nueva interfaz de corriente para el actuador bajo prueba; actualizar I-05 (torque medido) para reflejar que proviene de una estimación fusionada, no de una lectura directa de celda de carga. |
-| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-PRE-02, RNF-PRE-04) | Revisar una vez confirmada la tecnología de sensor; RNF-PRE-04 probablemente se relaje al eliminar la dependencia del radio efectivo de un brazo externo. |
-| `09_Verificacion_Mecanica_Brazo_Torque.md` | Si se confirma strain gauges, este documento (centrado en el brazo de palanca) deja de aplicar en su mayor parte — solo se mantiene reutilizable §4 (fijación de collares al eje), según ya lo anticipa su propia nota de estado. |
-| `01_Cronograma.md` | Evaluar si la caracterización de Kt, J y backlash debe adelantarse en la Fase C, dado que ahora bloquea explícitamente el diseño del filtro de fusión, no solo el ajuste fino del control de corriente. |
+| Documento                                                                | Impacto                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `06_Seleccion_Actuador_de_Carga.md` §6.2                              | Reemplazar la selección de celda de carga por la decisión de strain gauges (o mantener torquímetro si la reunión lo prioriza), incorporando el cálculo de §3.2 de este documento.                                               |
+| `05_Arquitectura_del_Sistema.md` §2.4, §2.5, §3                     | Nueva interfaz de corriente para el actuador bajo prueba; actualizar I-05 (torque medido) para reflejar que proviene de una estimación fusionada, no de una lectura directa de celda de carga.                                       |
+| `03_Requisitos_No_Funcionales.md` (RNF-CAR-01, RNF-PRE-02, RNF-PRE-04) | Revisar una vez confirmada la tecnología de sensor; RNF-PRE-04 probablemente se relaje al eliminar la dependencia del radio efectivo de un brazo externo.                                                                            |
+| `09_Verificacion_Mecanica_Brazo_Torque.md`                             | Si se confirma strain gauges, este documento (centrado en el brazo de palanca) deja de aplicar en su mayor parte — solo se mantiene reutilizable §4 (fijación de collares al eje), según ya lo anticipa su propia nota de estado. |
+| `01_Cronograma.md`                                                     | Evaluar si la caracterización de Kt, J y backlash debe adelantarse en la Fase C, dado que ahora bloquea explícitamente el diseño del filtro de fusión, no solo el ajuste fino del control de corriente.                           |
 
 ---
 
@@ -142,6 +142,7 @@ Existe una diferencia crítica entre la fusión sensorial para torque y para án
 **El back-EMF, tal como está planteado, solo proporciona información del motor de carga (DS3218, intervenido) — no del actuador bajo prueba (MG996R, componente externo intercambiable, RF-SIS-02).**
 
 Esto cambia sustancialmente qué puede hacer esta tercera fuente en la fusión:
+
 - Para **torque**: las corrientes de ambos motores son accesibles (con instrumentación adicional en el MG996R), permitiendo estimar la contribución individual de cada actuador.
 - Para **ángulo/velocidad**: el back-EMF solo estima la velocidad del rotor del DS3218, requiriendo pasar por la reductora (~236–250:1) y el eje intermedio para llegar a la aleta. El backlash de esa reductora rompe la relación limpia ω_rotor/N ↔ ω_aleta, igual que rompía la relación corriente↔torque en el §2.
 
@@ -149,12 +150,12 @@ Además, aplicar este mismo razonamiento al actuador bajo prueba (MG996R) exigir
 
 ### 10.2 Qué observa cada fuente, y qué no
 
-| Fuente | Mide directamente | Limitación |
-|---|---|---|
-| **Encoder** (en el eje, cerca de la aleta) | Posición angular absoluta, sin deriva | Resolución discreta; la velocidad derivada numéricamente amplifica ruido a alta frecuencia (riesgo ya señalado en RNF-PRE-05) |
-| **IMU — giroscopio** (en la aleta) | Velocidad angular directa, sin derivar | Deriva (bias) que se acumula al integrar para obtener ángulo — sin corrección externa, el ángulo integrado se aleja con el tiempo |
-| **IMU — acelerómetro** (en la aleta) | Aceleración específica (gravedad + centrípeta + tangencial, mezcladas) | Solo útil como referencia de orientación en reposo o cuasi-estático; si la IMU no está exactamente sobre el eje de giro, la componente centrípeta (ω²r) contamina la lectura — hay que conocer el radio de montaje |
-| **Modelo eléctrico (back-EMF)** | Velocidad angular del rotor del motor de carga | Ver limitación de fondo en §10.3 — no es directamente la velocidad de la aleta |
+| Fuente                                           | Mide directamente                                                         | Limitación                                                                                                                                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Encoder** (en el eje, cerca de la aleta) | Posición angular absoluta, sin deriva                                    | Resolución discreta; la velocidad derivada numéricamente amplifica ruido a alta frecuencia (riesgo ya señalado en RNF-PRE-05)                                                                                           |
+| **IMU — giroscopio** (en la aleta)        | Velocidad angular directa, sin derivar                                    | Deriva (bias) que se acumula al integrar para obtener ángulo — sin corrección externa, el ángulo integrado se aleja con el tiempo                                                                                      |
+| **IMU — acelerómetro** (en la aleta)     | Aceleración específica (gravedad + centrípeta + tangencial, mezcladas) | Solo útil como referencia de orientación en reposo o cuasi-estático; si la IMU no está exactamente sobre el eje de giro, la componente centrípeta (ω²r) contamina la lectura — hay que conocer el radio de montaje |
+| **Modelo eléctrico (back-EMF)**           | Velocidad angular del rotor del motor de carga                            | Ver limitación de fondo en §10.3 — no es directamente la velocidad de la aleta                                                                                                                                          |
 
 ### 10.3 La limitación de fondo del back-EMF: qué motor, y qué backlash arrastra
 
@@ -165,10 +166,11 @@ La ecuación del motor DC da, despejando la velocidad del rotor:
 ```
 
 Esto requiere:
+
 - **R** (resistencia de armadura)
 - **Ke** (constante de back-EMF)
 
-Ambos parámetros siguen pendientes de caracterización experimental (`08_Datasheet_Motor_DS3218.md` §4, mismo pendiente ya señalado para Kt en el documento de torque). 
+Ambos parámetros siguen pendientes de caracterización experimental (`08_Datasheet_Motor_DS3218.md` §4, mismo pendiente ya señalado para Kt en el documento de torque).
 
 **Dato útil:** para un motor DC ideal, **Kt y Ke son numéricamente iguales en unidades SI** — caracterizar uno con el ensayo de torque prácticamente resuelve el otro también. Vale la pena planear esa caracterización como una sola sesión experimental, no dos.
 
@@ -181,6 +183,7 @@ Dadas esas dos limitaciones, se propone tratar el back-EMF como **verificación 
 **La diferencia entre ω_rotor/N (predicha por back-EMF) y ω_aleta (medida por encoder/IMU) es, en sí misma, una estimación del backlash/compliance efectivo de la reductora del motor de carga en tiempo real** — un dato que hoy no tienes de otra forma sin desarmar el servo.
 
 Esto conecta directamente con:
+
 - **RNF-PRE-03** ("distinguir el ángulo real del ángulo comandado ante holgura o compliance")
 - La pregunta abierta de `Comparacion_Alternativas_Arquitectura_Fisica.md` §3 sobre si la IMU se usa como reemplazo o complemento del encoder — el back-EMF le da una tercera pata a esa verificación.
 
@@ -189,6 +192,7 @@ Esto conecta directamente con:
 Este es, en esencia, el problema clásico de fusión "ángulo absoluto ruidoso + velocidad angular con deriva" (equivalente a fusión encoder+IMU en robótica, o attitude estimation con giroscopio+referencia absoluta).
 
 **Estados propuestos:**
+
 ```
 [θ, ω, b_gyro]
 ```
@@ -196,6 +200,7 @@ Este es, en esencia, el problema clásico de fusión "ángulo absoluto ruidoso +
 donde `b_gyro` es el sesgo del giroscopio, tratado como **estado a estimar y corregir** (no como ruido a ignorar) — es lo que evita que el ángulo integrado del giroscopio se aleje indefinidamente.
 
 **Mediciones:**
+
 - **θ_encoder**: absoluta, sin deriva, pero discreta y en el punto del eje, no necesariamente el mismo punto físico que la IMU en la aleta — la diferencia entre ambas lecturas es, otra vez, información de compliance mecánica entre el eje y la aleta física, no solo ruido a promediar.
 - **ω_giro**: usada como entrada de control en el modelo de proceso, con corrección de `b_gyro`.
 - **Opcional: el acelerómetro**, solo en tramos cuasi-estáticos (ω y α bajos), como referencia de inclinación para re-anclar la orientación absoluta si el rango de movimiento de la aleta lo justifica — probablemente de utilidad marginal si el encoder ya da la referencia absoluta; conviene decidir esto según cuánto confíes en la sincronía temporal encoder-IMU antes de sumar complejidad.
@@ -205,27 +210,23 @@ donde `b_gyro` es el sesgo del giroscopio, tratado como **estado a estimar y cor
 Consistente con el principio metodológico del proyecto ("que funcione antes de que funcione bien"):
 
 1. **Primero:** filtro complementario o Kalman simple encoder+giroscopio (2 fuentes) — resuelve ya el problema central de RNF-PRE-05 (velocidad angular sin amplificar ruido de derivada) y da θ, ω robustos.
-
 2. **Después:** agregar el back-EMF del motor de carga, **no como entrada al filtro de la aleta**, sino como señal paralela para diagnosticar backlash de esa reductora en tiempo real — requiere primero cerrar la caracterización de R/Ke (compartida con Kt del documento de torque).
-
 3. **Evaluar al final** si el acelerómetro aporta algo más allá de lo que ya entrega la comparación encoder-vs-IMU en la aleta — evitar sumarlo solo "porque está en el mismo chip", si no resuelve un problema que el sistema, corriendo con lo anterior, muestre como real.
 
 ### 10.7 Puntos adicionales a presentar/preguntar en la reunión del viernes
 
 6. **Estrategia de fusión para ángulo/velocidad (§10):** presentar el enfoque de tres fuentes (encoder, giroscopio, back-EMF) con el back-EMF tratado como diagnóstico de backlash, no como entrada primaria al filtro. ¿Están de acuerdo con esta jerarquización de fuentes?
-
 7. **Caracterización conjunta Kt/Ke:** dado que Kt y Ke son numéricamente iguales en unidades SI para un motor DC ideal, proponer una única sesión experimental para caracterizar ambos parámetros simultáneamente. ¿Esto modifica la prioridad de tareas de caracterización en el cronograma?
-
 8. **Acelerómetro en la IMU:** consultar si el acelerómetro debe incluirse desde el inicio como referencia de orientación absoluta, o si se posterga su evaluación hasta tener operando el filtro encoder+giroscopio y verificar si existe un problema residual que justifique su complejidad adicional.
 
 ### 10.8 Impacto adicional sobre otros documentos (ampliación de §9)
 
-| Documento | Impacto |
-|---|---|
-| `08_Datasheet_Motor_DS3218.md` §4 | Agregar la caracterización de Ke (constante de back-EMF) como pendiente conjunto con Kt — misma sesión experimental. |
-| `05_Arquitectura_del_Sistema.md` §2.4, §3 | Confirmar la ubicación física de la IMU en la aleta (ya considerada en `Comparacion_Alternativas_Arquitectura_Fisica.md` §3) y su interfaz con el sistema de adquisición. |
+| Documento                                                    | Impacto                                                                                                                                                                                |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `08_Datasheet_Motor_DS3218.md` §4                         | Agregar la caracterización de Ke (constante de back-EMF) como pendiente conjunto con Kt — misma sesión experimental.                                                                |
+| `05_Arquitectura_del_Sistema.md` §2.4, §3                | Confirmar la ubicación física de la IMU en la aleta (ya considerada en`Comparacion_Alternativas_Arquitectura_Fisica.md` §3) y su interfaz con el sistema de adquisición.         |
 | `03_Requisitos_No_Funcionales.md` (RNF-PRE-03, RNF-PRE-05) | RNF-PRE-03 se vincula directamente con el uso del back-EMF como diagnóstico de backlash; RNF-PRE-05 se mitiga con la fusión encoder+giroscopio en vez de derivación numérica pura. |
-| `Comparacion_Alternativas_Arquitectura_Fisica.md` §3 | Este documento cierra la pregunta abierta sobre el rol de la IMU: complemento del encoder para estimación de velocidad angular, no reemplazo. |
-| `01_Cronograma.md` | La caracterización de R/Ke (junto con Kt) se vuelve bloqueante explícito para el diseño del filtro de ángulo/velocidad, no solo del filtro de torque. |
+| `Comparacion_Alternativas_Arquitectura_Fisica.md` §3      | Este documento cierra la pregunta abierta sobre el rol de la IMU: complemento del encoder para estimación de velocidad angular, no reemplazo.                                         |
+| `01_Cronograma.md`                                         | La caracterización de R/Ke (junto con Kt) se vuelve bloqueante explícito para el diseño del filtro de ángulo/velocidad, no solo del filtro de torque.                              |
 
 ---
