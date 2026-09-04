@@ -1,0 +1,1 @@
+{"nodes": [{"id": "requisitos_no_funcionales_md", "label": "Requisitos No Funcionales", "file_type": "document", "source_file": "03_Requisitos/03_Requisitos_No_Funcionales.md", "rationale": "Lists RNF for performance, precision, safety, and capacity (0.5-2 Nm torque range)."}], "edges": [], "hyperedges": []}

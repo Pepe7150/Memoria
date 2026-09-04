@@ -1,0 +1,276 @@
+{
+  "communities": {
+    "0": [
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_es_archivo_oppoint",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_es_archivo_polar",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_extraer_delta",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_leer_texto",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_main",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_parsear_oppoint",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_parsear_polar",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_1",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_102",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_109",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_114",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_157",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_73",
+      "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_rationale_85"
+    ],
+    "1": [
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_distribucion_x",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_escribir_dat",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_espesor_doble_cuna",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_generar_perfil",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_1",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_130",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_141",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_67",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_83",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_rationale_98",
+      "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_verificar_geometria"
+    ],
+    "2": [
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_es_archivo_polar_2d_gaw1",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_extraer_condicion",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_extraer_delta",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_leer_texto",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_main",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_parsear_polar_2d",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_rationale_1",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_rationale_108",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_rationale_125",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_rationale_83",
+      "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_rationale_93"
+    ],
+    "3": [
+      "04_cfd_00_xflr5_02_valores_referencia_xflr5",
+      "04_cfd_00_xflr5_03_pipeline_general_xflr5",
+      "04_cfd_00_xflr5_04_lecciones_metodologicas_xflr5",
+      "04_cfd_00_xflr5_nalci_kayran_momento_bisagra_vs_beta_png",
+      "04_cfd_00_xflr5_simpson_gaw1_01_checklist_simpson_gaw1",
+      "04_cfd_00_xflr5_simpson_naca_0012_01_checklist_simpson_naca0012",
+      "04_cfd_00_xflr5_simpson_naca_0012_comparacion_ch_vs_alpha_naca0012_png",
+      "04_cfd_01_casos_01_geometria_aleta_referencia",
+      "04_cfd_01_casos_03_matriz_casos_cfd_faseb1",
+      "05_diseno_mecanico_comparacion_alternativas_arquitectura_fisica"
+    ],
+    "4": [
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_cargar_datos_anchos",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_escribir_con_metadata",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_rationale_1",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_rationale_109",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_rationale_84",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_reportar_envolvente",
+      "04_cfd_00_xflr5_generar_tabla_contingencia_xflr5_reshape_a_formato_largo"
+    ],
+    "5": [
+      "03_requisitos_05_arquitectura_del_sistema_controlador",
+      "03_requisitos_05_arquitectura_del_sistema_motor_carga",
+      "03_requisitos_06_seleccion_actuador_de_carga_bts7960",
+      "03_requisitos_06_seleccion_actuador_de_carga_ds3218",
+      "03_requisitos_10_estrategia_estimacion_torque_fusion_sensorial_backemf",
+      "03_requisitos_10_estrategia_estimacion_torque_fusion_sensorial_kalman"
+    ],
+    "6": [
+      "03_requisitos_04_casos_de_uso_cu001",
+      "03_requisitos_04_casos_de_uso_cu002",
+      "03_requisitos_04_casos_de_uso_cu003"
+    ],
+    "7": [
+      "03_requisitos_04_casos_de_uso_cu006",
+      "03_requisitos_05_arquitectura_del_sistema_i11"
+    ],
+    "8": [
+      "03_requisitos_04_casos_de_uso_cu010",
+      "03_requisitos_05_arquitectura_del_sistema_i12"
+    ],
+    "9": [
+      "03_requisitos_05_arquitectura_del_sistema_offline",
+      "03_requisitos_05_arquitectura_del_sistema_online"
+    ],
+    "10": [
+      "01_documentos_memoria_capítulos_avance_1_checklist_avance_1_md"
+    ],
+    "11": [
+      "02_literatura_resumen_referencias_md"
+    ],
+    "12": [
+      "03_requisitos_05_arquitectura_del_sistema_sensor_torque"
+    ],
+    "13": [
+      "cronograma_md"
+    ],
+    "14": [
+      "especificacion_del_proyecto_md"
+    ],
+    "15": [
+      "estado_del_arte_md"
+    ],
+    "16": [
+      "kalman_filter_torque"
+    ],
+    "17": [
+      "notas_md"
+    ],
+    "18": [
+      "principios_metodologicos_md"
+    ],
+    "19": [
+      "registro_reuniones_avance_md"
+    ],
+    "20": [
+      "requisitos_funcionales_md"
+    ],
+    "21": [
+      "requisitos_no_funcionales_md"
+    ],
+    "22": [
+      "torque_parasito"
+    ]
+  },
+  "cohesion": {
+    "0": 0.21904761904761905,
+    "1": 0.19696969696969696,
+    "2": 0.25757575757575757,
+    "3": 0.2222222222222222,
+    "4": 0.25,
+    "5": 0.3333333333333333,
+    "6": 0.6666666666666666,
+    "7": 1.0,
+    "8": 1.0,
+    "9": 1.0,
+    "10": 1.0,
+    "11": 1.0,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0,
+    "19": 1.0,
+    "20": 1.0,
+    "21": 1.0,
+    "22": 1.0
+  },
+  "gods": [
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_main",
+      "label": "main()",
+      "degree": 6
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_parsear_polar_2d",
+      "label": "parsear_polar_2d()",
+      "degree": 6
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_leer_texto",
+      "label": "leer_texto()",
+      "degree": 5
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_parsear_oppoint",
+      "label": "parsear_oppoint()",
+      "degree": 5
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_parsear_polar",
+      "label": "parsear_polar()",
+      "degree": 5
+    },
+    {
+      "id": "04_cfd_00_xflr5_04_lecciones_metodologicas_xflr5",
+      "label": "Lecciones metodológicas del pipeline XFLR5",
+      "degree": 5
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_extraer_delta",
+      "label": "extraer_delta()",
+      "degree": 4
+    },
+    {
+      "id": "04_cfd_00_xflr5_nalci_kayran_generar_perfil_doble_cuna_nalci_kayran_generar_perfil",
+      "label": "generar_perfil()",
+      "degree": 4
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_ga_w_1_consolidar_polares_2d_gaw1_main",
+      "label": "main()",
+      "degree": 4
+    },
+    {
+      "id": "04_cfd_00_xflr5_simpson_naca_0012_consolidar_oppoints_xflr5_es_archivo_oppoint",
+      "label": "es_archivo_oppoint()",
+      "degree": 3
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Reevaluación de Alternativas — Arquitectura Física del Banco",
+      "target": "Lecciones metodológicas del pipeline XFLR5",
+      "source_files": [
+        "05_Diseño_Mecánico/Comparacion_Alternativas_Arquitectura_Fisica.md",
+        "04_CFD/00_XFLR5/04_Lecciones_Metodologicas_XFLR5.md"
+      ],
+      "confidence": "INFERRED",
+      "relation": "references",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories; peripheral node `Reevaluación de Alternativas — Arquitectura Física del Banco` unexpectedly reaches hub `Lecciones metodológicas del pipeline XFLR5`"
+    },
+    {
+      "source": "Lecciones metodológicas del pipeline XFLR5",
+      "target": "NACA 0012 wing hinge moments (corregido)",
+      "source_files": [
+        "04_CFD/00_XFLR5/04_Lecciones_Metodologicas_XFLR5.md",
+        "04_CFD/00_XFLR5/Simpson/NACA_0012/comparacion_Ch_vs_alpha_NACA0012.png"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (doc ↔ image); peripheral node `NACA 0012 wing hinge moments (corregido)` unexpectedly reaches hub `Lecciones metodológicas del pipeline XFLR5`"
+    },
+    {
+      "source": "Valores de Referencia de Flujo Potencial (XFLR5)",
+      "target": "Momento de bisagra vs. deflexión (Nalci & Kayran)",
+      "source_files": [
+        "04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md",
+        "04_CFD/00_XFLR5/Nalci&Kayran/momento_bisagra_vs_beta.png"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "crosses file types (doc ↔ image)"
+    },
+    {
+      "source": "Lecciones metodológicas del pipeline XFLR5",
+      "target": "Pipeline general XFLR5 para tablas de carga",
+      "source_files": [
+        "04_CFD/00_XFLR5/04_Lecciones_Metodologicas_XFLR5.md",
+        "04_CFD/00_XFLR5/03_Pipeline_General_XFLR5.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `Pipeline general XFLR5 para tablas de carga` unexpectedly reaches hub `Lecciones metodológicas del pipeline XFLR5`"
+    },
+    {
+      "source": "Lecciones metodológicas del pipeline XFLR5",
+      "target": "Simpson GA(W)-1: Hoja de entrada XFLR5",
+      "source_files": [
+        "04_CFD/00_XFLR5/04_Lecciones_Metodologicas_XFLR5.md",
+        "04_CFD/00_XFLR5/Simpson/GA(W)-1/01_Checklist_Simpson_GAW1.md"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "peripheral node `Simpson GA(W)-1: Hoja de entrada XFLR5` unexpectedly reaches hub `Lecciones metodológicas del pipeline XFLR5`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `Sensor de Torque`, `Simpson GA(W)-1: Hoja de entrada XFLR5`, `Matriz de Casos CFD — Fase B1` to the rest of the system?",
+      "why": "28 weakly-connected nodes found - possible documentation gaps or missing edges."
+    }
+  ]
+}

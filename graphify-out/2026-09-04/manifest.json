@@ -1,0 +1,170 @@
+{
+  "04_CFD/00_XFLR5/Nalci&Kayran/generar_perfil_doble_cuna_Nalci&Kayran.py": {
+    "mtime": 1787378241.3508956,
+    "seen": 1788533591.6953893,
+    "ast_hash": "7eab4783d8a746c2cb902edaea5aa6ea",
+    "semantic_hash": "7eab4783d8a746c2cb902edaea5aa6ea"
+  },
+  "04_CFD/00_XFLR5/Simpson/GA(W)-1/consolidar_polares_2D_gaw1.py": {
+    "mtime": 1787721911.833455,
+    "seen": 1788533591.6954012,
+    "ast_hash": "182acc6d62e06036f23f876b52223cd5",
+    "semantic_hash": "182acc6d62e06036f23f876b52223cd5"
+  },
+  "04_CFD/00_XFLR5/Simpson/NACA_0012/consolidar_oppoints_xflr5.py": {
+    "mtime": 1787638945.6356168,
+    "seen": 1788533591.6954076,
+    "ast_hash": "fe7d0876a0d6e09e3e530c065b45ee21",
+    "semantic_hash": "fe7d0876a0d6e09e3e530c065b45ee21"
+  },
+  "04_CFD/00_XFLR5/generar_tabla_contingencia_xflr5.py": {
+    "mtime": 1787458513.4746354,
+    "seen": 1788533591.695412,
+    "ast_hash": "b8e5896181305aaae8574f8697ad961e",
+    "semantic_hash": "b8e5896181305aaae8574f8697ad961e"
+  },
+  "00_Administraci\u00f3n/01_Cronograma.md": {
+    "mtime": 1786735529.4324214,
+    "seen": 1788533591.6954162,
+    "ast_hash": "71c43b3c0a7c0db24b84f5985523239c",
+    "semantic_hash": "71c43b3c0a7c0db24b84f5985523239c"
+  },
+  "00_Administraci\u00f3n/02_Registro_Reuniones_Avance.md": {
+    "mtime": 1788460677.7652688,
+    "seen": 1788533591.6954207,
+    "ast_hash": "3071190170919b693091b195ad0deeda",
+    "semantic_hash": "3071190170919b693091b195ad0deeda"
+  },
+  "01_Documentos_Memoria/Cap\u00edtulos/Avance_1/01_Estado_del_Arte.md": {
+    "mtime": 1788380356.1664653,
+    "seen": 1788533591.695425,
+    "ast_hash": "172df6783430e5f01c34cf35428541bf",
+    "semantic_hash": "172df6783430e5f01c34cf35428541bf"
+  },
+  "01_Documentos_Memoria/Cap\u00edtulos/Avance_1/Checklist_Avance_1.md": {
+    "mtime": 1788461093.0,
+    "seen": 1788533591.6954286,
+    "ast_hash": "2ed624fbe17d604434404c460b7af547",
+    "semantic_hash": "2ed624fbe17d604434404c460b7af547"
+  },
+  "02_Literatura/resumen_referencias.md": {
+    "mtime": 1787519792.2270565,
+    "seen": 1788533591.6954322,
+    "ast_hash": "3564147b8777901dfcea7b193155f396",
+    "semantic_hash": "3564147b8777901dfcea7b193155f396"
+  },
+  "03_Requisitos/00_Principios_Metodologicos.md": {
+    "mtime": 1787973111.184824,
+    "seen": 1788533591.6954358,
+    "ast_hash": "23fb0258eacc5b788f200097206df311",
+    "semantic_hash": "23fb0258eacc5b788f200097206df311"
+  },
+  "03_Requisitos/01_Especificacion_del_Proyecto.md": {
+    "mtime": 1788406431.8494725,
+    "seen": 1788533591.6954393,
+    "ast_hash": "af62aa3dc8eb68f7f582408e4f382525",
+    "semantic_hash": "af62aa3dc8eb68f7f582408e4f382525"
+  },
+  "03_Requisitos/02_Requisitos_Funcionales.md": {
+    "mtime": 1788451075.0,
+    "seen": 1788533591.6954434,
+    "ast_hash": "7d49866b8738ae95059541dbc61e3c3d",
+    "semantic_hash": "7d49866b8738ae95059541dbc61e3c3d"
+  },
+  "03_Requisitos/03_Requisitos_No_Funcionales.md": {
+    "mtime": 1788451192.0,
+    "seen": 1788533591.695447,
+    "ast_hash": "6cf9f5059eaa626ab712f8c66d0b66f1",
+    "semantic_hash": "6cf9f5059eaa626ab712f8c66d0b66f1"
+  },
+  "03_Requisitos/04_Casos_de_Uso.md": {
+    "mtime": 1788221620.948132,
+    "seen": 1788533591.6954505,
+    "ast_hash": "e2f7e530bdd6f3fab988b0031a1585f5",
+    "semantic_hash": "e2f7e530bdd6f3fab988b0031a1585f5"
+  },
+  "03_Requisitos/05_Arquitectura_del_Sistema.md": {
+    "mtime": 1788451129.0,
+    "seen": 1788533591.6954541,
+    "ast_hash": "0415c87b066be3b935206e9fab3aa888",
+    "semantic_hash": "0415c87b066be3b935206e9fab3aa888"
+  },
+  "03_Requisitos/06_Seleccion_Actuador_de_Carga.md": {
+    "mtime": 1788221870.9727418,
+    "seen": 1788533591.6954577,
+    "ast_hash": "eafe48f100b86b5d7b8bdd84b15a78b5",
+    "semantic_hash": "eafe48f100b86b5d7b8bdd84b15a78b5"
+  },
+  "03_Requisitos/10_Estrategia_Estimacion_Torque_Fusion_Sensorial.md": {
+    "mtime": 1788449742.0,
+    "seen": 1788533591.6954613,
+    "ast_hash": "db1ee7dac032b9de527364dc76d8eb76",
+    "semantic_hash": "db1ee7dac032b9de527364dc76d8eb76"
+  },
+  "04_CFD/00_XFLR5/02_Valores_Referencia_XFLR5.md": {
+    "mtime": 1788302485.8996308,
+    "seen": 1788533591.6954653,
+    "ast_hash": "9a0f63dc5dd7f6d23d122861a253723f",
+    "semantic_hash": "9a0f63dc5dd7f6d23d122861a253723f"
+  },
+  "04_CFD/00_XFLR5/03_Pipeline_General_XFLR5.md": {
+    "mtime": 1787686834.9167795,
+    "seen": 1788533591.695469,
+    "ast_hash": "934d9fdc388473cdabc285c7afdbaf15",
+    "semantic_hash": "934d9fdc388473cdabc285c7afdbaf15"
+  },
+  "04_CFD/00_XFLR5/04_Lecciones_Metodologicas_XFLR5.md": {
+    "mtime": 1787890249.791895,
+    "seen": 1788533591.6954725,
+    "ast_hash": "1200b9aab919720a2b24f64e85bb892c",
+    "semantic_hash": "1200b9aab919720a2b24f64e85bb892c"
+  },
+  "04_CFD/00_XFLR5/Simpson/GA(W)-1/01_Checklist_Simpson_GAW1.md": {
+    "mtime": 1787721911.7798128,
+    "seen": 1788533591.695476,
+    "ast_hash": "9e958308c5b717dda79e2ac30dddfc60",
+    "semantic_hash": "9e958308c5b717dda79e2ac30dddfc60"
+  },
+  "04_CFD/00_XFLR5/Simpson/NACA_0012/01_Checklist_Simpson_NACA0012.md": {
+    "mtime": 1788457557.2413948,
+    "seen": 1788533591.6954799,
+    "ast_hash": "5af54b2b6d9d0fb8b51d18f1f2b9c6b7",
+    "semantic_hash": "5af54b2b6d9d0fb8b51d18f1f2b9c6b7"
+  },
+  "04_CFD/01_Casos/01_Geometria_Aleta_Referencia.md": {
+    "mtime": 1788302131.8635702,
+    "seen": 1788533591.6954849,
+    "ast_hash": "5c72d0b092e02488e178716198904dea",
+    "semantic_hash": "5c72d0b092e02488e178716198904dea"
+  },
+  "04_CFD/01_Casos/03_Matriz_Casos_CFD_FaseB1.md": {
+    "mtime": 1788303005.0952885,
+    "seen": 1788533591.6954885,
+    "ast_hash": "c9b13ee940ec729b57614e903b5d6353",
+    "semantic_hash": "c9b13ee940ec729b57614e903b5d6353"
+  },
+  "05_Dise\u00f1o_Mec\u00e1nico/Comparacion_Alternativas_Arquitectura_Fisica.md": {
+    "mtime": 1788303317.0006607,
+    "seen": 1788533591.6954923,
+    "ast_hash": "01aef126f166bdd996eafd1be51288eb",
+    "semantic_hash": "01aef126f166bdd996eafd1be51288eb"
+  },
+  "Notas.md": {
+    "mtime": 1788459075.6868305,
+    "seen": 1788533591.6954958,
+    "ast_hash": "418155e50b522d4f84866d4da6ce34ca",
+    "semantic_hash": "418155e50b522d4f84866d4da6ce34ca"
+  },
+  "04_CFD/00_XFLR5/Nalci&Kayran/momento_bisagra_vs_beta.png": {
+    "mtime": 1787441356.3044531,
+    "seen": 1788533591.6954997,
+    "ast_hash": "d20000522499fcdb9342accc7d3d553b",
+    "semantic_hash": "d20000522499fcdb9342accc7d3d553b"
+  },
+  "04_CFD/00_XFLR5/Simpson/NACA_0012/comparacion_Ch_vs_alpha_NACA0012.png": {
+    "mtime": 1787885128.3742073,
+    "seen": 1788533591.6955037,
+    "ast_hash": "6ebfd07b1de51dd3b8a6fd090da3fb07",
+    "semantic_hash": "6ebfd07b1de51dd3b8a6fd090da3fb07"
+  }
+}
