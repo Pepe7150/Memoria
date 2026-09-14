@@ -56,8 +56,6 @@ La implementación de un banco de ensayos basado en cargas fluidodinámicas equi
 
 `En esta sección se debe responder la pregunta:¿Cómo se resuelve el problema?y para ello se espera que plantee las técnicas que utilizará, destacando los aportes que realizará en relación con lo existente, las hipótesis o condiciones de diseño iniciales.`
 
-
-
 ## Bibliografía
 
 `Esta sección demuestra el grado de investigación sobre el estado del arte y se espera que a lo menos cite a lo menos 5 autores en esta etapa.`
@@ -66,15 +64,14 @@ La implementación de un banco de ensayos basado en cargas fluidodinámicas equi
 
 `Esta herramienta de planificación permite asociar cada uno de los resultados esperados (máximo 2) con los objetivos específicos (máximo 4), asociando a cada uno de ellos actividades claves para su consecución, y establecer los hitos que permitirán verificar el cumplimiento de metas.`
 
-
 ## Rúbrica
 
 * [X] **Pertinencia del Tema** Describe con claridad el problema a abordar, justificando su pertinencia y relevancia en el contexto profesional
 * [X] **Identificación de tópicos relevantes** Presenta una síntesis de los tópicos emergentes, que sean relevantes para el proyecto, referenciando trabajos previos y detectando oportunidades.
-* [ ] **Aplicación de pensamiento crítico** Aplica pensamiento crítico para elaborar una metodología consistente, destacando los aportes que realizará en su proyecto.
-* [X] **ResponsabiSSlidad social y ética** Establece las implicancias del proyecto en los ámbitos tecnológico, económico, ambiental y social, según corresponda, en un contextode responsabilidad social y ética profesional.
+* [X] **Aplicación de pensamiento crítico** Aplica pensamiento crítico para elaborar una metodología consistente, destacando los aportes que realizará en su proyecto.
+* [X] **Responsabilidad social y ética** Establece las implicancias del proyecto en los ámbitos tecnológico, económico, ambiental y social, según corresponda, en un contextode responsabilidad social y ética profesional.
 * [X] **Objetivo General** El objetivo general apunta a la resolución del problema y es formulado en forma clara, realista, medible y concisa.
 * [X] **Objetivos específicos** Los objetivos específicos son concretos, medibles y realizables, considerando el contexto de la aplicación.
-* [ ] **Diseño Metodológico** Describe claramente la metodología de trabajo, desarrollando métodos coherentes y eficientes para la consecución de los objetivos y resultados esperados.
-* [ ] **Planificación** Asocia resultados, objetivos, actividades e hitos en forma coherente, estableciendo plazos realistas mediante una carta Gantt.
+* [X] **Diseño Metodológico** Describe claramente la metodología de trabajo, desarrollando métodos coherentes y eficientes para la consecución de los objetivos y resultados esperados.
+* [X] **Planificación** Asocia resultados, objetivos, actividades e hitos en forma coherente, estableciendo plazos realistas mediante una carta Gantt.
 * [X] **Responsabilidad** Entrega la documentación y se presenta en los tiempos establecidos.

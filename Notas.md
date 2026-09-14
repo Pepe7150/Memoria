@@ -17,8 +17,8 @@
 * [ ] Quiero tener un esquema ordenado como el de annastopoulos et al.
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí.
 * [X] Incorporar switches de fin de carrera para que el motor de carga no vaya a explotar si nada lo frena.
-* [ ] Hacer el ASD del eje y el filtro de kalman para torque.
-* [ ] revisar el ancho de banda de los componentes y el necesario.
+* [X] Hacer el ASD del eje y el filtro de kalman para torque.
+* [X] revisar el ancho de banda de los componentes y el necesario.
 * [X] Terminar de ajustar los OEs.
-* [ ] Hacer el informe con formato
+* [X] Hacer el informe con formato
 * [ ] Partir con las simulaciones en CFD cuanto antes.

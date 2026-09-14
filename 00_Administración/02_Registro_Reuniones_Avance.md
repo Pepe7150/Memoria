@@ -66,12 +66,32 @@ Respuestas:
 
 1. se medirá con strain gauges y con aproximación dinámica para estimar torque y pasarlo por un filtro de kalman. el filtro debe estar para el 11/09. Estimar torque a partir de aceleración y velocidad y deformación del strain gauge. Hay que hacer el ASD del eje.
 2. El motor de carga será un motor DC, arquitectura A.
-3. Hay dudas respecto al ancho de banda del motor, del controlador y del sistema de contro de torque en sí. Para eso se evaluará el filtro de kalman para saber si el sistema lograría controlar el torque de manera adecuada. La duda es si la frecuencia de actualización del torque que ejerce el motor de carga es suficiente para compensar el aumento de torque propio a la torsión del eje.
+3. Hay dudas respecto al ancho de banda del motor, del controlador y del sistema de control de torque en sí. Para eso se evaluará el filtro de kalman para saber si el sistema lograría controlar el torque de manera adecuada. La duda es si la frecuencia de actualización del torque que ejerce el motor de carga es suficiente para compensar el aumento de torque propio a la torsión del eje.
 4. La geometría de referencia es la NACA 0012
 5. El cálculo de momento de bisagra dimensional está listo
 6. No se realizó esta pregunta por falta de tiempo
 7. OEs validados pero faltan ajustes menores
 8. Ya no es necesaria la reunión.
+
+
+
+## Reunión 11/09/2026
+
+**Estado:** Pendiente.
+
+**Preguntas a plantear:**
+
+1. Informe y Carta Gantt
+2. Simulaciones dinámicas y Filtros de kalman
+3. Preguntar por la altura de una vez
+
+**Respuestas / acuerdos:**
+
+1. Ver bien el modelo ASD si es con 2 ángulos, 2 o 3 gdl. Ver la cantidad de mediciones que se necesitan. Hablar con vicuña siosi
+2. Ver CFD, partir pronto
+3. Para ver una envolvente de vuelo a lo mejor preguntarle a cornejo. Sino elegir algun dron X nomas o con Tinnapp.
+4. Ver un esquema quizás
+5. El calculo que tenía es considerando un solo motor y una carga, por eso solo hay un torque aplicado.
 
 ## Cómo usar este documento
 
