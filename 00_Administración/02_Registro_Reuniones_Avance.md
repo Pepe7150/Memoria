@@ -45,7 +45,7 @@
 
 ## Reunión 04/09/2026
 
-**Estado:** Por realizar (viernes).
+**Estado:** Realizada
 
 **Contexto de entrada a esta reunión:** toda la documentación del proyecto (`03_Requisitos/`, `04_CFD/`, `05_Diseño_Mecánico/`, `01_Documentos_Memoria/`) fue revisada y actualizada para reflejar consistentemente los acuerdos de la reunión del 28/08/2026 (ver resumen de propagación al inicio de este documento). Los puntos que siguen abajo son, en su mayoría, continuaciones directas de los pendientes que esa propagación dejó abiertos — no preguntas nuevas sin relación con lo ya acordado.
 
@@ -73,11 +73,9 @@ Respuestas:
 7. OEs validados pero faltan ajustes menores
 8. Ya no es necesaria la reunión.
 
-
-
 ## Reunión 11/09/2026
 
-**Estado:** Pendiente.
+**Estado:** Realizada
 
 **Preguntas a plantear:**
 
@@ -92,6 +90,19 @@ Respuestas:
 3. Para ver una envolvente de vuelo a lo mejor preguntarle a cornejo. Sino elegir algun dron X nomas o con Tinnapp.
 4. Ver un esquema quizás
 5. El calculo que tenía es considerando un solo motor y una carga, por eso solo hay un torque aplicado.
+
+## Reunión 17/09/2026
+
+**Estado:** Pendiente.
+
+**Preguntas a plantear:**
+
+1. Codigo en matlab, sistema ASD
+2. respuesta del chino al transductor
+3. Avance de CFD (geometrías y empezar a mallar)
+4. 
+
+**Respuestas / acuerdos:**
 
 ## Cómo usar este documento
 
