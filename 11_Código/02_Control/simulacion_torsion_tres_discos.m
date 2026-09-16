@@ -12,7 +12,9 @@ function simulacion_torsion_tres_discos()
 %   - Strain gauge en C  -> montado en el tramo A-C: mide T_AC = k1*(theta_A-theta_C)
 %     (theta_C y T_CB, el tramo C-B, no tienen sensor directo: se infieren del modelo)
 %
-% Estado del Kalman (8): x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B]
+% Estado del Kalman (10): x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B; biasA; biasB]
+% biasA/biasB: deriva de calibración de Kt (p.ej. térmica) que la
+% estimación "solo corriente" no puede detectar por sí sola.
 % Salidas de interés: T_A, T_B, torque transmitido (T_AC y T_CB), y
 % posición/velocidad angular de C. Sin análisis espectral; se mantiene la
 % regla heurística de ancho de banda.
@@ -75,17 +77,17 @@ bw_strain       = 30;
 bw_current_filt = 500;
 
 %% 3. CONFIGURACIÓN TEMPORAL Y PERFIL DE TORQUE DEL MOTOR A (carga, open-loop)
-fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 5;
+fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 6;   % 6s para dejar ~2s de reposo al final
 t = (0:dt_sim:T_sim-dt_sim)'; N = length(t);
 
-f_test = 0.75 * fn1;    % Prueba cerca del primer modo elástico
-
-T_A_ref = ones(N,1) * 0.5;
-idx_step = floor(N*0.2);
-T_A_ref(idx_step:end) = 4.0;
-T_A_ref = T_A_ref + 0.3*sin(2*pi*f_test*t);
-
-fprintf('Frecuencia de excitación de prueba: %.2f Hz (0.75*fn1)\n\n', f_test);
+% Perfil por tramos de tiempo: 0 Nm hasta t=1s, rampa de 0 a 4.0 Nm entre
+% t=1s y t=4s, luego se mantiene en 4.0 Nm el resto de la simulación.
+t_ramp_ini = 1.0; t_ramp_fin = 4.0;
+idx_r1 = find(t >= t_ramp_ini, 1, 'first');
+idx_r2 = find(t >= t_ramp_fin, 1, 'first');
+T_A_ref = zeros(N,1);
+T_A_ref(idx_r1:idx_r2) = linspace(0, 4.0, idx_r2-idx_r1+1)';
+T_A_ref(idx_r2:end) = 4.0;
 
 %% 4. TORQUE Y CORRIENTE REALES DEL MOTOR A (perturbación externa, open-loop)
 I_A_ref = T_A_ref / Kt_A;
@@ -97,7 +99,35 @@ I_A_true = zeros(N,1);
 for i = 2:N
     I_A_true(i) = I_A_true(i-1) + alpha_drv*(I_A_ref(i) - I_A_true(i-1));
 end
-T_A_true = Kt_A * I_A_true;
+
+% --- Deriva térmica de Kt (motor A) ---
+% El Kt real NO es constante: se calienta con la corriente y el imán
+% pierde fuerza (magnitud típica ~0.1-0.2%/°C, aquí se modela como una
+% fracción de "calentamiento acumulado", no como grados C reales, para
+% mantenerlo simple). La estimación "solo corriente" (TA_current_est,
+% sección 6.2) sigue usando el Kt NOMINAL de fábrica -- porque en la
+% realidad no conoces el Kt real en tiempo real, ese es justo el punto:
+% el Kalman podría corregir esto vía la info mecánica, que no depende de
+% Kt para nada; la estimación de corriente sola no tiene cómo saberlo.
+I_A_rated = 4.0/Kt_A;              % Corriente de referencia para normalizar el calentamiento
+% NOTA: constantes térmicas reales de bobinados suelen ser de MINUTOS, no
+% segundos -- 1.5s original hacía que la deriva se notara casi de
+% inmediato, poco creíble incluso como demo. 10s sigue siendo una versión
+% "acelerada" (no física) para que el efecto quepa en esta ventana corta
+% de simulación, pero ya no aparece instantáneo: con la rampa de carga
+% terminando recién en t=4s, para t=6s el calentamiento alcanza como
+% mucho ~1-exp(-2/10)=~18% de su valor final -- una deriva parcial y
+% gradual, no un salto brusco.
+tau_thermal = 10;                  % [s] constante de tiempo térmica (acelerada, no física)
+alpha_th = dt_sim/(tau_thermal+dt_sim);
+kt_drift_A = 0.08;                 % Fracción de caída de Kt a calentamiento pleno (8%)
+
+heatA = zeros(N,1);
+for i = 2:N
+    heatA(i) = heatA(i-1) + alpha_th*((I_A_true(i)/I_A_rated)^2 - heatA(i-1));
+end
+Kt_A_actual = Kt_A * (1 - kt_drift_A*heatA);
+T_A_true = Kt_A_actual .* I_A_true;   % Torque REAL (con Kt ya degradado)
 
 %% 5. DINÁMICA MECÁNICA REAL + LAZO DE CONTROL DE POSICIÓN DEL MOTOR B
 % Motor B ya NO recibe un perfil de torque abierto: tiene un controlador
@@ -108,10 +138,24 @@ T_A_true = Kt_A * I_A_true;
 % el mecanismo que debería mantenerlo en rango durante operación normal.
 
 theta_B_target = 0.2;   % Consigna de posición del actuador [rad] (~11.5°, dentro de +-135°)
-Kp_pos = 50;             % Ganancia proporcional [Nm/rad]
-Kd_pos = 1.5;             % Ganancia derivativa [Nms/rad]
-% (gánalas de forma conservadora; ajústalas al ancho de banda real que
-% quieras que tenga el lazo de control de tu actuador)
+
+% Ganancias del controlador (PID, no solo PD): Kp se eligió deliberadamente
+% BAJO -- sqrt(Kp/J_B) debe quedar varias veces por debajo de fn1 (revisa
+% el valor impreso arriba) para no excitar los modos estructurales. El
+% error de estado estacionario bajo carga se compensa con Ki (acción
+% lenta), no subiendo Kp. Con Kp=50 anterior, sqrt(Kp/J_B)~65 Hz -- caía
+% encima de la resonancia de C (J_C chico -> modo local de cientos de Hz)
+% y el lazo se volvía inestable de verdad, no era un problema numérico.
+% Ganancias verificadas por análisis de estabilidad en lazo cerrado
+% (autovalores del sistema completo: mecánica + retardo del driver +
+% PID -- equivalente a un root locus, resuelto numéricamente barriendo
+% miles de combinaciones y quedándome con una estable y bien amortiguada).
+% Ancho de banda nominal sqrt(Kp/J_B) ~ 13 Hz, ~5x por debajo de fn1
+% (69.2 Hz) para no excitar el primer modo elástico.
+Kp_pos = 2;               % Ganancia proporcional [Nm/rad]
+Ki_pos = 2;               % Ganancia integral [Nm/(rad*s)]
+Kd_pos = 0.1;             % Ganancia derivativa [Nms/rad]
+integral_max = 5/Ki_pos;  % Anti-windup: satura el aporte integral a +-5 Nm
 
 Ac6 = [0, 1, 0, 0, 0, 0;
       -k1/J_A, -(c1+b_A)/J_A,  k1/J_A,  c1/J_A, 0, 0;
@@ -133,13 +177,32 @@ Bd6 = Maug6d(1:n6, n6+1:end);
 x6 = zeros(6, N);
 I_B_true = zeros(N,1);
 T_B_true = zeros(N,1);
-for i = 2:N
-    % Controlador PD causal: usa el estado real del paso anterior
-    T_B_cmd = Kp_pos*(theta_B_target - x6(5,i-1)) + Kd_pos*(0 - x6(6,i-1));
+theta_err_int = 0;   % Acumulador del término integral (causal, un solo escalar)
 
-    I_B_ref_i = T_B_cmd / Kt_B;
+% Deriva térmica de Kt (motor B) -- mismo criterio que A
+I_B_rated = 3.0/Kt_B;
+kt_drift_B = 0.08;
+heatB = zeros(N,1);
+Kt_B_actual = zeros(N,1); Kt_B_actual(1) = Kt_B;
+
+for i = 2:N
+    % Controlador PID causal: usa el estado real del paso anterior
+    theta_err = theta_B_target - x6(5,i-1);
+    theta_err_int = theta_err_int + dt_sim*theta_err;
+    theta_err_int = max(min(theta_err_int, integral_max), -integral_max);  % anti-windup
+
+    % SIGNO: en la ecuación de Newton, T_B entra como "-T_B" (B resiste).
+    % El controlador tiene que dar el torque con esa convención en mente,
+    % o si no queda en realimentación positiva (inestable para CUALQUIER
+    % Kp>0, por chico que sea -- eso es lo que estaba pasando antes).
+    T_B_cmd = -(Kp_pos*theta_err + Ki_pos*theta_err_int + Kd_pos*(0 - x6(6,i-1)));
+
+    I_B_ref_i = T_B_cmd / Kt_B;   % El controlador SÍ asume el Kt nominal (no conoce la deriva)
     I_B_true(i) = I_B_true(i-1) + alpha_drv*(I_B_ref_i - I_B_true(i-1));
-    T_B_true(i) = Kt_B * I_B_true(i);
+
+    heatB(i) = heatB(i-1) + alpha_th*((I_B_true(i)/I_B_rated)^2 - heatB(i-1));
+    Kt_B_actual(i) = Kt_B * (1 - kt_drift_B*heatB(i));
+    T_B_true(i) = Kt_B_actual(i) * I_B_true(i);   % Torque REAL (con Kt ya degradado)
 
     x6(:,i) = Ad6*x6(:,i-1) + Bd6*[T_A_true(i); T_B_true(i)];
 end
@@ -194,16 +257,22 @@ for i = 2:N
     SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw(i) - SG_meas(i-1));
 end
 
-%% 7. FILTRO DE KALMAN DE 8 ESTADOS
-% x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B]
+%% 7. FILTRO DE KALMAN DE 10 ESTADOS (incluye deriva de calibración de Kt)
+% x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B; biasA; biasB]
 % Mecánica: ecuación de Newton exacta de los 3 discos. T_A, T_B: paseo
-% aleatorio (desconocidos a priori, se infieren de la corriente + el
-% resto de la dinámica).
+% aleatorio. biasA, biasB (NUEVO): la discrepancia entre "Kt_nominal*I" y
+% el torque real -- también paseo aleatorio, pero MUCHO más lento (una
+% deriva térmica cambia en segundos/minutos, no a cada paso). El sensor
+% de corriente ahora se modela como que mide (T_A + biasA), no T_A puro:
+% así el filtro puede usar el camino mecánico (que no sabe nada de Kt)
+% para notar que la corriente se está desviando, y atribuírselo a un
+% sesgo que va corrigiendo con el tiempo -- en vez de creerle ciegamente.
 %   Encoder A -> theta_A         Encoder B -> theta_B
-%   Corriente A -> T_A           Corriente B -> T_B
+%   Corriente A -> T_A + biasA   Corriente B -> T_B + biasB
 %   IMU en C -> omega_C
 %   Strain (tramo A-C) -> k1*(theta_A - theta_C)
 
+Ac10 = zeros(10,10);
 Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
       -k1/J_A, -(c1+b_A)/J_A,  k1/J_A,  c1/J_A, 0, 0, 1/J_A, 0;
        0, 0, 0, 1, 0, 0, 0, 0;
@@ -212,14 +281,16 @@ Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
        0, 0, k2/J_B, c2/J_B, -k2/J_B, -(c2+b_B)/J_B, 0, -1/J_B;
        0, 0, 0, 0, 0, 0, 0, 0;
        0, 0, 0, 0, 0, 0, 0, 0];
-Adk = expm(Ac8*dt_sim);   % Discretización exacta (misma razón que Ad6/Bd6 arriba)
+Ac10(1:8,1:8) = Ac8;   % Bloque mecánico + T_A,T_B (igual que antes)
+% Filas 9 y 10 (biasA', biasB') quedan en cero -> paseo aleatorio puro
+Adk = expm(Ac10*dt_sim);
 
-H = [1, 0, 0, 0, 0, 0, 0, 0;          % Encoder A -> theta_A
-     0, 0, 0, 0, 1, 0, 0, 0;          % Encoder B -> theta_B
-     0, 0, 0, 0, 0, 0, 1, 0;          % Corriente A -> T_A
-     0, 0, 0, 0, 0, 0, 0, 1;          % Corriente B -> T_B
-     0, 0, 0, 1, 0, 0, 0, 0;          % IMU en C -> omega_C
-     k1, 0, -k1, 0, 0, 0, 0, 0];      % Strain (A-C) -> T_AC
+H = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0;          % Encoder A -> theta_A
+     0, 0, 0, 0, 1, 0, 0, 0, 0, 0;          % Encoder B -> theta_B
+     0, 0, 0, 0, 0, 0, 1, 0, 1, 0;          % Corriente A -> T_A + biasA
+     0, 0, 0, 0, 0, 0, 0, 1, 0, 1;          % Corriente B -> T_B + biasB
+     0, 0, 0, 1, 0, 0, 0, 0, 0, 0;          % IMU en C -> omega_C
+     k1, 0, -k1, 0, 0, 0, 0, 0, 0, 0];      % Strain (A-C) -> T_AC
 
 var_enc  = noise_encoder_std^2 * alpha_enc/(2-alpha_enc);
 var_IA   = noise_current_std^2 * alpha_cs/(2-alpha_cs);
@@ -239,22 +310,30 @@ R = diag([var_enc, var_enc, (Kt_A^2)*var_IA, (Kt_B^2)*var_IB, var_imu, var_sg]);
 q_theta = 1e-10;      % Posición: el encoder ya es muy preciso, casi no hace falta
 q_omega = 5e-5;       % Velocidad: antes casi nula (1e-10) -> el filtro ignoraba la IMU
 q_TA_density = 0.01; q_TB_density = 0.01;   % [Nm^2/s] (antes 400 -> saturaba la ganancia en ~1)
+% q_bias: MUCHO más lento que q_TA/TB -- una deriva térmica no cambia a
+% cada paso, cambia en segundos. Si lo pones tan rápido como T_A/T_B, el
+% filtro no puede distinguir "es un cambio real de torque" de "es una
+% deriva de calibración" -- lento a propósito para que solo capture
+% tendencias sostenidas, no el ruido normal del torque real.
+q_bias_density = 1e-5;
 Q = diag([q_theta, q_omega, q_theta, q_omega, q_theta, q_omega, ...
-          q_TA_density*dt_sim, q_TB_density*dt_sim]);
+          q_TA_density*dt_sim, q_TB_density*dt_sim, ...
+          q_bias_density*dt_sim, q_bias_density*dt_sim]);
 
-fprintf('=== SINTONÍA DEL KALMAN (8 estados) ===\n');
+fprintf('=== SINTONÍA DEL KALMAN (10 estados, con deriva de Kt) ===\n');
 fprintf('R encoder (A y B): %.3e rad^2\n', var_enc);
 fprintf('R corriente A:     %.3e Nm^2\n', R(3,3));
 fprintf('R corriente B:     %.3e Nm^2\n', R(4,4));
 fprintf('R IMU (omega_C):   %.3e (rad/s)^2\n', var_imu);
 fprintf('R strain (T_AC):   %.3e Nm^2\n', var_sg);
 fprintf('Q torque A/B:      %.3e Nm^2 por paso\n', Q(7,7));
-fprintf('=========================================\n\n');
+fprintf('Q bias A/B:        %.3e Nm^2 por paso (mucho más lento)\n', Q(9,9));
+fprintf('===========================================================\n\n');
 
-x_est = zeros(8,1);
-P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10]);
+x_est = zeros(10,1);
+P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1]);
 
-X_hist = zeros(8, N);
+X_hist = zeros(10, N);
 for i = 2:N
     x_pred = Adk*x_est;
     P_pred = Adk*P*Adk' + Q;
@@ -266,7 +345,7 @@ for i = 2:N
     K = (P_pred*H') / S;
 
     x_est = x_pred + K*y_innov;
-    P = (eye(8) - K*H)*P_pred;
+    P = (eye(10) - K*H)*P_pred;
 
     X_hist(:,i) = x_est;
 end
@@ -275,9 +354,15 @@ thetaA_kf = X_hist(1,:)'; omegaA_kf = X_hist(2,:)';
 thetaC_kf = X_hist(3,:)'; omegaC_kf = X_hist(4,:)';
 thetaB_kf = X_hist(5,:)'; omegaB_kf = X_hist(6,:)';
 T_A_kf    = X_hist(7,:)'; T_B_kf    = X_hist(8,:)';
+biasA_kf  = X_hist(9,:)'; biasB_kf  = X_hist(10,:)';
 
 T_AC_kf = k1*(thetaA_kf-thetaC_kf) + c1*(omegaA_kf-omegaC_kf);
 T_CB_kf = k2*(thetaC_kf-thetaB_kf) + c2*(omegaC_kf-omegaB_kf);
+
+% Sesgo REAL inducido por la deriva térmica (para comparar contra lo que
+% el filtro logró estimar en biasA_kf/biasB_kf)
+biasA_true = TA_current_est - T_A_true;
+biasB_true = TB_current_est - T_B_true;
 
 %% 8. RESULTADOS Y GRÁFICOS
 
@@ -287,16 +372,16 @@ plot(t, T_A_true, 'k--', 'LineWidth', 2); hold on;
 plot(t, TA_current_est, 'm', 'LineWidth', 1);
 plot(t, T_A_kf, 'b', 'LineWidth', 2);
 ylabel('T_A (Nm)'); grid on; xlim([0 T_sim]);
-legend('Real', 'Solo corriente', 'Kalman', 'Location', 'best');
-title('Torque Motor A');
+legend('Real', 'Solo corriente (Kt nominal, sesgada)', 'Kalman', 'Location', 'best');
+title('Torque Motor A (con deriva térmica de Kt)');
 
 subplot(2,1,2);
 plot(t, T_B_true, 'k--', 'LineWidth', 2); hold on;
 plot(t, TB_current_est, 'm', 'LineWidth', 1);
 plot(t, T_B_kf, 'r', 'LineWidth', 2);
 ylabel('T_B (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
-legend('Real', 'Solo corriente', 'Kalman', 'Location', 'best');
-title('Torque Motor B');
+legend('Real', 'Solo corriente (Kt nominal, sesgada)', 'Kalman', 'Location', 'best');
+title('Torque Motor B (con deriva térmica de Kt)');
 
 figure('Name', 'Torque Transmitido (tramos A-C y C-B)', 'Color', 'w', 'Position', [70,70,950,700]);
 subplot(2,1,1);
@@ -340,11 +425,16 @@ rmse_TAC_sg  = rmse(SG_meas-T_AC_true);       rmse_TAC_kf = rmse(T_AC_kf-T_AC_tr
 rmse_wC_imu  = rmse(omegaC_meas-omega_C_true); rmse_wC_kf = rmse(omegaC_kf-omega_C_true);
 
 fprintf('=== MÉTRICAS DE DESEMPEÑO ===\n');
-fprintf('--- Torque motores ---\n');
+fprintf('--- Torque motores (con deriva térmica de Kt activa) ---\n');
 fprintf('T_A - RMSE solo corriente: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
     rmse_TA_curr, rmse_TA_kf, mejora(rmse_TA_curr, rmse_TA_kf));
 fprintf('T_B - RMSE solo corriente: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
     rmse_TB_curr, rmse_TB_kf, mejora(rmse_TB_curr, rmse_TB_kf));
+fprintf('--- Deriva de Kt (sesgo aprendido vs sesgo real) ---\n');
+fprintf('biasA - RMSE Kalman vs sesgo real: %.4f Nm (sesgo real final: %.4f Nm)\n', ...
+    rmse(biasA_kf-biasA_true), biasA_true(end));
+fprintf('biasB - RMSE Kalman vs sesgo real: %.4f Nm (sesgo real final: %.4f Nm)\n', ...
+    rmse(biasB_kf-biasB_true), biasB_true(end));
 fprintf('--- Torque transmitido ---\n');
 fprintf('T_AC - RMSE solo strain: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
     rmse_TAC_sg, rmse_TAC_kf, mejora(rmse_TAC_sg, rmse_TAC_kf));
