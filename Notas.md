@@ -19,6 +19,7 @@
 * [X] revisar el ancho de banda de los componentes y el necesario.
 * [X] Terminar de ajustar los OEs.
 * [X] Hacer el informe con formato
+* [X] Revisar que hay archivos de documentación que están duplicados en texto
 * [ ] Partir con las simulaciones en CFD cuanto antes.
 * [ ] Quiero tener un esquema ordenado como el de annastopoulos et al. Para eso falta tener el sistema completamente definido y cerrado
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
@@ -28,7 +29,6 @@
 * [ ] Evaluar si el lazo de todo el sistema responde mejor al torque o a la posición
 * [ ] Ver que dicen los chinos del transductor de torque
 * [ ] en el modelo dinámico a lo mejor tirar la mitad de la inercia del eje mismo por lado (A y C o B y C), aunque vicuña dijo que la inercia del eje suele ser casi insignificante
-* [ ] Agregar revisón a la hora de integrar que los cables no interfieran con el movimiento o que cambien la inercia al ser un sistema muy pequeño.
+* [ ] Agregar revisión a la hora de integrar que los cables no interfieran con el movimiento o que cambien la inercia al ser un sistema muy pequeño.
 * [ ] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos
-* [ ] Revisar que hay archivos de documentación que están duplicados en texto
 * [ ]

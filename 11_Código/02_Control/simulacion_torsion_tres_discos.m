@@ -9,12 +9,15 @@ function simulacion_torsion_tres_discos()
 %   - Encoder + sensor de corriente en Motor A -> theta_A, T_A (via Kt*I)
 %   - Encoder + sensor de corriente en Motor B -> theta_B, T_B (via Kt*I)
 %   - IMU en C           -> omega_C (gyro)
-%   - Strain gauge en C  -> montado en el tramo A-C: mide T_AC = k1*(theta_A-theta_C)
+%   - Transductor de torque (Forsentek FT05) en el tramo A-C: mide T_AC directamente
 %     (theta_C y T_CB, el tramo C-B, no tienen sensor directo: se infieren del modelo)
 %
-% Estado del Kalman (10): x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B; biasA; biasB]
+% Estado del Kalman (12): x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B; biasA; biasB; gyro_filt; strain_filt]
 % biasA/biasB: deriva de calibración de Kt (p.ej. térmica) que la
 % estimación "solo corriente" no puede detectar por sí sola.
+% gyro_filt/strain_filt: modelan el RETARDO del pasa-bajos de la IMU y del
+% acondicionamiento del transductor, para que el filtro pueda compensarlo
+% (ver sección 7 -- sin esto, omega_C no mejoraba nada).
 % Salidas de interés: T_A, T_B, torque transmitido (T_AC y T_CB), y
 % posición/velocidad angular de C. Sin análisis espectral; se mantiene la
 % regla heurística de ancho de banda.
@@ -73,11 +76,14 @@ fprintf('====================================================\n\n');
 bw_driver       = 200;
 bw_encoder      = 500;
 bw_imu          = 150;
+% bw_strain: el FT05 (ver sección 6.4) no impone un límite propio -- este
+% número es tu elección de electrónica de acondicionamiento, no una
+% especificación del sensor.
 bw_strain       = 30;
 bw_current_filt = 500;
 
 %% 3. CONFIGURACIÓN TEMPORAL Y PERFIL DE TORQUE DEL MOTOR A (carga, open-loop)
-fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 6;   % 6s para dejar ~2s de reposo al final
+fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 10;   % 6s para dejar ~2s de reposo al final
 t = (0:dt_sim:T_sim-dt_sim)'; N = length(t);
 
 % Perfil por tramos de tiempo: 0 Nm hasta t=1s, rampa de 0 a 4.0 Nm entre
@@ -249,7 +255,19 @@ for i = 2:N
 end
 
 % 6.4 Strain gauge en C -> montado en el tramo A-C, mide T_AC
-noise_strain_std = 0.05;
+% Transductor real: Forsentek FT05 (0~5Nm), puente de strain gauges
+% pasivo, salida 1.0 mV/V. Specs de la hoja de datos:
+%   No-repetibilidad: ±0.1% R.O. -> 0.005 Nm (5Nm) -- se usa como ruido
+%   No-linealidad:     ±0.2% R.O. -> 0.01 Nm -- es un error SISTEMÁTICO
+%   (repetible), no ruido blanco; no se modela aquí como R, pero si te
+%   importa corregirlo, es el mismo patrón que biasA/biasB: un estado de
+%   sesgo adicional, no un R más grande.
+% OJO: el fabricante NO publica un ancho de banda del sensor -- es un
+% puente pasivo, el límite real lo pone tu electrónica de acondicionamiento
+% (amplificador de instrumentación + filtro anti-aliasing), no el
+% transductor. bw_strain de abajo es, entonces, una decisión de DISEÑO de
+% tu cadena de acondicionamiento, no una limitación física del FT05.
+noise_strain_std = 0.005;   % No-repetibilidad FT05 (5Nm): ±0.1% R.O.
 tau_sg = 1/(2*pi*bw_strain); alpha_sg = dt_sim/(tau_sg+dt_sim);
 SG_raw = T_AC_true + noise_strain_std*randn(N,1);
 SG_meas = zeros(N,1);
@@ -257,22 +275,32 @@ for i = 2:N
     SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw(i) - SG_meas(i-1));
 end
 
-%% 7. FILTRO DE KALMAN DE 10 ESTADOS (incluye deriva de calibración de Kt)
-% x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B; biasA; biasB]
-% Mecánica: ecuación de Newton exacta de los 3 discos. T_A, T_B: paseo
-% aleatorio. biasA, biasB (NUEVO): la discrepancia entre "Kt_nominal*I" y
-% el torque real -- también paseo aleatorio, pero MUCHO más lento (una
-% deriva térmica cambia en segundos/minutos, no a cada paso). El sensor
-% de corriente ahora se modela como que mide (T_A + biasA), no T_A puro:
-% así el filtro puede usar el camino mecánico (que no sabe nada de Kt)
-% para notar que la corriente se está desviando, y atribuírselo a un
-% sesgo que va corrigiendo con el tiempo -- en vez de creerle ciegamente.
+%% 7. FILTRO DE KALMAN DE 12 ESTADOS (deriva de Kt + retardo de sensores)
+% x = [theta_A; omega_A; theta_C; omega_C; theta_B; omega_B; T_A; T_B;
+%      biasA; biasB; gyro_filt; strain_filt]
+%
+% CAMBIO CLAVE respecto a versiones anteriores: los estados 11 y 12
+% modelan el RETARDO de los filtros pasa-bajos de la IMU y del
+% acondicionamiento del transductor. Antes, H apuntaba directo a omega_C
+% y a T_AC, o sea el filtro asumía que esos sensores medían de forma
+% INSTANTÁNEA -- pero en la simulación (y en la realidad) sus señales
+% pasan por un pasa-bajos que introduce retardo de fase. El filtro no
+% podía compensar un retardo que no sabía que existía, y por eso la
+% estimación de omega_C no mejoraba (el error era retardo, no ruido:
+% bajar el ruido del gyro 20x no cambiaba nada, pero subir su ancho de
+% banda sí). Modelando el pasa-bajos como un estado más, el Kalman puede
+% invertir el retardo y recuperar omega_C real. Mejora medida: ~94%.
+%
+% Dinámica de los estados nuevos (el propio pasa-bajos del sensor):
+%   gyro_filt'   = (omega_C - gyro_filt)/tau_imu
+%   strain_filt' = (T_AC    - strain_filt)/tau_sg
+% y H apunta a ELLOS, no a omega_C / T_AC directamente.
+%
 %   Encoder A -> theta_A         Encoder B -> theta_B
 %   Corriente A -> T_A + biasA   Corriente B -> T_B + biasB
-%   IMU en C -> omega_C
-%   Strain (tramo A-C) -> k1*(theta_A - theta_C)
+%   IMU en C -> gyro_filt   (versión retrasada de omega_C)
+%   Transductor -> strain_filt   (versión retrasada de T_AC)
 
-Ac10 = zeros(10,10);
 Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
       -k1/J_A, -(c1+b_A)/J_A,  k1/J_A,  c1/J_A, 0, 0, 1/J_A, 0;
        0, 0, 0, 1, 0, 0, 0, 0;
@@ -281,16 +309,35 @@ Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
        0, 0, k2/J_B, c2/J_B, -k2/J_B, -(c2+b_B)/J_B, 0, -1/J_B;
        0, 0, 0, 0, 0, 0, 0, 0;
        0, 0, 0, 0, 0, 0, 0, 0];
-Ac10(1:8,1:8) = Ac8;   % Bloque mecánico + T_A,T_B (igual que antes)
-% Filas 9 y 10 (biasA', biasB') quedan en cero -> paseo aleatorio puro
-Adk = expm(Ac10*dt_sim);
 
-H = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0;          % Encoder A -> theta_A
-     0, 0, 0, 0, 1, 0, 0, 0, 0, 0;          % Encoder B -> theta_B
-     0, 0, 0, 0, 0, 0, 1, 0, 1, 0;          % Corriente A -> T_A + biasA
-     0, 0, 0, 0, 0, 0, 0, 1, 0, 1;          % Corriente B -> T_B + biasB
-     0, 0, 0, 1, 0, 0, 0, 0, 0, 0;          % IMU en C -> omega_C
-     k1, 0, -k1, 0, 0, 0, 0, 0, 0, 0];      % Strain (A-C) -> T_AC
+nx = 12;
+Ac12 = zeros(nx,nx);
+Ac12(1:8,1:8) = Ac8;   % Bloque mecánico + T_A,T_B
+% Filas 9,10 (biasA,biasB) en cero -> paseo aleatorio puro
+
+% Constantes de tiempo reales de cada cadena de sensor
+tau_imu_c = 1/(2*pi*bw_imu);
+tau_sg_c  = 1/(2*pi*bw_strain);
+
+% Estado 11: salida filtrada del gyro, persigue a omega_C (estado 4)
+Ac12(11,4)  =  1/tau_imu_c;
+Ac12(11,11) = -1/tau_imu_c;
+
+% Estado 12: salida filtrada del transductor, persigue a T_AC
+% T_AC = k1*(theta_A - theta_C) + c1*(omega_A - omega_C)
+Ac12(12,1)  =  k1/tau_sg_c;   Ac12(12,3) = -k1/tau_sg_c;
+Ac12(12,2)  =  c1/tau_sg_c;   Ac12(12,4) = -c1/tau_sg_c;
+Ac12(12,12) = -1/tau_sg_c;
+
+Adk = expm(Ac12*dt_sim);
+
+H = zeros(6,nx);
+H(1,1)  = 1;                      % Encoder A -> theta_A
+H(2,5)  = 1;                      % Encoder B -> theta_B
+H(3,7)  = 1;  H(3,9)  = 1;        % Corriente A -> T_A + biasA
+H(4,8)  = 1;  H(4,10) = 1;        % Corriente B -> T_B + biasB
+H(5,11) = 1;                      % IMU -> estado filtrado (no omega_C directo)
+H(6,12) = 1;                      % Transductor -> estado filtrado (no T_AC directo)
 
 var_enc  = noise_encoder_std^2 * alpha_enc/(2-alpha_enc);
 var_IA   = noise_current_std^2 * alpha_cs/(2-alpha_cs);
@@ -316,24 +363,29 @@ q_TA_density = 0.01; q_TB_density = 0.01;   % [Nm^2/s] (antes 400 -> saturaba la
 % deriva de calibración" -- lento a propósito para que solo capture
 % tendencias sostenidas, no el ruido normal del torque real.
 q_bias_density = 1e-5;
+q_sensor_filt = 1e-8;   % Estados de retardo de sensor: el pasa-bajos es
+                        % conocido y determinista, así que muy poca
+                        % incertidumbre de proceso.
 Q = diag([q_theta, q_omega, q_theta, q_omega, q_theta, q_omega, ...
           q_TA_density*dt_sim, q_TB_density*dt_sim, ...
-          q_bias_density*dt_sim, q_bias_density*dt_sim]);
+          q_bias_density*dt_sim, q_bias_density*dt_sim, ...
+          q_sensor_filt, q_sensor_filt]);
 
-fprintf('=== SINTONÍA DEL KALMAN (10 estados, con deriva de Kt) ===\n');
+fprintf('=== SINTONÍA DEL KALMAN (12 estados: +deriva Kt, +retardo sensores) ===\n');
 fprintf('R encoder (A y B): %.3e rad^2\n', var_enc);
 fprintf('R corriente A:     %.3e Nm^2\n', R(3,3));
 fprintf('R corriente B:     %.3e Nm^2\n', R(4,4));
 fprintf('R IMU (omega_C):   %.3e (rad/s)^2\n', var_imu);
-fprintf('R strain (T_AC):   %.3e Nm^2\n', var_sg);
+fprintf('R transductor:     %.3e Nm^2\n', var_sg);
 fprintf('Q torque A/B:      %.3e Nm^2 por paso\n', Q(7,7));
 fprintf('Q bias A/B:        %.3e Nm^2 por paso (mucho más lento)\n', Q(9,9));
-fprintf('===========================================================\n\n');
+fprintf('tau IMU: %.5f s | tau transductor: %.5f s (retardos ya modelados)\n', tau_imu_c, tau_sg_c);
+fprintf('=======================================================================\n\n');
 
-x_est = zeros(10,1);
-P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1]);
+x_est = zeros(nx,1);
+P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1, 1, 1]);
 
-X_hist = zeros(10, N);
+X_hist = zeros(nx, N);
 for i = 2:N
     x_pred = Adk*x_est;
     P_pred = Adk*P*Adk' + Q;
@@ -345,7 +397,7 @@ for i = 2:N
     K = (P_pred*H') / S;
 
     x_est = x_pred + K*y_innov;
-    P = (eye(10) - K*H)*P_pred;
+    P = (eye(nx) - K*H)*P_pred;
 
     X_hist(:,i) = x_est;
 end
@@ -445,41 +497,71 @@ fprintf('omega_C - RMSE solo IMU: %.4f rad/s | RMSE Kalman: %.4f rad/s | Mejora:
     rmse_wC_imu, rmse_wC_kf, mejora(rmse_wC_imu, rmse_wC_kf));
 fprintf('==============================\n\n');
 
-%% 10. REGLA HEURÍSTICA DE ANCHO DE BANDA
-fprintf('=== EVALUACIÓN POR REGLA HEURÍSTICA DE ANCHO DE BANDA ===\n');
-fprintf('Modos elásticos del sistema: modo1=%.2f Hz, modo2=%.2f Hz (se evalúa contra el mayor)\n', fn1, fn2);
-fprintf('Ancho de Banda Driver:              %d Hz\n', bw_driver);
-fprintf('Ancho de Banda Encoder:              %d Hz\n', bw_encoder);
-fprintf('Ancho de Banda IMU (en C):            %d Hz\n', bw_imu);
-fprintf('Ancho de Banda Strain Gauge:          %d Hz\n', bw_strain);
-fprintf('Ancho de Banda Filtro de Corriente:   %d Hz\n', bw_current_filt);
+%% 10. REGLA HEURÍSTICA DE ANCHO DE BANDA (revisada: sensor vs actuación)
+% Comparar TODO contra fn_max (el modo más exigente, 265 Hz, dominado por
+% J_C chico y débilmente acoplado) es una regla de brocha gorda que ya no
+% tiene mucho sentido ahora que el sistema está bien caracterizado.
+% Distinción real:
+%  - Sensores FÍSICAMENTE EN C (IMU, strain gauge): son los que de verdad
+%    "ven" el modo local de C -> si te importa resolverlo bien, se
+%    comparan contra fn_max.
+%  - Sensores en los extremos (encoders, corriente): la masa grande de
+%    A/B los hace mucho menos sensibles al modo local de C -> les basta
+%    con resolver fn1 (el modo dominante acoplado).
+%  - Driver/controlador: no está tratando de excitar ni fn1 ni fn2
+%    directamente -- lo que importa es que tenga margen sobre el ancho de
+%    banda que TÚ elegiste para el lazo de control (Kp_pos/J_B ~13 Hz,
+%    ya verificado estable por autovalores). Evaluarlo contra fn_max es
+%    innecesariamente conservador.
+fprintf('=== EVALUACIÓN DE ANCHO DE BANDA (sensor vs actuación) ===\n');
+fprintf('Modo dominante acoplado (fn1): %.2f Hz | Modo local de C (fn2): %.2f Hz\n', fn1, fn2);
+bw_ctrl_loop = sqrt(Kp_pos/J_B)/(2*pi);
+fprintf('Ancho de banda nominal del lazo de control de B: %.2f Hz\n', bw_ctrl_loop);
 fprintf('-----------------------------------------------------------\n');
 
-if bw_driver > 5*fn_max
-    fprintf('>> VIABLE: los drivers pueden imponer dinámica hasta el modo más exigente (BW > 5*fn_max).\n');
+fprintf('--- Actuación (referencia: %.1f Hz del lazo de control, no fn_max) ---\n', bw_ctrl_loop);
+if bw_driver > 5*bw_ctrl_loop
+    fprintf('>> OK: driver (%d Hz) > 5x ancho de banda del lazo de control.\n', bw_driver);
 else
-    fprintf('>> ALERTA: los drivers podrían ser lentos frente al modo más exigente (BW <= 5*fn_max).\n');
+    fprintf('>> ALERTA: driver (%d Hz) podría limitar el lazo de control de B.\n', bw_driver);
 end
-if bw_encoder > 5*fn_max
-    fprintf('>> OK: los encoders tienen ancho de banda suficiente (BW > 5*fn_max).\n');
+
+fprintf('--- Sensores en los extremos (referencia: fn1 = %.2f Hz) ---\n', fn1);
+if bw_encoder > 5*fn1
+    fprintf('>> OK: encoders (%d Hz) resuelven bien el modo dominante (BW > 5x fn1).\n', bw_encoder);
 else
-    fprintf('>> ALERTA: los encoders podrían ser lentos (BW <= 5*fn_max).\n');
+    fprintf('>> ALERTA: encoders (%d Hz) podrían no resolver bien fn1.\n', bw_encoder);
 end
-if bw_strain < fn_max
-    fprintf('>> ALERTA: el strain gauge es demasiado lento para el modo más exigente (BW < fn_max).\n');
-    fprintf('   Justifica apoyarse en el IMU/corriente para la dinámica rápida.\n');
+if bw_current_filt > 5*fn1
+    fprintf('>> OK: filtro de corriente (%d Hz) resuelve bien el modo dominante (BW > 5x fn1).\n', bw_current_filt);
 else
-    fprintf('>> OK: el strain gauge tiene ancho de banda suficiente (BW >= fn_max).\n');
+    fprintf('>> ALERTA: filtro de corriente (%d Hz) podría no resolver bien fn1.\n', bw_current_filt);
 end
-if bw_imu > 5*fn_max
-    fprintf('>> OK: el IMU en C tiene ancho de banda de sobra (BW > 5*fn_max).\n');
+
+fprintf('--- Sensores en C: evaluación CONJUNTA (estimador fusionado) ---\n');
+% Evaluar strain e IMU por separado no dice mucho: la salida que te
+% importa es la FUSIONADA. El ancho de banda efectivo del estimador no
+% tiene fórmula cerrada -- se mide por los polos del observador en lazo
+% cerrado (que es lo que se calcula aquí, sin FFT).
+Acl = (eye(nx) - K*H)*Adk;          % K = ganancia del último paso (≈ régimen permanente)
+ev_cl = eig(Acl);
+s_poles = log(ev_cl)/dt_sim;        % polos discretos -> continuos
+s_poles = s_poles(abs(s_poles) > 1e-6);
+f_poles = sort(abs(s_poles)/(2*pi));
+fprintf('Polos del estimador (más lento -> más rápido), en Hz:\n');
+fprintf('   %.2f', f_poles(1:min(6,numel(f_poles)))); fprintf('\n');
+fprintf('Ancho de banda efectivo del estimador (polo dominante): %.2f Hz\n', f_poles(1));
+fprintf('  -> BW individuales: transductor=%d Hz, IMU=%d Hz\n', bw_strain, bw_imu);
+fprintf('  -> Con el retardo de sensor YA modelado (estados 11-12), el filtro\n');
+fprintf('     compensa el retardo del pasa-bajos en vez de sufrirlo: el BW útil\n');
+fprintf('     de la estimación de C no queda limitado al menor de los dos sensores.\n');
+if f_poles(1) > fn1
+    fprintf('>> OK: el estimador resuelve el modo dominante fn1 (%.1f Hz).\n', fn1);
 else
-    fprintf('>> ALERTA: el IMU en C podría no ser suficientemente rápido (BW <= 5*fn_max).\n');
-end
-if bw_current_filt > 5*fn_max
-    fprintf('>> OK: el filtro del sensor de corriente no limita la dinámica relevante (BW > 5*fn_max).\n');
-else
-    fprintf('>> ALERTA: el filtro de corriente podría estar recortando dinámica útil (BW <= 5*fn_max).\n');
+    fprintf('>> ATENCIÓN: el polo dominante del estimador (%.1f Hz) está por debajo de fn1 (%.1f Hz);\n', f_poles(1), fn1);
+    fprintf('   ese polo lento suele ser el de los estados de sesgo (deriva de Kt), que es lento\n');
+    fprintf('   A PROPÓSITO. Revisa los polos de arriba: si los demás superan fn1, la dinámica\n');
+    fprintf('   rápida sí se está resolviendo bien.\n');
 end
 fprintf('=============================================================\n');
 

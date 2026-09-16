@@ -12,7 +12,9 @@ extruido una celda en z para que quede como un caso 2D pseudo-3D de OpenFOAM
 (patches "front" y "back" tipo empty).
 
 Uso típico (uno por cada .dat generado en el paso de geometría):
-    python naca_mesh_gmsh.py --dat geometrias/naca0012_delta+10.0.dat \ --out mallas/naca0012_delta+10.msh \--yplus-height 3e-6 --farfield 20
+    python naca_mesh_gmsh.py --dat geometrias/naca0012_delta+10.0.dat \
+        --out mallas/naca0012_delta+10.msh \
+        --yplus-height 3e-6 --farfield 20
 
 El valor de --yplus-height es la altura de la primera celda junto a la pared
 (y1), que depende del Reynolds más alto de tu barrido de Mach/AoA para ese
@@ -90,21 +92,30 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     airfoil_curves = [spline_upper, spline_lower, te_line]
 
     # --- 2. Dominio exterior tipo C: semicírculo aguas arriba + rectángulo aguas abajo ---
+    # OJO: un único addCircleArc de 3 puntos (inicio, centro, fin) no garantiza
+    # tomar la vuelta larga; con puntos casi opuestos, Gmsh puede tomar el arco
+    # corto por el lado equivocado (aguas abajo, cruzando el dominio) y dejar
+    # el lazo exterior mal formado. Por eso partimos el semicírculo en dos
+    # arcos de 90°, que sí son inequívocos, encontrándose en el punto más a
+    # la izquierda (el "morro" del dominio, aguas arriba del perfil).
     R = farfield_radius
     L = wake_length
 
-    p_top_te = occ.addPoint(1.0, R, 0, farfield_size)
-    p_bot_te = occ.addPoint(1.0, -R, 0, farfield_size)
+    p_top = occ.addPoint(0.0, R, 0, farfield_size)
+    p_bot = occ.addPoint(0.0, -R, 0, farfield_size)
+    p_left = occ.addPoint(-R, 0.0, 0, farfield_size)
+    p_center = occ.addPoint(0.0, 0.0, 0, farfield_size)
     p_top_out = occ.addPoint(1.0 + L, R, 0, farfield_size)
     p_bot_out = occ.addPoint(1.0 + L, -R, 0, farfield_size)
-    p_center = occ.addPoint(0.0, 0.0, 0, farfield_size)
 
-    arc = occ.addCircleArc(p_top_te, p_center, p_bot_te)
-    l_top = occ.addLine(p_top_te, p_top_out)
+    arc_top = occ.addCircleArc(p_top, p_center, p_left)
+    arc_bot = occ.addCircleArc(p_left, p_center, p_bot)
+    l_top = occ.addLine(p_top, p_top_out)
     l_out = occ.addLine(p_top_out, p_bot_out)
-    l_bot = occ.addLine(p_bot_out, p_bot_te)
+    l_bot = occ.addLine(p_bot_out, p_bot)
 
-    outer_loop = occ.addCurveLoop([arc, l_top, l_out, l_bot])
+    outer_loop = occ.addCurveLoop([arc_top, l_top, l_out, l_bot, arc_bot])
+    farfield_arc_curves = {arc_top, arc_bot}
 
     surface = occ.addPlaneSurface([outer_loop, airfoil_loop])
     occ.synchronize()
@@ -145,16 +156,49 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     gmsh.model.mesh.generate(3)
 
     # --- 6. Grupos físicos: nombres de patch que gmshToFoam va a respetar ---
+    # No confiamos en el orden en que 'extrude' devuelve las superficies (varía
+    # según versión/kernel). En vez de eso, para cada superficie lateral miramos
+    # qué curva de base la generó (el extrude conserva la curva original como
+    # borde de la nueva cara), y así la clasificamos sin ambigüedad.
     vol_tag = [e[1] for e in ext if e[0] == 3][0]
     gmsh.model.addPhysicalGroup(3, [vol_tag], name="internal")
 
-    # OJO: los tags de superficies laterales del extrude dependen del orden de
-    # curvas del loop exterior + perfil; revisa con gmsh.model.getEntities(2)
-    # y ajusta estos nombres a tu caso si tu contorno exterior tiene otro orden.
-    surf_entities = [e for e in ext if e[0] == 2]
-    print("Superficies generadas por el extrude (revisar antes de nombrar patches):")
-    for e in surf_entities:
-        print("  ", e)
+    airfoil_curve_set = set(airfoil_curves)
+    base_curve_ids = airfoil_curve_set | farfield_arc_curves | {l_top, l_out, l_bot}
+    airfoil_tags, farfield_tags, outlet_tags = [], [], []
+    front_tag = None
+
+    for dim, tag in gmsh.model.getEntities(2):
+        if tag == surface:
+            continue  # esta es "back", se agrega aparte más abajo
+        bnd = gmsh.model.getBoundary([(2, tag)], oriented=False, combined=False)
+        curve_ids = {abs(c[1]) for c in bnd}
+
+        if curve_ids & airfoil_curve_set:
+            airfoil_tags.append(tag)
+        elif l_out in curve_ids:
+            outlet_tags.append(tag)
+        elif curve_ids & (farfield_arc_curves | {l_top, l_bot}):
+            farfield_tags.append(tag)
+        elif not (curve_ids & base_curve_ids):
+            # no toca ninguna curva original del dominio 2D -> es la tapa
+            # nueva creada por el extrude (la "top face", a z = extrude_z)
+            front_tag = tag
+
+    if front_tag is None:
+        raise RuntimeError("No se identificó la tapa 'front' del extrude; revisa la geometría.")
+
+    gmsh.model.addPhysicalGroup(2, airfoil_tags, name="airfoil")
+    gmsh.model.addPhysicalGroup(2, farfield_tags, name="farfield")
+    gmsh.model.addPhysicalGroup(2, outlet_tags, name="outlet")
+    gmsh.model.addPhysicalGroup(2, [front_tag], name="front")
+    gmsh.model.addPhysicalGroup(2, [surface], name="back")
+
+    print("Patches creados:")
+    print(f"  airfoil  -> {len(airfoil_tags)} superficie(s)")
+    print(f"  farfield -> {len(farfield_tags)} superficie(s)  (arco + costados sup/inf)")
+    print(f"  outlet   -> {len(outlet_tags)} superficie(s)")
+    print(f"  front/back -> tags {front_tag} / {surface} (empty, para el caso pseudo-2D)")
 
     gmsh.option.setNumber("Mesh.SaveAll", 0)
     gmsh.option.setNumber("Mesh.MshFileVersion", 2.2)
