@@ -83,7 +83,7 @@ bw_strain       = 30;
 bw_current_filt = 500;
 
 %% 3. CONFIGURACIÓN TEMPORAL Y PERFIL DE TORQUE DEL MOTOR A (carga, open-loop)
-fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 10;   % 6s para dejar ~2s de reposo al final
+fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 6;   % 6s para dejar ~2s de reposo al final
 t = (0:dt_sim:T_sim-dt_sim)'; N = length(t);
 
 % Perfil por tramos de tiempo: 0 Nm hasta t=1s, rampa de 0 a 4.0 Nm entre
@@ -539,30 +539,17 @@ else
 end
 
 fprintf('--- Sensores en C: evaluación CONJUNTA (estimador fusionado) ---\n');
-% Evaluar strain e IMU por separado no dice mucho: la salida que te
-% importa es la FUSIONADA. El ancho de banda efectivo del estimador no
-% tiene fórmula cerrada -- se mide por los polos del observador en lazo
-% cerrado (que es lo que se calcula aquí, sin FFT).
-Acl = (eye(nx) - K*H)*Adk;          % K = ganancia del último paso (≈ régimen permanente)
-ev_cl = eig(Acl);
-s_poles = log(ev_cl)/dt_sim;        % polos discretos -> continuos
-s_poles = s_poles(abs(s_poles) > 1e-6);
-f_poles = sort(abs(s_poles)/(2*pi));
-fprintf('Polos del estimador (más lento -> más rápido), en Hz:\n');
-fprintf('   %.2f', f_poles(1:min(6,numel(f_poles)))); fprintf('\n');
-fprintf('Ancho de banda efectivo del estimador (polo dominante): %.2f Hz\n', f_poles(1));
-fprintf('  -> BW individuales: transductor=%d Hz, IMU=%d Hz\n', bw_strain, bw_imu);
-fprintf('  -> Con el retardo de sensor YA modelado (estados 11-12), el filtro\n');
-fprintf('     compensa el retardo del pasa-bajos en vez de sufrirlo: el BW útil\n');
-fprintf('     de la estimación de C no queda limitado al menor de los dos sensores.\n');
-if f_poles(1) > fn1
-    fprintf('>> OK: el estimador resuelve el modo dominante fn1 (%.1f Hz).\n', fn1);
-else
-    fprintf('>> ATENCIÓN: el polo dominante del estimador (%.1f Hz) está por debajo de fn1 (%.1f Hz);\n', f_poles(1), fn1);
-    fprintf('   ese polo lento suele ser el de los estados de sesgo (deriva de Kt), que es lento\n');
-    fprintf('   A PROPÓSITO. Revisa los polos de arriba: si los demás superan fn1, la dinámica\n');
-    fprintf('   rápida sí se está resolviendo bien.\n');
-end
+% Evaluar strain e IMU por separado no dice mucho: lo que importa es la
+% salida FUSIONADA. Un "ancho de banda del estimador" como número único
+% no es honesto aquí: mezclaría los polos rápidos (mecánica) con los
+% deliberadamente lentos (deriva de Kt), y esa mezcla no responde nada
+% útil. La forma correcta y ya disponible es mirar directamente el error
+% de seguimiento de omega_C (sección 9, RMSE solo IMU vs Kalman) --
+% si el Kalman sigue de cerca la verdad con el retardo de sensor ya
+% modelado (estados 11-12), el ancho de banda conjunto es adecuado; si el
+% RMSE del Kalman no mejora sobre el sensor crudo, es la señal de que no.
+fprintf('Ver RMSE de omega_C en la sección de métricas: si el Kalman mejora\n');
+fprintf('claramente sobre "solo IMU", el ancho de banda conjunto es adecuado.\n');
 fprintf('=============================================================\n');
 
 end
