@@ -103,10 +103,8 @@ def parse_force_coeffs(case_dir):
         raise ValueError(f"{dat_file} no tiene datos (¿el caso corrió?)")
 
     values = re.split(r"\s+", last_line)
-    # Columnas típicas: Time Cm Cd Cl Cl(f) Cl(r) ... (el orden exacto varía
-    # levemente entre versiones de OpenFOAM -- revisa el header del archivo
-    # la primera vez que lo uses y ajusta estos índices si hace falta)
-    return {"Cm": float(values[1]), "Cd": float(values[2]), "Cl": float(values[3])}
+    # Confirmado con un caso real: Time Cd Cs Cl CmRoll CmPitch CmYaw Cd(f) ...
+    return {"Cd": float(values[1]), "Cl": float(values[3]), "CmPitch": float(values[5])}
 
 
 def main():
@@ -148,10 +146,10 @@ def main():
                     "delta_deg": delta, "mach": mach, "aoa_deg": aoa,
                     **coeffs,
                 })
-                print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  Cm={coeffs['Cm']:.4f}")
+                print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  CmPitch={coeffs['CmPitch']:.4f}")
 
     with open(args.summary, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["delta_deg", "mach", "aoa_deg", "Cl", "Cd", "Cm"])
+        writer = csv.DictWriter(f, fieldnames=["delta_deg", "mach", "aoa_deg", "Cl", "Cd", "CmPitch"])
         writer.writeheader()
         writer.writerows(rows)
 

@@ -20,15 +20,27 @@
 * [X] Terminar de ajustar los OEs.
 * [X] Hacer el informe con formato
 * [X] Revisar que hay archivos de documentación que están duplicados en texto
-* [ ] Partir con las simulaciones en CFD cuanto antes.
-* [ ] Quiero tener un esquema ordenado como el de annastopoulos et al. Para eso falta tener el sistema completamente definido y cerrado
-* [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
-* [ ] Terminar de ver lo de los anchos de banda
+* [X] Partir con las simulaciones en CFD cuanto antes.
+* [X] Terminar de ver lo de los anchos de banda
+* [X] En el motor de carga definir los límites de torque para que el sistema no se mantenga girando ante la ausencia de un torque resistente
+* [X] Evaluar si el lazo de todo el sistema responde mejor al torque o a la posición
 * [ ] Terminar de ver el sistema simulado en matlab
-* [ ] En el motor de carga definir los límites de torque para que el sistema no se mantenga girando ante la ausencia de un torque resistente
-* [ ] Evaluar si el lazo de todo el sistema responde mejor al torque o a la posición
-* [ ] Ver que dicen los chinos del transductor de torque
+
+  * [X] Terminar de seccionar el código
+  * [X] Revisar el lazo de control de posición de B, por qué empieza a controlar la posición cuando termina la rampa
+  * [X] El kalman no tiene acción de control, o no explicita facil de encontrar
+  * [X] integrar fail safes al sistema (switches, theta max y omega peligroso) a una frecuencia suficientemente alta para proteger al sistema en caso de falla catastrófica.
+  * [X] Ver si se puede estimar todas las mediciones solo con IMUs (parece que no), parece que si pero hay que ver bien. Se supone que no, pero funciona  cuando el control es lento.
+  * [ ] Sacar los encoders
+  * [ ] Incorporar sesgo a todos los sensores
+  * [ ] Volver a seccionar el codigo largo
+* [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
+* [ ] Ver que dicen los chinos del transductor de torque e incorporarlo
+
+  * [ ] Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
 * [ ] en el modelo dinámico a lo mejor tirar la mitad de la inercia del eje mismo por lado (A y C o B y C), aunque vicuña dijo que la inercia del eje suele ser casi insignificante
 * [ ] Agregar revisión a la hora de integrar que los cables no interfieran con el movimiento o que cambien la inercia al ser un sistema muy pequeño.
-* [ ] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos
-* [ ]
+* [X] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos
+* [ ] Quiero tener un esquema ordenado como el de annastopoulos et al. Para eso falta tener el sistema completamente definido y cerrado
+* [ ] Evaluar valores realistas de fail safe
+* [ ] Seguir con el CFD del caso con deflexion

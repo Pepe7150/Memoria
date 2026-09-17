@@ -100,9 +100,15 @@ Respuestas:
 1. Codigo en matlab, sistema ASD
 2. respuesta del chino al transductor
 3. Avance de CFD (geometrías y empezar a mallar)
-4. 
 
 **Respuestas / acuerdos:**
+
+1. Seccionar el código de matlab para poder explicarlo
+2. Revisar el lazo de control de posición de B, por qué empieza a controlar la posición cuando termina la rampa
+3. Ver si se puede estimar todas las mediciones solo con IMUs (parece que no)
+4. El kalman no tiene acción de control, o no explicita facil de encontrar
+5. integrar fail safes al sistema (switches, theta max y omega peligroso) a una frecuencia suficientemente alta para proteger al sistema en caso de falla catastrófica.
+6. Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
 
 ## Cómo usar este documento
 
