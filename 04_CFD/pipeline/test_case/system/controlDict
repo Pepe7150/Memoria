@@ -24,7 +24,7 @@ deltaT          1;
 writeControl    timeStep;
 writeInterval   200;
 
-purgeWrite      2;                  // conserva solo las últimas 2 carpetas de tiempo (ahorra disco en el barrido)
+purgeWrite    0;                  // conserva solo las últimas 2 carpetas de tiempo (ahorra disco en el barrido)
 
 writeFormat     ascii;
 writePrecision  8;
