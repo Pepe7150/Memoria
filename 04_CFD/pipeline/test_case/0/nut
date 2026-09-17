@@ -1,0 +1,49 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nut;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 2 -1 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    front
+{
+    type            empty;
+}
+back
+{
+    type            empty;
+}
+    airfoil
+    {
+        // se adapta automáticamente si el y+ real queda algo distinto de 1
+        // (por ejemplo en las condiciones de menor Re del barrido)
+        type            nutLowReWallFunction;
+        value           uniform 0;
+    }
+
+    farfield
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    outlet
+    {
+        type            calculated;
+        value           uniform 0;
+    }
+
+    
+
+    
+}
+
+// ************************************************************************* //

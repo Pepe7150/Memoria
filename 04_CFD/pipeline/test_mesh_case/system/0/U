@@ -1,0 +1,46 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volVectorField;
+    object      U;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 -1 0 0 0 0];
+
+internalField   uniform (@UX@ @UY@ 0);
+
+boundaryField
+{
+    airfoil
+    {
+        type            noSlip;
+    }
+
+    farfield
+    {
+        // freestream maneja entrada Y salida en la misma cara según el
+        // signo local del flujo -- ideal para el borde curvo del dominio C
+        type            freestreamVelocity;
+        freestreamValue uniform (@UX@ @UY@ 0);
+    }
+
+    outlet
+    {
+        type            freestreamVelocity;
+        freestreamValue uniform (@UX@ @UY@ 0);
+    }
+
+    front
+    {
+        type            empty;
+    }
+
+    back
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //
