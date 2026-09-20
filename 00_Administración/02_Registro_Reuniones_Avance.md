@@ -93,7 +93,7 @@ Respuestas:
 
 ## Reunión 17/09/2026
 
-**Estado:** Pendiente.
+**Estado:** Realizada.
 
 **Preguntas a plantear:**
 
@@ -109,6 +109,18 @@ Respuestas:
 4. El kalman no tiene acción de control, o no explicita facil de encontrar
 5. integrar fail safes al sistema (switches, theta max y omega peligroso) a una frecuencia suficientemente alta para proteger al sistema en caso de falla catastrófica.
 6. Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
+
+## Reunión 21/09/2026
+
+**Estado:** Pendiente.
+
+**Preguntas a plantear:**
+
+1. Presentar codigo
+2. Hablar de la observabilidad y los sensores necesarios
+3. Opción de sensor hall para observar la posición absoluta (anillo magnético + sensor)
+
+**Respuestas / acuerdos:**
 
 ## Cómo usar este documento
 

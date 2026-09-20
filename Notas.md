@@ -31,7 +31,9 @@
   * [X] El kalman no tiene acción de control, o no explicita facil de encontrar
   * [X] integrar fail safes al sistema (switches, theta max y omega peligroso) a una frecuencia suficientemente alta para proteger al sistema en caso de falla catastrófica.
   * [X] Ver si se puede estimar todas las mediciones solo con IMUs (parece que no), parece que si pero hay que ver bien. Se supone que no, pero funciona  cuando el control es lento.
-  * [ ] Sacar los encoders
+  * [X] Sacar los encoders por sensorles de efecto hall
+  * [ ] Ver el asunto de la observabilidad
+  * [ ] Cambiar el transductor chino por los strain gauges de nuevo
   * [ ] Incorporar sesgo a todos los sensores
   * [ ] Volver a seccionar el codigo largo
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente

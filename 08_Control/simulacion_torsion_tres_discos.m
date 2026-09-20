@@ -1,5 +1,6 @@
 % =========================================================================
 % SIMULACIÓN COMPLETA: SISTEMA DE 3 INERCIAS CON DERIVA TÉRMICA Y KALMAN
+% (VERSIÓN CON SENSORES HALL, IMU, SG Y CORRIENTE)
 % =========================================================================
 clc; clear; close all;
 
@@ -40,7 +41,7 @@ fn2 = fn_all(3);   % Segundo modo elástico
 
 % ANCHOS DE BANDA Y ELECTRONICA [Hz]
 bw_driver       = 200;
-bw_encoder      = 500;
+bw_hall         = 500; % Ancho de banda del sensor Hall
 bw_imu          = 150;
 bw_strain       = 30;
 bw_current_filt = 500;
@@ -92,12 +93,6 @@ end
 Kt_A_actual = Kt_A * (1 - kt_drift_A*heatA);
 T_A_true = Kt_A_actual .* I_A_true;   
 
-fprintf('=== PERFIL Y DERIVA TÉRMICA (LAZO ABIERTO) ===\n');
-fprintf('Vector de tiempo (N): %d muestras (dt = %.4f s)\n', N, dt_sim);
-fprintf('Torque de referencia final: %.2f Nm\n', T_A_ref(end));
-fprintf('Kt_A nominal: %.4f Nm/A | Kt_A final degradado: %.4f Nm/A\n', Kt_A, Kt_A_actual(end));
-fprintf('Torque real final aplicado (con deriva): %.4f Nm\n\n', T_A_true(end));
-
 
 %% 3. INICIALIZACIÓN LAZO CERRADO Y FILTRO DE KALMAN
 % --- Planta Mecánica (6 estados) ---
@@ -112,7 +107,6 @@ Maug6d = expm([Ac6, Bc6; zeros(2, 8)]*dt_sim);
 Ad6 = Maug6d(1:6, 1:6); 
 Bd6 = Maug6d(1:6, 7:8);
 
-% Reinicio de vectores para el lazo cerrado
 x6 = zeros(6, N);
 I_A_true = zeros(N,1); T_A_true = zeros(N,1); 
 I_B_true = zeros(N,1); T_B_true = zeros(N,1);
@@ -144,26 +138,37 @@ Ac12(12,4) = -c1/tau_sg_c;
 Ac12(12,12) = -1/tau_sg_c;
 Adk = expm(Ac12*dt_sim);
 
+% Matriz de Observación (6 sensores: Hall A, Hall B, TA, TB, IMU, SG)
 H = zeros(6,nx); 
-H(1,1) = 1; H(2,5) = 1; 
-H(3,7) = 1; H(3,9) = 1;   
-H(4,8) = 1; H(4,10) = 1;  
-H(5,11) = 1; H(6,12) = 1; 
+H(1,1) = 1;               % Sensor Hall Motor A (thetaA)
+H(2,5) = 1;               % Sensor Hall Motor B (thetaB)
+H(3,7) = 1; H(3,9) = 1;   % Sensor corriente Motor A (TA_current_est)
+H(4,8) = 1; H(4,10) = 1;  % Sensor corriente Motor B (TB_current_est)
+H(5,11) = 1;              % IMU (omegaC)
+H(6,12) = 1;              % Strain Gauge (T_AC)
 
-noise_encoder_std = 0.001; noise_current_std = 0.03;
-noise_gyro_std = 0.02; noise_strain_std = 0.005;
+noise_hall_std = 0.002;   % Ruido típico para sensor Hall magnético
+noise_current_std = 0.03;
+noise_gyro_std = 0.02; 
+noise_strain_std = 0.005;
 
-tau_enc = 1/(2*pi*bw_encoder); alpha_enc = dt_sim/(tau_enc+dt_sim);
+% --- Análisis de Observabilidad ---
+O_mat = obsv(Adk, H);      % Matriz de observabilidad discreta
+rank_O = rank(O_mat);      % Rango (debe ser igual a nx, es decir, 12)
+cond_O = cond(O_mat);      % Medida cuantitativa (número de condición)
+
+tau_hall = 1/(2*pi*bw_hall); alpha_hall = dt_sim/(tau_hall+dt_sim);
 tau_cs = 1/(2*pi*bw_current_filt); alpha_cs = dt_sim/(tau_cs+dt_sim);
 tau_imu = 1/(2*pi*bw_imu); alpha_imu = dt_sim/(tau_imu+dt_sim);
 tau_sg = 1/(2*pi*bw_strain); alpha_sg = dt_sim/(tau_sg+dt_sim);
 
-var_enc = noise_encoder_std^2 * alpha_enc/(2-alpha_enc);
+var_hall = noise_hall_std^2 * alpha_hall/(2-alpha_hall);
 var_IA = noise_current_std^2 * alpha_cs/(2-alpha_cs);
 var_imu = noise_gyro_std^2 * alpha_imu/(2-alpha_imu);
 var_sg = noise_strain_std^2 * alpha_sg/(2-alpha_sg);
 
-R = diag([var_enc, var_enc, (Kt_A^2)*var_IA, (Kt_B^2)*var_IA, var_imu, var_sg]);
+% Matriz de Covarianza (6x6)
+R = diag([var_hall, var_hall, (Kt_A^2)*var_IA, (Kt_B^2)*var_IA, var_imu, var_sg]);
 Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, 0.01*dt_sim, 0.01*dt_sim, 1e-5*dt_sim, 1e-5*dt_sim, 1e-8, 1e-8]);
 
 x_est = zeros(nx,1);
@@ -177,58 +182,64 @@ T_A_cmd = zeros(N,1);
 
 IA_meas = 0; IB_meas = 0; 
 
-Kp_pos = 15; Ki_pos = 50; Kd_pos = 2.0; 
+Kp_pos = 1; Ki_pos = 5; Kd_pos = 0.5; 
 integral_max = 10; theta_C_target = 0.2; theta_err_int = 0;
 
 
 %% LIMITES DE SEGURIDAD (FAIL SAFES)
-max_angle_rad = 135 * (pi / 180);       % +/- 135 grados
-max_speed_rads = 1000 * (2*pi / 60);    % 1000 RPM (Límite angular absoluto)
-max_torque_Nm = 8.0;                    % 8 Nm (Límite para torque aplicado y transmitido)
+max_angle_rad = 135 * (pi / 180);       
+max_speed_rads = 1000 * (2*pi / 60);    
+max_torque_Nm = 8.0;                    
 system_fault = false;
 fault_time = NaN;
-
+fault_reason = ''; % <-- Nueva variable para almacenar la causa exacta
 
 %% 4. BUCLE EN TIEMPO REAL (Simulación Lazo Cerrado)
 for i = 2:N
     
-    % --- VERIFICACIÓN DE SEGURIDAD ---
     if ~system_fault
-        % Torques transmitidos mecánicamente en la iteración anterior
         T_AC_prev = k1*(x6(1,i-1)-x6(3,i-1)) + c1*(x6(2,i-1)-x6(4,i-1));
         T_CB_prev = k2*(x6(3,i-1)-x6(5,i-1)) + c2*(x6(4,i-1)-x6(6,i-1));
         
-        % Revisamos ángulos, velocidades y todos los torques (eléctricos y mecánicos)
-        if abs(x6(1,i-1)) >= max_angle_rad || abs(x6(5,i-1)) >= max_angle_rad || ...
-           abs(x6(2,i-1)) >= max_speed_rads || abs(x6(6,i-1)) >= max_speed_rads || ...
-           abs(T_A_true(i-1)) >= max_torque_Nm || abs(T_B_true(i-1)) >= max_torque_Nm || ...
-           abs(T_AC_prev) >= max_torque_Nm || abs(T_CB_prev) >= max_torque_Nm
-       
+        % Lógica desglozada para identificar la causa raíz
+        if abs(x6(1,i-1)) >= max_angle_rad || abs(x6(5,i-1)) >= max_angle_rad
             system_fault = true;
             fault_time = t(i);
+            fault_reason = 'Límite de ÁNGULO superado (>= 135°)';
+            
+        elseif abs(x6(2,i-1)) >= max_speed_rads || abs(x6(6,i-1)) >= max_speed_rads
+            system_fault = true;
+            fault_time = t(i);
+            fault_reason = 'Límite de VELOCIDAD superado (>= 1000 RPM)';
+            
+        elseif abs(T_A_true(i-1)) >= max_torque_Nm || abs(T_B_true(i-1)) >= max_torque_Nm || ...
+               abs(T_AC_prev) >= max_torque_Nm || abs(T_CB_prev) >= max_torque_Nm
+            system_fault = true;
+            fault_time = t(i);
+            fault_reason = sprintf('Límite de TORQUE superado (>= %.1f Nm)', max_torque_Nm);
         end
     end
 
-    % --- LÓGICA DE CONTROL VS FALLA ---
     if system_fault
         T_A_cmd(i) = 0;
         I_A_ref_i = 0;
         T_B_cmd_i = 0;
         I_B_ref_i = 0;
     else
-        % Control Motor A (Feedforward + Compensación)
+        % Motor A
         biasA_estimado = x_est(9); 
         T_A_cmd(i) = T_A_ref(i) + biasA_estimado; 
         I_A_ref_i = T_A_cmd(i) / Kt_A;
         
-        % Control Motor B (Lazo Cerrado PID)
-        theta_err = theta_C_target - x6(3,i-1);
+        % Motor B (Lazo Cerrado PID)
+        % CRÍTICO: El PID vuelve a usar la estimación del Kalman (x_est) porque 
+        % los sensores Hall recuperaron la observabilidad de la posición absoluta.
+        theta_err = theta_C_target - x_est(3);
         theta_err_int = max(min(theta_err_int + dt_sim*theta_err, integral_max), -integral_max);
-        T_B_cmd_i = -(Kp_pos*theta_err + Ki_pos*theta_err_int + Kd_pos*(0 - x6(4,i-1)));
+        T_B_cmd_i = -(Kp_pos*theta_err + Ki_pos*theta_err_int + Kd_pos*(0 - x_est(4)));
         I_B_ref_i = T_B_cmd_i / Kt_B;
     end
     
-    % Dinámica compartida (funciona igual ya sea control activo o cortado a 0)
     I_A_true(i) = I_A_true(i-1) + alpha_drv*(I_A_ref_i - I_A_true(i-1));
     heatA(i) = heatA(i-1) + alpha_th*((I_A_true(i)/I_A_rated)^2 - heatA(i-1));
     Kt_A_actual = Kt_A * (1 - kt_drift_A*heatA(i));
@@ -241,7 +252,6 @@ for i = 2:N
 
     u_plant = [T_A_true(i); T_B_true(i)];
 
-    % Avance de la Planta Física
     x6(:,i) = Ad6*x6(:,i-1) + Bd6*u_plant; 
     
     theta_A_true_i = x6(1,i); omega_A_true_i = x6(2,i);
@@ -249,12 +259,15 @@ for i = 2:N
     theta_B_true_i = x6(5,i); omega_B_true_i = x6(6,i);
     T_AC_true_i = k1*(theta_A_true_i-theta_C_true_i) + c1*(omega_A_true_i-omega_C_true_i);
 
-    % Sensores (Ruido + Filtro Digital)
-    thA_raw = theta_A_true_i + noise_encoder_std*randn;
-    thB_raw = theta_B_true_i + noise_encoder_std*randn;
-    thetaA_meas(i) = thetaA_meas(i-1) + alpha_enc*(thA_raw - thetaA_meas(i-1));
-    thetaB_meas(i) = thetaB_meas(i-1) + alpha_enc*(thB_raw - thetaB_meas(i-1));
+    % --- Adquisición de Sensores ---
+    
+    % Sensores Hall
+    thA_raw = theta_A_true_i + noise_hall_std*randn;
+    thB_raw = theta_B_true_i + noise_hall_std*randn;
+    thetaA_meas(i) = thetaA_meas(i-1) + alpha_hall*(thA_raw - thetaA_meas(i-1));
+    thetaB_meas(i) = thetaB_meas(i-1) + alpha_hall*(thB_raw - thetaB_meas(i-1));
 
+    % Corriente
     IA_raw = I_A_true(i) + noise_current_std*randn;
     IB_raw = I_B_true(i) + noise_current_std*randn;
     IA_meas = IA_meas + alpha_cs*(IA_raw - IA_meas);
@@ -262,15 +275,18 @@ for i = 2:N
     TA_current_est(i) = Kt_A * IA_meas;
     TB_current_est(i) = Kt_B * IB_meas;
 
+    % IMU y SG
     wC_raw = omega_C_true_i + noise_gyro_std*randn;
     omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
 
     SG_raw = T_AC_true_i + noise_strain_std*randn;
     SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw - SG_meas(i-1));
 
-    % Filtro de Kalman
+    % --- Filtro de Kalman (6 mediciones) ---
     x_pred = Adk*x_est;
     P_pred = Adk*P*Adk' + Q;
+    
+    % Vector z actualizado con las 6 variables
     z = [thetaA_meas(i); thetaB_meas(i); TA_current_est(i); TB_current_est(i); omegaC_meas(i); SG_meas(i)];
          
     y_innov = z - H*x_pred;
@@ -295,15 +311,6 @@ T_CB_kf = k2*(thetaC_kf-thetaB_kf) + c2*(omegaC_kf-omegaB_kf);
 theta_C_true = x6(3,:)'; omega_C_true = x6(4,:)';
 T_AC_true = k1*(x6(1,:)'-x6(3,:)') + c1*(x6(2,:)'-x6(4,:)');
 T_CB_true = k2*(x6(3,:)'-x6(5,:)') + c2*(x6(4,:)'-x6(6,:)');
-
-biasA_true = TA_current_est - T_A_true;
-biasB_true = TB_current_est - T_B_true;
-
-fprintf('=== SIMULACIÓN CON COMPENSACIÓN DE KALMAN CONCLUIDA ===\n');
-fprintf('Torque de referencia solicitado: %.2f Nm\n', T_A_ref(end));
-fprintf('Torque real entregado por Motor A: %.4f Nm (Lazo cerrado compensado)\n', T_A_true(end));
-fprintf('Sesgo térmico estimado por Kalman: %.4f Nm\n\n', biasA_kf(end));
-
 
 %% 5. GRÁFICOS Y MÉTRICAS
 % Figura 1: Torques
@@ -335,12 +342,13 @@ if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
 ylabel('T_{CB} (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
 legend('Real', 'Kalman', 'Location', 'best'); title('Torque Transmitido C-B');
 
-% Figura 3: Cinemática
+% Figura 3: Cinemática Disco C
 figure('Name', 'Cinemática Disco C', 'Color', 'w', 'Position', [90,90,950,700]);
 subplot(2,1,1);
 plot(t, theta_C_true, 'k--', 'LineWidth', 2); hold on; plot(t, thetaC_kf, 'b', 'LineWidth', 2);
 if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
-ylabel('\theta_C (rad)'); grid on; xlim([0 T_sim]); legend('Real', 'Kalman', 'Location', 'best');
+ylabel('\theta_C (rad)'); grid on; xlim([0 T_sim]); legend('Real', 'Kalman (Recuperado)', 'Location', 'best');
+title('Posición Absoluta (Sin Deriva)');
 subplot(2,1,2);
 plot(t, omega_C_true, 'k--', 'LineWidth', 2); hold on;
 plot(t, omegaC_meas, 'm', 'LineWidth', 1); plot(t, omegaC_kf, 'b', 'LineWidth', 2);
@@ -372,12 +380,6 @@ else
     fprintf('>> ALERTA: Driver (%d Hz) podría limitar el control.\n', bw_driver);
 end
 
-if bw_encoder > 5*fn1
-    fprintf('>> OK: Encoders (%d Hz) resuelven fn1 (BW > 5x fn1).\n', bw_encoder);
-else
-    fprintf('>> ALERTA: Encoders (%d Hz) podrían no resolver fn1.\n', bw_encoder);
-end
-
 if bw_current_filt > 5*fn1
     fprintf('>> OK: Filtro corriente (%d Hz) resuelve fn1 (BW > 5x fn1).\n', bw_current_filt);
 else
@@ -388,8 +390,18 @@ fprintf('=====================================================\n\n');
 fprintf('=== ESTADO DE SEGURIDAD (FAIL SAFES) ===\n');
 if system_fault
     fprintf('!!! ADVERTENCIA: Se disparó un FAIL SAFE a los %.3f segundos !!!\n', fault_time);
-    fprintf('Causa: Se superó un límite crítico de ángulo, velocidad o torque (%.1f Nm).\n', max_torque_Nm);
+    fprintf('Causa específica: %s\n', fault_reason); % <-- Imprime la razón exacta
 else
     fprintf('Estado: OK. No se detectaron violaciones a los límites angulares, cinemáticos ni de torque.\n');
 end
 fprintf('=====================================================\n');
+
+fprintf('=== ANÁLISIS DE OBSERVABILIDAD ===\n');
+fprintf('Rango de la matriz: %d / %d\n', rank_O, nx);
+fprintf('Número de condición: %.2e (valores menores indican mejor observabilidad numérica)\n', cond_O);
+if rank_O == nx
+    fprintf('>> OK: El sistema es COMPLETAMENTE OBSERVABLE con los 6 sensores actuales.\n');
+else
+    fprintf('>> ALERTA: El sistema NO es completamente observable. Rango deficiente.\n');
+end
+fprintf('=====================================================\n\n');
