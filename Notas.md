@@ -32,14 +32,19 @@
   * [X] integrar fail safes al sistema (switches, theta max y omega peligroso) a una frecuencia suficientemente alta para proteger al sistema en caso de falla catastrófica.
   * [X] Ver si se puede estimar todas las mediciones solo con IMUs (parece que no), parece que si pero hay que ver bien. Se supone que no, pero funciona  cuando el control es lento.
   * [X] Sacar los encoders por sensorles de efecto hall
-  * [ ] Ver el asunto de la observabilidad
-  * [ ] Cambiar el transductor chino por los strain gauges de nuevo
-  * [ ] Incorporar sesgo a todos los sensores
-  * [ ] Volver a seccionar el codigo largo
+  * [X] Ver el asunto de la observabilidad
+  * [X] Cambiar el transductor chino por los strain gauges de nuevo
+  * [X] Incorporar sesgo a todos los sensores
+  * [X] Volver a seccionar el codigo largo
+  * [X] Ver que chucha son alpha y estados filtro
+  * [X] Usar funciones como c2d en lugar de hacer las cosas manualmente
+  * [X] Dejar matrices en función de matrices y variables anteriores y reordenar las matrices
+  * [ ] actualizar bias en el tiempo
+  * [ ] forzar theta b fijo ( o theta c a lo mejor sea) y evaluar como se comporta T_B
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
-* [ ] Ver que dicen los chinos del transductor de torque e incorporarlo
+* [X] Ver que dicen los chinos del transductor de torque e incorporarlo
 
-  * [ ] Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
+  * [X] Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
 * [ ] en el modelo dinámico a lo mejor tirar la mitad de la inercia del eje mismo por lado (A y C o B y C), aunque vicuña dijo que la inercia del eje suele ser casi insignificante
 * [ ] Agregar revisión a la hora de integrar que los cables no interfieran con el movimiento o que cambien la inercia al ser un sistema muy pequeño.
 * [X] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos

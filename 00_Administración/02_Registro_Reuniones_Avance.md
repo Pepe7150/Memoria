@@ -112,13 +112,27 @@ Respuestas:
 
 ## Reunión 21/09/2026
 
-**Estado:** Pendiente.
+**Estado:** Realizada.
 
 **Preguntas a plantear:**
 
 1. Presentar codigo
 2. Hablar de la observabilidad y los sensores necesarios
 3. Opción de sensor hall para observar la posición absoluta (anillo magnético + sensor)
+
+**Respuestas / acuerdos:**
+
+1. Si ya se armaron matrices en oasos anteriores seguir usándolas para la construcción de las demas matrices, así queda todo funcionalizado
+2. Cambiar para que el bias se vaya actualizando en el tiempo (con una justificación física o por lo menos argumentada de por qué y como), actualmente se mantiene constante.
+3. Hacer exploración de forzar que theta b sea fijo (x2 = 0), el torque b debería ir creciendo conforme crezca el torque a para mantener esa posición. (Esta no sé si la entendí muy bien.
+
+## Reunión 25/09/2026
+
+**Estado:** Pendiente.
+
+**Preguntas a plantear:**
+
+1. Presentar cambios a la simulación dinámica (funcionalización,
 
 **Respuestas / acuerdos:**
 

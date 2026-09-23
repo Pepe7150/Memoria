@@ -15,7 +15,7 @@
 #   ./convert_mesh.sh casos/naca0012_d10 mallas/naca0012_d10.msh
 #
 # El <caso> debe ser una carpeta de caso de OpenFOAM que ya tenga system/
-# (con controlDict, fvSchemes, fvSolution y createPatchDict).
+# (con controlDict, fvSchemes, fvSolution).
 
 set -e  # aborta si cualquier comando falla
 
@@ -37,12 +37,6 @@ if [ ! -d "$CASE_DIR/system" ]; then
     exit 1
 fi
 
-if [ ! -f "$CASE_DIR/system/createPatchDict" ]; then
-    echo "ERROR: falta $CASE_DIR/system/createPatchDict"
-    echo "       Copia el createPatchDict a la carpeta system/ del caso."
-    exit 1
-fi
-
 # Verifica que el entorno de OpenFOAM esté cargado
 if ! command -v gmshToFoam &> /dev/null; then
     echo "ERROR: no se encuentra gmshToFoam."
@@ -55,8 +49,20 @@ echo "=== 1. Convirtiendo malla de Gmsh a OpenFOAM ==="
 gmshToFoam "$MSH_FILE" -case "$CASE_DIR" 2>&1 | tail -20
 
 echo ""
-echo "=== 2. Corrigiendo tipos de patch (empty para front/back, wall para airfoil) ==="
-createPatch -overwrite -case "$CASE_DIR" 2>&1 | tail -20
+echo "=== 2. Corrigiendo tipos de patch en constant/polyMesh/boundary ==="
+# OJO: NO usamos createPatch aquí. gmshToFoam ya crea los patches con los
+# nombres exactos de los grupos físicos (front, back, airfoil, farfield,
+# outlet), así que para createPatch esos patches "ya existen" -- y cuando un
+# patch ya existe, createPatch únicamente reordena sus caras y IGNORA el tipo
+# que le pidas en patchInfo (queda como "patch" genérico, no como "empty" o
+# "wall"). Es un comportamiento poco intuitivo y fácil de pasar por alto: el
+# caso puede fallar al arrancar (error de tipo en 0/p), o peor, correr "bien"
+# con el perfil sin reconocerse como pared para el cálculo de distancia a la
+# pared del modelo de turbulencia. La forma robusta es editar el tipo
+# directamente con foamDictionary:
+foamDictionary "$CASE_DIR/constant/polyMesh/boundary" -entry front.type -set empty
+foamDictionary "$CASE_DIR/constant/polyMesh/boundary" -entry back.type -set empty
+foamDictionary "$CASE_DIR/constant/polyMesh/boundary" -entry airfoil.type -set wall
 
 echo ""
 echo "=== 3. Validando calidad de malla ==="

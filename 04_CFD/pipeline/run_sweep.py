@@ -61,19 +61,10 @@ def build_geometry_and_mesh(delta, cfg, workdir):
     ])
 
     os.makedirs(mesh_case, exist_ok=True)
-    shutil_copy_system_dict(mesh_case)
+    os.makedirs(os.path.join(mesh_case, "system"), exist_ok=True)
     run([os.path.join(HERE, "convert_mesh.sh"), mesh_case, msh_path])
 
     return mesh_case
-
-
-def shutil_copy_system_dict(case_dir):
-    import shutil
-    os.makedirs(os.path.join(case_dir, "system"), exist_ok=True)
-    shutil.copy(
-        os.path.join(HERE, "createPatchDict"),
-        os.path.join(case_dir, "system", "createPatchDict"),
-    )
 
 
 def parse_force_coeffs(case_dir):

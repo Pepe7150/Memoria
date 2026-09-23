@@ -114,7 +114,7 @@ heatA = zeros(N,1); heatB = zeros(N,1);
 I_A_rated = 4.0/Kt_A; I_B_rated = 3.0/Kt_B;
 kt_drift_B = 0.08;
 
-% --- FILTRO DE KALMAN (12 estados) ---
+% --- FILTRO DE KALMAN (14 estados: 6 mecánica + 2 torques + 2 bias corriente + 2 filtros + 2 bias IMU/SG) ---
 Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
       -k1/J_A, -(c1+b_A)/J_A,  k1/J_A,  c1/J_A, 0, 0, 1/J_A, 0; 
        0, 0, 0, 1, 0, 0, 0, 0;
@@ -124,38 +124,70 @@ Ac8 = [0, 1, 0, 0, 0, 0, 0, 0;
        0, 0, 0, 0, 0, 0, 0, 0;
        0, 0, 0, 0, 0, 0, 0, 0];
 
-nx = 12; 
-Ac12 = zeros(nx,nx);
-Ac12(1:8,1:8) = Ac8;
+nx = 14; 
+Ac14 = zeros(nx,nx);
+Ac14(1:8,1:8) = Ac8;
 tau_imu_c = 1/(2*pi*bw_imu); 
 tau_sg_c = 1/(2*pi*bw_strain);
-Ac12(11,4) = 1/tau_imu_c; 
-Ac12(11,11) = -1/tau_imu_c;
-Ac12(12,1) = k1/tau_sg_c;
-Ac12(12,3) = -k1/tau_sg_c;
-Ac12(12,2) = c1/tau_sg_c; 
-Ac12(12,4) = -c1/tau_sg_c; 
-Ac12(12,12) = -1/tau_sg_c;
-Adk = expm(Ac12*dt_sim);
 
-% Matriz de Observación (6 sensores: Hall A, Hall B, TA, TB, IMU, SG)
+% Filtros de dinámica de sensores
+Ac14(11,4) = 1/tau_imu_c; 
+Ac14(11,11) = -1/tau_imu_c;
+Ac14(12,1) = k1/tau_sg_c;
+Ac14(12,3) = -k1/tau_sg_c;
+Ac14(12,2) = c1/tau_sg_c; 
+Ac14(12,4) = -c1/tau_sg_c; 
+Ac14(12,12) = -1/tau_sg_c;
+
+% Nota: Los estados 9, 10, 13 y 14 son derivas/sesgos constantes (sus derivadas son 0)
+Adk = expm(Ac14*dt_sim);
+
+% Matriz de Observación (6 sensores con estimación de bias en corriente, IMU y SG)
 H = zeros(6,nx); 
 H(1,1) = 1;               % Sensor Hall Motor A (thetaA)
 H(2,5) = 1;               % Sensor Hall Motor B (thetaB)
-H(3,7) = 1; H(3,9) = 1;   % Sensor corriente Motor A (TA_current_est)
-H(4,8) = 1; H(4,10) = 1;  % Sensor corriente Motor B (TB_current_est)
-H(5,11) = 1;              % IMU (omegaC)
-H(6,12) = 1;              % Strain Gauge (T_AC)
+H(3,7) = 1; H(3,9) = 1;   % Sensor corriente Motor A + Bias Corriente A
+H(4,8) = 1; H(4,10) = 1;  % Sensor corriente Motor B + Bias Corriente B
+H(5,11) = 1; H(5,13) = 1; % IMU + Bias IMU
+H(6,12) = 1; H(6,14) = 1; % Strain Gauge + Bias SG
 
 noise_hall_std = 0.002;   % Ruido típico para sensor Hall magnético
 noise_current_std = 0.03;
 noise_gyro_std = 0.02; 
 noise_strain_std = 0.005;
 
+% --- Sesgos (Bias) reales de los sensores ---
+bias_hallA = 0.05;      % Sesgo constante Hall A [rad]
+bias_hallB = -0.03;     % Sesgo constante Hall B [rad]
+bias_currentA = 0.1;    % Sesgo constante Corriente A [A]
+bias_currentB = -0.08;  % Sesgo constante Corriente B [A]
+bias_imu = 0.2;         % Sesgo constante IMU [rad/s]
+bias_sg = 0.15;         % Sesgo constante Strain Gauge [Nm]
+
 % --- Análisis de Observabilidad ---
 O_mat = obsv(Adk, H);      % Matriz de observabilidad discreta
-rank_O = rank(O_mat);      % Rango (debe ser igual a nx, es decir, 12)
-cond_O = cond(O_mat);      % Medida cuantitativa (número de condición)
+rank_O = rank(O_mat);      % Rango (debe ser igual a nx = 14)
+cond_O = cond(O_mat);      % Número de condición
+
+% --- Búsqueda del mínimo de sensores ---
+min_sensores = 0;
+nombres_sensores = {'Hall A', 'Hall B', 'Corriente A', 'Corriente B', 'IMU', 'Strain Gauge'};
+combo_ideal = {};
+
+for k = 1:6
+    combos = nchoosek(1:6, k);
+    for j = 1:size(combos, 1)
+        H_test = H(combos(j,:), :);
+        if rank(obsv(Adk, H_test)) == nx
+            min_sensores = k;
+            combo_ideal = nombres_sensores(combos(j,:));
+            break;
+        end
+    end
+    if min_sensores > 0
+        break; 
+    end
+end
 
 tau_hall = 1/(2*pi*bw_hall); alpha_hall = dt_sim/(tau_hall+dt_sim);
 tau_cs = 1/(2*pi*bw_current_filt); alpha_cs = dt_sim/(tau_cs+dt_sim);
@@ -167,12 +199,18 @@ var_IA = noise_current_std^2 * alpha_cs/(2-alpha_cs);
 var_imu = noise_gyro_std^2 * alpha_imu/(2-alpha_imu);
 var_sg = noise_strain_std^2 * alpha_sg/(2-alpha_sg);
 
-% Matriz de Covarianza (6x6)
+% Matriz de Covarianza R (6x6)
 R = diag([var_hall, var_hall, (Kt_A^2)*var_IA, (Kt_B^2)*var_IA, var_imu, var_sg]);
-Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, 0.01*dt_sim, 0.01*dt_sim, 1e-5*dt_sim, 1e-5*dt_sim, 1e-8, 1e-8]);
+
+% Matriz de Covarianza Q (14x14)
+Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, ... % 1-6: Dinámica mecánica
+          0.01*dt_sim, 0.01*dt_sim, ...              % 7-8: Torques activos
+          1e-5*dt_sim, 1e-5*dt_sim, ...              % 9-10: Bias Corrientes
+          1e-8, 1e-8, ...                            % 11-12: Filtros sensores
+          1e-6, 1e-6]);                              % 13-14: Bias IMU y SG
 
 x_est = zeros(nx,1);
-P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1, 1, 1]);
+P = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1, 1, 1, 1, 1]);
 
 X_hist = zeros(nx, N);
 thetaA_meas = zeros(N,1); thetaB_meas = zeros(N,1);
@@ -262,24 +300,29 @@ for i = 2:N
     % --- Adquisición de Sensores ---
     
     % Sensores Hall
-    thA_raw = theta_A_true_i + noise_hall_std*randn;
-    thB_raw = theta_B_true_i + noise_hall_std*randn;
-    thetaA_meas(i) = thetaA_meas(i-1) + alpha_hall*(thA_raw - thetaA_meas(i-1));
-    thetaB_meas(i) = thetaB_meas(i-1) + alpha_hall*(thB_raw - thetaB_meas(i-1));
-
+    thA_raw = theta_A_true_i + bias_hallA + noise_hall_std*randn;
+    thB_raw = theta_B_true_i + bias_hallB + noise_hall_std*randn;
+    
+    % Compensación estática (Homing) requerida por el modo rígido
+    thA_cal = thA_raw - bias_hallA; 
+    thB_cal = thB_raw - bias_hallB; 
+    
+    thetaA_meas(i) = thetaA_meas(i-1) + alpha_hall*(thA_cal - thetaA_meas(i-1));
+    thetaB_meas(i) = thetaB_meas(i-1) + alpha_hall*(thB_cal - thetaB_meas(i-1));
+    
     % Corriente
-    IA_raw = I_A_true(i) + noise_current_std*randn;
-    IB_raw = I_B_true(i) + noise_current_std*randn;
+    IA_raw = I_A_true(i) + bias_currentA + noise_current_std*randn;
+    IB_raw = I_B_true(i) + bias_currentB + noise_current_std*randn;
     IA_meas = IA_meas + alpha_cs*(IA_raw - IA_meas);
     IB_meas = IB_meas + alpha_cs*(IB_raw - IB_meas);
     TA_current_est(i) = Kt_A * IA_meas;
     TB_current_est(i) = Kt_B * IB_meas;
 
     % IMU y SG
-    wC_raw = omega_C_true_i + noise_gyro_std*randn;
+    wC_raw = omega_C_true_i + bias_imu + noise_gyro_std*randn;
     omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
 
-    SG_raw = T_AC_true_i + noise_strain_std*randn;
+    SG_raw = T_AC_true_i + bias_sg + noise_strain_std*randn;
     SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw - SG_meas(i-1));
 
     % --- Filtro de Kalman (6 mediciones) ---
@@ -355,20 +398,64 @@ plot(t, omegaC_meas, 'm', 'LineWidth', 1); plot(t, omegaC_kf, 'b', 'LineWidth', 
 if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
 ylabel('\omega_C (rad/s)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]); legend('Real', 'IMU', 'Kalman');
 
-% Métricas
+% --- EXTRACTO DE ESTADOS REALES Y MÉTRICAS ---
+theta_A_true = x6(1,:)'; omega_A_true = x6(2,:)';
+theta_C_true = x6(3,:)'; omega_C_true = x6(4,:)';
+theta_B_true = x6(5,:)'; omega_B_true = x6(6,:)';
+
 rmse = @(e) sqrt(mean(e.^2));
 mejora = @(rmse_crudo, rmse_kf) ((rmse_crudo - rmse_kf)/rmse_crudo)*100;
 
-fprintf('=== MÉTRICAS DE DESEMPEÑO ===\n');
-fprintf('T_A - RMSE corriente: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
+fprintf('========================================================================================\n');
+fprintf('                             MÉTRICAS DE DESEMPEÑO Y SENSORES                           \n');
+fprintf('========================================================================================\n\n');
+
+% 1. POSICIONES ANGULARES
+fprintf('--- POSICIONES ANGULARES [rad] ---\n');
+fprintf('theta_A  | Sensor directo: Hall A (+ Fusión Modelo/Kalman)\n');
+fprintf('         RMSE Crudo: %.5f rad | RMSE Kalman: %.5f rad | Mejora: %.2f %%\n', ...
+    rmse(thetaA_meas - theta_A_true), rmse(thetaA_kf - theta_A_true), mejora(rmse(thetaA_meas - theta_A_true), rmse(thetaA_kf - theta_A_true)));
+
+fprintf('theta_B  | Sensor directo: Hall B (+ Fusión Modelo/Kalman)\n');
+fprintf('         RMSE Crudo: %.5f rad | RMSE Kalman: %.5f rad | Mejora: %.2f %%\n', ...
+    rmse(thetaB_meas - theta_B_true), rmse(thetaB_kf - theta_B_true), mejora(rmse(thetaB_meas - theta_B_true), rmse(thetaB_kf - theta_B_true)));
+
+fprintf('theta_C  | Sensor directo: Ninguno (Estimación Virtual por Fusión: Hall A, Hall B, IMU, SG)\n');
+fprintf('         RMSE Crudo: N/A          | RMSE Kalman: %.5f rad\n\n', ...
+    rmse(thetaC_kf - theta_C_true));
+
+% 2. VELOCIDADES ANGULARES
+fprintf('--- VELOCIDADES ANGULARES [rad/s] ---\n');
+fprintf('omega_A  | Sensor directo: Ninguno (Estimación Virtual: Modelo + Hall A + Corriente A)\n');
+fprintf('         RMSE Crudo: N/A          | RMSE Kalman: %.4f rad/s\n', ...
+    rmse(omegaA_kf - omega_A_true));
+
+fprintf('omega_B  | Sensor directo: Ninguno (Estimación Virtual: Modelo + Hall B + Corriente B)\n');
+fprintf('         RMSE Crudo: N/A          | RMSE Kalman: %.4f rad/s\n', ...
+    rmse(omegaB_kf - omega_B_true));
+
+fprintf('omega_C  | Sensor directo: IMU Giroscopio (+ Fusión Modelo/Kalman)\n');
+fprintf('         RMSE Crudo: %.4f rad/s | RMSE Kalman: %.4f rad/s | Mejora: %.2f %%\n\n', ...
+    rmse(omegaC_meas - omega_C_true), rmse(omegaC_kf - omega_C_true), mejora(rmse(omegaC_meas - omega_C_true), rmse(omegaC_kf - omega_C_true)));
+
+% 3. TORQUES
+fprintf('--- TORQUES ACTIVOS Y TRANSMITIDOS [Nm] ---\n');
+fprintf('T_A      | Sensor directo: Corriente Motor A (+ Estimación Kalman de Kt drift y Bias)\n');
+fprintf('         RMSE Crudo: %.4f Nm   | RMSE Kalman: %.4f Nm   | Mejora: %.2f %%\n', ...
     rmse(TA_current_est - T_A_true), rmse(T_A_kf - T_A_true), mejora(rmse(TA_current_est - T_A_true), rmse(T_A_kf - T_A_true)));
-fprintf('T_B - RMSE corriente: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
+
+fprintf('T_B      | Sensor directo: Corriente Motor B (+ Estimación Kalman de Kt drift y Bias)\n');
+fprintf('         RMSE Crudo: %.4f Nm   | RMSE Kalman: %.4f Nm   | Mejora: %.2f %%\n', ...
     rmse(TB_current_est - T_B_true), rmse(T_B_kf - T_B_true), mejora(rmse(TB_current_est - T_B_true), rmse(T_B_kf - T_B_true)));
-fprintf('--- Torque Transmitido ---\n');
-fprintf('T_AC - RMSE strain: %.4f Nm | RMSE Kalman: %.4f Nm | Mejora: %.2f %%\n', ...
+
+fprintf('T_AC     | Sensor directo: Strain Gauge SG (+ Fusión Modelo/Kalman)\n');
+fprintf('         RMSE Crudo: %.4f Nm   | RMSE Kalman: %.4f Nm   | Mejora: %.2f %%\n', ...
     rmse(SG_meas - T_AC_true), rmse(T_AC_kf - T_AC_true), mejora(rmse(SG_meas - T_AC_true), rmse(T_AC_kf - T_AC_true)));
-fprintf('T_CB - RMSE Kalman (sin sensor): %.4f Nm\n', rmse(T_CB_kf - T_CB_true));
-fprintf('==============================\n\n');
+
+fprintf('T_CB     | Sensor directo: Ninguno (Estimación Virtual: Modelo + Hall B + SG)\n');
+fprintf('         RMSE Crudo: N/A          | RMSE Kalman: %.4f Nm\n', ...
+    rmse(T_CB_kf - T_CB_true));
+fprintf('========================================================================================\n\n');
 
 fprintf('=== EVALUACIÓN DE ANCHO DE BANDA ===\n');
 bw_ctrl_loop = sqrt(Kp_pos/J_B)/(2*pi);
@@ -399,9 +486,17 @@ fprintf('=====================================================\n');
 fprintf('=== ANÁLISIS DE OBSERVABILIDAD ===\n');
 fprintf('Rango de la matriz: %d / %d\n', rank_O, nx);
 fprintf('Número de condición: %.2e (valores menores indican mejor observabilidad numérica)\n', cond_O);
+
 if rank_O == nx
     fprintf('>> OK: El sistema es COMPLETAMENTE OBSERVABLE con los 6 sensores actuales.\n');
 else
     fprintf('>> ALERTA: El sistema NO es completamente observable. Rango deficiente.\n');
+end
+
+if min_sensores > 0
+    fprintf('>> MÍNIMO NECESARIO: Se requieren al menos %d sensor(es) para observar los %d estados.\n', min_sensores, nx);
+    fprintf('>> COMBINACIÓN VÁLIDA: %s\n', strjoin(combo_ideal, ', '));
+else
+    fprintf('>> ERROR: Ninguna combinación de los sensores permite observabilidad completa.\n');
 end
 fprintf('=====================================================\n\n');
