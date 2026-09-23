@@ -1,0 +1,64 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+Plantilla de caso: NACA0012 con flap, subsónico incompresible (simpleFoam).
+Los valores marcados con arroba los reemplaza build_case.py según Mach/AoA/delta.
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         2000;               // iteraciones; el caso puede converger antes (ver residualControl en fvSolution)
+
+deltaT          1;
+
+writeControl    timeStep;
+writeInterval   200;
+
+purgeWrite      2;                  // conserva solo las últimas 2 carpetas de tiempo (ahorra disco en el barrido)
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
+{
+    forceCoeffs1
+    {
+        type            forceCoeffs;
+        libs            (forces);
+        patches         (airfoil);
+
+        rho             rhoInf;
+        rhoInf          1;          // incompresible: densidad de referencia arbitraria (coeficientes quedan normalizados igual)
+
+        liftDir         (0.069756 0.997564 0);   // perpendicular a la corriente libre, NO al perfil (rota con AoA)
+        dragDir         (0.997564 -0.069756 0);   // alineado con la corriente libre (rota con AoA)
+        CofR            (0.250000 0 0);          // referencia de momento (cuarto de cuerda por defecto)
+        pitchAxis       (0 0 1);
+
+        magUInf         34.030000;
+        lRef            1.000000;                 // cuerda
+        Aref            0.100000;                  // cuerda * espesor de extrusión (revisa que calce con tu malla)
+
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+    }
+}
+
+// ************************************************************************* //

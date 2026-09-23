@@ -132,7 +132,8 @@ Respuestas:
 
 **Preguntas a plantear:**
 
-1. Presentar cambios a la simulación dinámica (funcionalización,
+1. Presentar cambios a la simulación dinámica (alpha y estados filtro, funcionalización, código seco,
+2. Preguntar por un avión específico genérico para saber la cuerda a usar, mas o menos.
 
 **Respuestas / acuerdos:**
 

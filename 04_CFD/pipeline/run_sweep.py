@@ -29,9 +29,21 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-def run(cmd, **kwargs):
+def run(cmd, clear_ld_library_path=False, **kwargs):
+    """
+    clear_ld_library_path=True fuerza LD_LIBRARY_PATH="" para este subproceso
+    -- necesario para los scripts de Python (numpy/gmsh), que chocan con las
+    librerías de ThirdParty/ que trae cargadas el entorno de OpenFOAM. Los
+    binarios de OpenFOAM (gmshToFoam, simpleFoam, vía convert_mesh.sh) SÍ
+    necesitan ese LD_LIBRARY_PATH, así que a esos no se lo tocamos.
+    """
+    env = kwargs.pop("env", None) or os.environ.copy()
+    if clear_ld_library_path:
+        env = dict(env)
+        env["LD_LIBRARY_PATH"] = ""
+
     print(f"$ {' '.join(cmd)}")
-    result = subprocess.run(cmd, capture_output=True, text=True, **kwargs)
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env, **kwargs)
     if result.returncode != 0:
         print(result.stdout[-3000:])
         print(result.stderr[-3000:])
@@ -47,7 +59,7 @@ def build_geometry_and_mesh(delta, cfg, workdir):
     run([
         sys.executable, os.path.join(HERE, "naca0012_flap_geometry.py"),
         "--delta", str(delta), "--hinge", str(cfg["hinge"]), "--out", dat_path,
-    ])
+    ], clear_ld_library_path=True)  # usa numpy -> choca con libstdc++ de OpenFOAM
 
     run([
         sys.executable, os.path.join(HERE, "naca_mesh_gmsh.py"),
@@ -58,11 +70,14 @@ def build_geometry_and_mesh(delta, cfg, workdir):
         "--te-size", str(cfg["te_size"]), "--le-size", str(cfg["le_size"]),
         "--farfield-size", str(cfg["farfield_size"]),
         "--extrude-z", str(cfg["extrude_z"]),
-    ])
+    ], clear_ld_library_path=True)  # usa numpy + gmsh -> mismo choque
 
     os.makedirs(mesh_case, exist_ok=True)
     os.makedirs(os.path.join(mesh_case, "system"), exist_ok=True)
     run([os.path.join(HERE, "convert_mesh.sh"), mesh_case, msh_path])
+    # convert_mesh.sh SÍ necesita el LD_LIBRARY_PATH de OpenFOAM (gmshToFoam,
+    # checkMesh); su llamada interna a fix_patch_types.py no usa numpy/gmsh,
+    # así que no choca aunque corra con ese entorno.
 
     return mesh_case
 

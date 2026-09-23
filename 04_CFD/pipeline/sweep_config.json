@@ -1,0 +1,18 @@
+{
+  "deltas": [-10, 0, 10],
+  "machs": [0.1, 0.15, 0.2],
+  "aoas": [-4, 0, 4, 8, 12],
+  "chord": 1.0,
+  "hinge": 0.7,
+  "extrude_z": 0.1,
+  "farfield": 15,
+  "wake": 20,
+  "farfield_size": 1.5,
+  "te_size": 0.004,
+  "le_size": 0.004,
+  "y1": 2.5513e-05,
+  "layers": 20,
+  "growth": 1.2,
+  "speed_of_sound": 340.3,
+  "nu": 7.5e-05
+}
