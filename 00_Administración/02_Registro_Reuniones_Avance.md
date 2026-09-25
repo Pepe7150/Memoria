@@ -124,7 +124,7 @@ Respuestas:
 
 1. Si ya se armaron matrices en oasos anteriores seguir usándolas para la construcción de las demas matrices, así queda todo funcionalizado
 2. Cambiar para que el bias se vaya actualizando en el tiempo (con una justificación física o por lo menos argumentada de por qué y como), actualmente se mantiene constante.
-3. Hacer exploración de forzar que theta b sea fijo (x2 = 0), el torque b debería ir creciendo conforme crezca el torque a para mantener esa posición. (Esta no sé si la entendí muy bien.
+3. Hacer exploración de forzar que theta b sea fijo (x2 = 0), el torque b debería ir creciendo conforme crezca el torque a para mantener esa posición. (Esta no sé si la entendí muy bien).
 
 ## Reunión 25/09/2026
 
@@ -132,8 +132,9 @@ Respuestas:
 
 **Preguntas a plantear:**
 
-1. Presentar cambios a la simulación dinámica (alpha y estados filtro, funcionalización, código seco,
-2. Preguntar por un avión específico genérico para saber la cuerda a usar, mas o menos.
+1. Presentar cambios a la simulación dinámica (alpha y estados filtro, funcionalización, código seco y cambio de sesgo en el tiempo.
+2. Preguntar por como hacer lo del theta_b fijo, no entendí bien como hacerlo-
+3. Preguntar por un avión específico genérico para saber la cuerda a usar, mas o menos.
 
 **Respuestas / acuerdos:**
 

@@ -39,7 +39,7 @@
   * [X] Ver que chucha son alpha y estados filtro
   * [X] Usar funciones como c2d en lugar de hacer las cosas manualmente
   * [X] Dejar matrices en función de matrices y variables anteriores y reordenar las matrices
-  * [ ] actualizar bias en el tiempo
+  * [X] actualizar bias en el tiempo
   * [ ] forzar theta b fijo ( o theta c a lo mejor sea) y evaluar como se comporta T_B
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
 * [X] Ver que dicen los chinos del transductor de torque e incorporarlo
@@ -50,4 +50,8 @@
 * [X] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos
 * [ ] Quiero tener un esquema ordenado como el de annastopoulos et al. Para eso falta tener el sistema completamente definido y cerrado
 * [ ] Evaluar valores realistas de fail safe
-* [ ] Seguir con el CFD del caso con deflexion
+* [ ] Seguir con el CFD
+
+  * [X] prueba con deflexión
+  * [ ] Terminar de probar si funciona el barrido
+  * [ ] Definir correctamente el barrido a usar

@@ -46,7 +46,25 @@ bw_imu          = 150;
 bw_strain       = 30;
 bw_current_filt = 500;
 
-fprintf('=== PARÁMETROS MECÁNICOS Y ELECTRÓNICOS CARGADOS ===\n');
+% --- Parámetros de Sesgo (Modelo Gauss-Markov / Ornstein-Uhlenbeck) ---
+% Tiempos de correlación tau_b [s]
+tau_b_IA  = 12.0;    % Tiempo de correlación sesgo Corriente A [s]
+tau_b_IB  = 12.0;    % Tiempo de correlación sesgo Corriente B [s]
+tau_b_imu = 8.0;     % Tiempo de correlación sesgo IMU Giroscopio [s]
+tau_b_sg  = 10.0;    % Tiempo de correlación sesgo Strain Gauge [s]
+
+% Desviaciones estándar estacionarias del sesgo sigma_b
+sigma_b_IA  = 0.15;  % Sesgo de Corriente A [A]
+sigma_b_IB  = 0.12;  % Sesgo de Corriente B [A]
+sigma_b_imu = 0.25;  % Sesgo de IMU Giroscopio [rad/s]
+sigma_b_sg  = 0.20;  % Sesgo de Strain Gauge [Nm]
+
+fprintf('=== PARÁMETROS MECÁNICOS, ELECTRÓNICOS Y SESGOS CARGADOS ===\n');
 fprintf('Rigidez k1 (A-C): %.2f Nm/rad | Rigidez k2 (C-B): %.2f Nm/rad\n', k1, k2);
-fprintf('Frecuencias naturales: Modo Rígido = %.2f Hz | Modo 1 = %.2f Hz | Modo 2 = %.2f Hz\n\n', ...
+fprintf('Frecuencias naturales: Modo Rígido = %.2f Hz | Modo 1 = %.2f Hz | Modo 2 = %.2f Hz\n', ...
     fn_all(1), fn1, fn2);
+fprintf('Parámetros Gauss-Markov (tau / sigma):\n');
+fprintf('  Corriente A: tau = %.1f s, sigma = %.2f A\n', tau_b_IA, sigma_b_IA);
+fprintf('  Corriente B: tau = %.1f s, sigma = %.2f A\n', tau_b_IB, sigma_b_IB);
+fprintf('  IMU:         tau = %.1f s, sigma = %.2f rad/s\n', tau_b_imu, sigma_b_imu);
+fprintf('  Strain Gauge:tau = %.1f s, sigma = %.2f Nm\n\n', tau_b_sg, sigma_b_sg);

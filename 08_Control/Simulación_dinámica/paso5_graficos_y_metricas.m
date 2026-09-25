@@ -47,13 +47,49 @@ plot(t, omegaC_meas, 'm', 'LineWidth', 1); plot(t, omegaC_kf, 'b', 'LineWidth', 
 if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
 ylabel('\omega_C (rad/s)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]); legend('Real', 'IMU', 'Kalman');
 
+% --- Figura 4: Seguimiento de Sesgos Dinámicos (Gauss-Markov) ---
+figure('Name', 'Seguimiento de Sesgos (Gauss-Markov)', 'Color', 'w', 'Position', [110,110,950,700]);
+
+subplot(2,2,1);
+plot(t, bias_currentA_true, 'k--', 'LineWidth', 1.5); hold on;
+plot(t, bias_IA_kf, 'b', 'LineWidth', 2);
+if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
+ylabel('Bias I_A (A)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
+legend('Real (Gauss-Markov)', 'Estimación Kalman', 'Location', 'best'); title('Sesgo Corriente Motor A');
+
+subplot(2,2,2);
+plot(t, bias_currentB_true, 'k--', 'LineWidth', 1.5); hold on;
+plot(t, bias_IB_kf, 'r', 'LineWidth', 2);
+if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
+ylabel('Bias I_B (A)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
+legend('Real (Gauss-Markov)', 'Estimación Kalman', 'Location', 'best'); title('Sesgo Corriente Motor B');
+
+subplot(2,2,3);
+plot(t, bias_imu_true, 'k--', 'LineWidth', 1.5); hold on;
+plot(t, bias_imu_kf, 'm', 'LineWidth', 2);
+if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
+ylabel('Bias IMU (rad/s)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
+legend('Real (Gauss-Markov)', 'Estimación Kalman', 'Location', 'best'); title('Sesgo Giroscopio IMU');
+
+subplot(2,2,4);
+plot(t, bias_sg_true, 'k--', 'LineWidth', 1.5); hold on;
+plot(t, bias_sg_kf, 'g', 'LineWidth', 2);
+if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
+ylabel('Bias SG (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
+legend('Real (Gauss-Markov)', 'Estimación Kalman', 'Location', 'best'); title('Sesgo Strain Gauge');
+
 % --- REPORTE DE MÉTRICAS ---
-% Función anónima para calcular mejora porcentual
 mejora = @(rmse_crudo, rmse_kf) ((rmse_crudo - rmse_kf)/rmse_crudo)*100;
 
 fprintf('========================================================================================\n');
 fprintf('                             MÉTRICAS DE DESEMPEÑO Y SENSORES                           \n');
 fprintf('========================================================================================\n\n');
+
+fprintf('--- ESTIMACIÓN DE SESGOS DINÁMICOS (MODELO GAUSS-MARKOV) ---\n');
+fprintf('Bias Corriente A | RMSE Estimación: %.4f A\n', rmse(bias_IA_kf, bias_currentA_true));
+fprintf('Bias Corriente B | RMSE Estimación: %.4f A\n', rmse(bias_IB_kf, bias_currentB_true));
+fprintf('Bias IMU         | RMSE Estimación: %.4f rad/s\n', rmse(bias_imu_kf, bias_imu_true));
+fprintf('Bias Strain Gauge| RMSE Estimación: %.4f Nm\n\n', rmse(bias_sg_kf, bias_sg_true));
 
 fprintf('--- POSICIONES ANGULARES [rad] ---\n');
 fprintf('theta_A  | Sensor directo: Hall A (+ Fusión Modelo/Kalman)\n');
@@ -64,7 +100,7 @@ fprintf('theta_B  | Sensor directo: Hall B (+ Fusión Modelo/Kalman)\n');
 fprintf('         RMSE Crudo: %.5f rad | RMSE Kalman: %.5f rad | Mejora: %.2f %%\n', ...
     rmse(thetaB_meas, theta_B_true), rmse(thetaB_kf, theta_B_true), mejora(rmse(thetaB_meas, theta_B_true), rmse(thetaB_kf, theta_B_true)));
 
-fprintf('theta_C  | Sensor directo: Ninguno (Estimación Virtual por Fusión: Hall A, Hall B, IMU, SG)\n');
+fprintf('theta_C  | Sensor directo: Ninguno (Estimación Virtual por Fusión)\n');
 fprintf('         RMSE Crudo: N/A          | RMSE Kalman: %.5f rad\n\n', rmse(thetaC_kf, theta_C_true));
 
 fprintf('--- VELOCIDADES ANGULARES [rad/s] ---\n');
@@ -79,11 +115,11 @@ fprintf('         RMSE Crudo: %.4f rad/s | RMSE Kalman: %.4f rad/s | Mejora: %.2
     rmse(omegaC_meas, omega_C_true), rmse(omegaC_kf, omega_C_true), mejora(rmse(omegaC_meas, omega_C_true), rmse(omegaC_kf, omega_C_true)));
 
 fprintf('--- TORQUES ACTIVOS Y TRANSMITIDOS [Nm] ---\n');
-fprintf('T_A      | Sensor directo: Corriente Motor A (+ Estimación Kalman de Kt drift y Bias)\n');
+fprintf('T_A      | Sensor directo: Corriente Motor A (+ Estimación Kalman de Kt y Bias)\n');
 fprintf('         RMSE Crudo: %.4f Nm   | RMSE Kalman: %.4f Nm   | Mejora: %.2f %%\n', ...
     rmse(TA_current_est, T_A_true), rmse(T_A_kf, T_A_true), mejora(rmse(TA_current_est, T_A_true), rmse(T_A_kf, T_A_true)));
 
-fprintf('T_B      | Sensor directo: Corriente Motor B (+ Estimación Kalman de Kt drift y Bias)\n');
+fprintf('T_B      | Sensor directo: Corriente Motor B (+ Estimación Kalman de Kt y Bias)\n');
 fprintf('         RMSE Crudo: %.4f Nm   | RMSE Kalman: %.4f Nm   | Mejora: %.2f %%\n', ...
     rmse(TB_current_est, T_B_true), rmse(T_B_kf, T_B_true), mejora(rmse(TB_current_est, T_B_true), rmse(T_B_kf, T_B_true)));
 
