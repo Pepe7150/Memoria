@@ -40,8 +40,13 @@
   * [X] Usar funciones como c2d en lugar de hacer las cosas manualmente
   * [X] Dejar matrices en función de matrices y variables anteriores y reordenar las matrices
   * [X] actualizar bias en el tiempo
-  * [ ] forzar theta b fijo ( o theta c a lo mejor sea) y evaluar como se comporta T_B
-* [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente
+  * [X] forzar theta b fijo ( o theta c a lo mejor sea) y evaluar como se comporta T_B. No supe como hacerlo.
+  * [X] cambiar plots de T_transmitido por theta_a y theta_b.
+  * [X] explicar bien lo de estados filtros pero tenerlo escrito bien para finalmente salir del tema.
+  * [ ] Hacer análisis de sensibilidad.
+* [X] Escribir conceptos y ecuaciones del modelo y generales.
+* [ ] Animar sistema mecánico equivalente
+* [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente. Decidir uno solamente si igual no está en el alcance del proyecto que avión se va a modelar.
 * [X] Ver que dicen los chinos del transductor de torque e incorporarlo
 
   * [X] Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.

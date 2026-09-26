@@ -18,20 +18,31 @@ if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
 ylabel('T_B (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
 legend('Real', 'Solo corriente (Kt nominal)', 'Kalman', 'Location', 'best'); title('Torque Motor B');
 
-% --- Figura 2: Torque Transmitido ---
-figure('Name', 'Torque Transmitido', 'Color', 'w', 'Position', [70,70,950,700]);
+% --- Figura 2: Flexión Torsional del Eje (\Delta\theta) ---
+% Cálculo de las deflexiones (flexión angular) entre los nodos
+deflexion_AC_true = theta_A_true - theta_C_true;
+deflexion_AC_kf   = thetaA_kf - thetaC_kf;
+
+deflexion_CB_true = theta_C_true - theta_B_true;
+deflexion_CB_kf   = thetaC_kf - thetaB_kf;
+
+figure('Name', 'Flexión Torsional del Eje', 'Color', 'w', 'Position', [70,70,950,700]);
+
 subplot(2,1,1);
-plot(t, T_AC_true, 'k--', 'LineWidth', 2); hold on;
-plot(t, SG_meas, 'c', 'LineWidth', 1); plot(t, T_AC_kf, 'g', 'LineWidth', 2);
+plot(t, deflexion_AC_true, 'k--', 'LineWidth', 2); hold on;
+plot(t, deflexion_AC_kf, 'b', 'LineWidth', 2);
 if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
-ylabel('T_{AC} (Nm)'); grid on; xlim([0 T_sim]);
-legend('Real', 'Strain gauge', 'Kalman', 'Location', 'best'); title('Torque Transmitido A-C');
+ylabel('\Delta\theta_{AC} (rad)'); grid on; xlim([0 T_sim]);
+legend('Real (\theta_A - \theta_C)', 'Kalman', 'Location', 'best'); 
+title('Flexión del Eje: Tramo Motor A -> Disco C');
 
 subplot(2,1,2);
-plot(t, T_CB_true, 'k--', 'LineWidth', 2); hold on; plot(t, T_CB_kf, 'g', 'LineWidth', 2);
+plot(t, deflexion_CB_true, 'k--', 'LineWidth', 2); hold on; 
+plot(t, deflexion_CB_kf, 'r', 'LineWidth', 2);
 if system_fault, xline(fault_time, 'r--', 'HandleVisibility', 'off'); end
-ylabel('T_{CB} (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
-legend('Real', 'Kalman', 'Location', 'best'); title('Torque Transmitido C-B');
+ylabel('\Delta\theta_{CB} (rad)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
+legend('Real (\theta_C - \theta_B)', 'Kalman', 'Location', 'best'); 
+title('Flexión del Eje: Tramo Disco C -> Motor B');
 
 % --- Figura 3: Cinemática del Disco Central C ---
 figure('Name', 'Cinemática Disco C', 'Color', 'w', 'Position', [90,90,950,700]);

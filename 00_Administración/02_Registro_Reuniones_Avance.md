@@ -128,7 +128,7 @@ Respuestas:
 
 ## Reunión 25/09/2026
 
-**Estado:** Pendiente.
+**Estado:** Realizada.
 
 **Preguntas a plantear:**
 
@@ -137,6 +137,10 @@ Respuestas:
 3. Preguntar por un avión específico genérico para saber la cuerda a usar, mas o menos.
 
 **Respuestas / acuerdos:**
+
+1. Explicar correctamente al presentar que es la observabilidad y como funciona obsv, junto con poder escribir todas las ecuaciones que describen el sistema.
+2. Plotear las variables intermedias theta_a y theta_b en lugar de los torques transmitidos. Para saber cuanto de la posición de c viene de la flexión del eje.
+3. Hacer análisis de sensibilidad.
 
 ## Cómo usar este documento
 
