@@ -19,7 +19,6 @@ ylabel('T_B (Nm)'); xlabel('Tiempo (s)'); grid on; xlim([0 T_sim]);
 legend('Real', 'Solo corriente (Kt nominal)', 'Kalman', 'Location', 'best'); title('Torque Motor B');
 
 % --- Figura 2: Flexión Torsional del Eje (\Delta\theta) ---
-% Cálculo de las deflexiones (flexión angular) entre los nodos
 deflexion_AC_true = theta_A_true - theta_C_true;
 deflexion_AC_kf   = thetaA_kf - thetaC_kf;
 

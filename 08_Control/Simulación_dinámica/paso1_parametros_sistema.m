@@ -28,6 +28,17 @@ b_B = 0.02;                       % Fricción viscosa en B [Nms/rad]
 Kt_A = 0.06;                      % Constante de torque Motor A [Nm/A]
 Kt_B = 0.05;                      % Constante de torque Motor B [Nm/A]
 
+% --- Parámetros Físicos de Montaje ---
+r_imu = 0.005;                    % Excentricidad radial de la IMU [m] (5 mm fuera del centro)
+
+% Sensibilidad del giroscopio a aceleración lineal (g-sensitivity).
+% Un giroscopio MEMS montado fuera del eje siente la aceleración centrípeta
+% (omega^2 * r_imu) y una fracción se filtra a su salida de velocidad angular.
+% El datasheet la da en [°/s por g]. 0.05 °/s/g es un valor TÍPICO de MEMS,
+% NO el de tu IMU: reemplázalo con el valor del datasheet del sensor real.
+g_sens_imu  = 0.05 * (pi/180);    % [(rad/s) por g]
+g_terrestre = 9.81;               % [m/s^2]
+
 % --- Frecuencias Naturales ---
 M = diag([J_A, J_C, J_B]);
 K = [ k1,      -k1,      0;
@@ -47,24 +58,18 @@ bw_strain       = 30;
 bw_current_filt = 500;
 
 % --- Parámetros de Sesgo (Modelo Gauss-Markov / Ornstein-Uhlenbeck) ---
-% Tiempos de correlación tau_b [s]
 tau_b_IA  = 12.0;    % Tiempo de correlación sesgo Corriente A [s]
 tau_b_IB  = 12.0;    % Tiempo de correlación sesgo Corriente B [s]
 tau_b_imu = 8.0;     % Tiempo de correlación sesgo IMU Giroscopio [s]
 tau_b_sg  = 10.0;    % Tiempo de correlación sesgo Strain Gauge [s]
 
-% Desviaciones estándar estacionarias del sesgo sigma_b
 sigma_b_IA  = 0.15;  % Sesgo de Corriente A [A]
 sigma_b_IB  = 0.12;  % Sesgo de Corriente B [A]
 sigma_b_imu = 0.25;  % Sesgo de IMU Giroscopio [rad/s]
 sigma_b_sg  = 0.20;  % Sesgo de Strain Gauge [Nm]
 
-fprintf('=== PARÁMETROS MECÁNICOS, ELECTRÓNICOS Y SESGOS CARGADOS ===\n');
+fprintf('=== PARÁMETROS MECÁNICOS, ELECTRÓNICOS Y FÍSICOS CARGADOS ===\n');
 fprintf('Rigidez k1 (A-C): %.2f Nm/rad | Rigidez k2 (C-B): %.2f Nm/rad\n', k1, k2);
 fprintf('Frecuencias naturales: Modo Rígido = %.2f Hz | Modo 1 = %.2f Hz | Modo 2 = %.2f Hz\n', ...
     fn_all(1), fn1, fn2);
-fprintf('Parámetros Gauss-Markov (tau / sigma):\n');
-fprintf('  Corriente A: tau = %.1f s, sigma = %.2f A\n', tau_b_IA, sigma_b_IA);
-fprintf('  Corriente B: tau = %.1f s, sigma = %.2f A\n', tau_b_IB, sigma_b_IB);
-fprintf('  IMU:         tau = %.1f s, sigma = %.2f rad/s\n', tau_b_imu, sigma_b_imu);
-fprintf('  Strain Gauge:tau = %.1f s, sigma = %.2f Nm\n\n', tau_b_sg, sigma_b_sg);
+fprintf('Excentricidad IMU configurada: r_imu = %.1f mm\n\n', r_imu*1000);

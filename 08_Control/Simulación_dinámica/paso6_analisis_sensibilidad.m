@@ -1,190 +1,223 @@
 % =========================================================================
-% SCRIPT 6: ANÁLISIS DE SENSIBILIDAD DE SENSORES Y COMPONENTES CRÍTICOS
+% SCRIPT 6: ANÁLISIS DE SENSIBILIDAD EN VARIABLES CRÍTICAS (th_C, om_C, I_B)
 % =========================================================================
 clc; clearvars; close all;
 
-fprintf('=== INICIANDO ANÁLISIS DE SENSIBILIDAD ===\n');
-fprintf('Evaluando impacto del ruido en la estimación de variables no medidas...\n');
+fprintf('========================================================================\n');
+fprintf(' INICIANDO ANÁLISIS DE SENSIBILIDAD UNIFICADO (th_C, om_C, I_B)\n');
+fprintf('========================================================================\n');
 
-% Multiplicadores de ruido a evaluar (0.1 = Premium, 1 = Base, 5 = Low-cost)
-multiplicadores = [0.1, 0.5, 1.0, 2.0, 5.0];
-num_tests = length(multiplicadores);
+mult_ruido  = [0.1, 0.5, 1.0, 2.0, 5.0]; 
+mult_modelo = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]; 
 
-% Matrices para almacenar los resultados del RMSE
-rmse_thetaC = zeros(4, num_tests); % Filas: 1=Hall, 2=Current, 3=Gyro, 4=Strain
-rmse_TCB    = zeros(4, num_tests);
+nombres_sensores = {'1. Sensores Hall (Encoder)', '2. Sensores de Corriente', ...
+                    '3. Giroscopio (IMU)', '4. Strain Gauge (Tramo AC)'};
+nombres_parametros = {'1. Inercias (J_A, J_B, J_C)', '2. Fricción y Amortiguamiento (c, b)', ...
+                      '3. Constante de Torque (Kt)', '4. Sesgos Estocásticos (\sigma_b)', ...
+                      '5. Rigidez Torsional del Eje (k)'};
 
-% Nombres para los gráficos
-nombres_sensores = {'Ruido Sensores Hall', 'Ruido Sensores Corriente', ...
-                    'Ruido IMU (Giroscopio)', 'Ruido Strain Gauge'};
+rmse_thC_ruido = zeros(4, length(mult_ruido));
+rmse_omC_ruido = zeros(4, length(mult_ruido));
+rmse_IB_ruido  = zeros(4, length(mult_ruido));
 
-% Ruido base nominal de tu sistema
-base_hall_std = 0.002; base_current_std = 0.03;
-base_gyro_std = 0.02;  base_strain_std  = 0.005;
+rmse_thC_mod = zeros(5, length(mult_modelo));
+rmse_omC_mod = zeros(5, length(mult_modelo));
+rmse_IB_mod  = zeros(5, length(mult_modelo));
 
-for sensor_idx = 1:4
-    for m_idx = 1:num_tests
-        % Reiniciar valores nominales
-        n_hall = base_hall_std; n_curr = base_current_std;
-        n_gyro = base_gyro_std; n_strain = base_strain_std;
-        
-        % Aplicar multiplicador al sensor correspondiente
-        mult = multiplicadores(m_idx);
-        switch sensor_idx
-            case 1, n_hall = base_hall_std * mult;
-            case 2, n_curr = base_current_std * mult;
-            case 3, n_gyro = base_gyro_std * mult;
-            case 4, n_strain = base_strain_std * mult;
-        end
-        
-        % Ejecutar simulación con los ruidos modificados
-        [err_thetaC, err_TCB] = run_sim_for_sensitivity(n_hall, n_curr, n_gyro, n_strain);
-        
-        % Almacenar métricas
-        rmse_thetaC(sensor_idx, m_idx) = err_thetaC;
-        rmse_TCB(sensor_idx, m_idx)    = err_TCB;
+fprintf('\n[1/2] Evaluando propagación de ruido de sensores...\n');
+for i = 1:4
+    for m = 1:length(mult_ruido)
+        [rmse_thC_ruido(i,m), rmse_omC_ruido(i,m), rmse_IB_ruido(i,m)] = run_unified_sim(1, i, mult_ruido(m));
     end
 end
 
-% --- Graficar Resultados de Sensibilidad ---
-figure('Name', 'Sensibilidad de Componentes a la Calidad del Sensor', 'Color', 'w', 'Position', [100,100,1000,600]);
-colores = lines(4);
-
-subplot(1,2,1);
-for i = 1:4
-    plot(multiplicadores, rmse_thetaC(i,:), '-o', 'LineWidth', 2, 'Color', colores(i,:)); hold on;
+fprintf('[2/2] Evaluando sensibilidad a errores paramétricos de hardware...\n');
+for i = 1:5
+    for m = 1:length(mult_modelo)
+        [rmse_thC_mod(i,m), rmse_omC_mod(i,m), rmse_IB_mod(i,m)] = run_unified_sim(2, i, mult_modelo(m));
+    end
 end
-xlabel('Multiplicador de Ruido (1 = Nominal, <1 = Mejor)');
-ylabel('RMSE \theta_C (rad)');
-title('Sensibilidad en Posición Central (No Medida)');
-grid on; legend(nombres_sensores, 'Location', 'best');
 
-subplot(1,2,2);
+figure('Name', 'Sensibilidad en Variables Críticas', 'Color', 'w', 'Position', [50, 50, 1200, 900]);
+
+subplot(3,2,1); hold on; grid on;
+for i=1:4, plot(mult_ruido, rmse_thC_ruido(i,:), '-o', 'LineWidth', 2); end
+title('Ruido vs Posición \theta_C'); ylabel('RMSE (rad)'); 
+legend(nombres_sensores, 'Location', 'best', 'FontSize', 8);
+
+subplot(3,2,2); hold on; grid on;
+for i=1:5, plot(mult_modelo, rmse_thC_mod(i,:), '-s', 'LineWidth', 2); end
+xline(1.0, 'k--', 'Modelo Perfecto'); title('Desajuste vs Posición \theta_C'); ylabel('RMSE (rad)');
+legend(nombres_parametros, 'Location', 'best', 'FontSize', 8);
+
+subplot(3,2,3); hold on; grid on;
+for i=1:4, plot(mult_ruido, rmse_omC_ruido(i,:), '-o', 'LineWidth', 2); end
+title('Ruido vs Velocidad \omega_C'); ylabel('RMSE (rad/s)');
+
+subplot(3,2,4); hold on; grid on;
+for i=1:5, plot(mult_modelo, rmse_omC_mod(i,:), '-s', 'LineWidth', 2); end
+xline(1.0, 'k--', 'Modelo Perfecto'); title('Desajuste vs Velocidad \omega_C'); ylabel('RMSE (rad/s)');
+
+subplot(3,2,5); hold on; grid on;
+for i=1:4, plot(mult_ruido, rmse_IB_ruido(i,:), '-o', 'LineWidth', 2); end
+title('Ruido vs Corriente Motor B'); xlabel('Multiplicador de Ruido (1=Nominal)'); ylabel('RMSE (A)');
+
+subplot(3,2,6); hold on; grid on;
+for i=1:5, plot(mult_modelo, rmse_IB_mod(i,:), '-s', 'LineWidth', 2); end
+xline(1.0, 'k--', 'Modelo Perfecto'); title('Desajuste vs Corriente Motor B'); xlabel('Factor Físico vs Software (1=Exacto)'); ylabel('RMSE (A)');
+
+fprintf('\n========================================================================\n');
+fprintf(' CONCLUSIONES: CALIDAD DE SENSORES (PRESUPUESTO)\n');
+fprintf('========================================================================\n');
+idx_nom_r = find(mult_ruido == 1.0);
+idx_peor_r = find(mult_ruido == 5.0);
+
 for i = 1:4
-    plot(multiplicadores, rmse_TCB(i,:), '-o', 'LineWidth', 2, 'Color', colores(i,:)); hold on;
+    deg_thC = (rmse_thC_ruido(i, idx_peor_r) - rmse_thC_ruido(i, idx_nom_r)) / rmse_thC_ruido(i, idx_nom_r) * 100;
+    deg_omC = (rmse_omC_ruido(i, idx_peor_r) - rmse_omC_ruido(i, idx_nom_r)) / rmse_omC_ruido(i, idx_nom_r) * 100;
+    deg_IB  = (rmse_IB_ruido(i, idx_peor_r) - rmse_IB_ruido(i, idx_nom_r)) / rmse_IB_ruido(i, idx_nom_r) * 100;
+    deg_max = max([deg_thC, deg_omC, deg_IB]);
+    
+    if deg_max > 40.0 
+        fprintf('[CRÍTICO] %s:\n -> Hardware barato destruye la estimación (Peor degradación: %.1f%%).\n\n', nombres_sensores{i}, deg_max);
+    else
+        fprintf('[AHORRO]  %s:\n -> Kalman compensa bien. Apto para hardware económico (Peor degradación: %.1f%%).\n\n', nombres_sensores{i}, deg_max);
+    end
 end
-xlabel('Multiplicador de Ruido (1 = Nominal, <1 = Mejor)');
-ylabel('RMSE T_{CB} (Nm)');
-title('Sensibilidad en Torque Transmitido CB (No Medido)');
-grid on; legend(nombres_sensores, 'Location', 'best');
 
-fprintf('=== ANÁLISIS COMPLETADO ===\n');
-fprintf('Revisa las pendientes en los gráficos: las curvas más empinadas indican los\n');
-fprintf('componentes más críticos estructuralmente donde debes destinar más presupuesto.\n');
+fprintf('========================================================================\n');
+fprintf(' CONCLUSIONES: TIEMPO DE CARACTERIZACIÓN (INGENIERÍA)\n');
+fprintf('========================================================================\n');
+idx_nom_m = find(mult_modelo == 1.0);
+idx_peor_m = find(mult_modelo == 2.0);
 
-% =========================================================================
-% FUNCIÓN LOCAL: MOTOR DE SIMULACIÓN Y KALMAN CONDENSADO
-% =========================================================================
-function [rmse_thC, rmse_tcb] = run_sim_for_sensitivity(noise_hall, noise_current, noise_gyro, noise_strain)
-    % Parámetros mecánicos base
-    d = 0.005; L = 0.15; G = 79.3e9; 
-    J_polar = (pi * d^4) / 32; k_full = (G * J_polar) / L; c_full = 0.05;
-    k1 = 2*k_full; c1 = 2*c_full; k2 = 2*k_full; c2 = 2*c_full;
-    J_A = 4e-4; J_B = 3e-4; J_C = 5e-5; b_A = 0.02; b_B = 0.02;
-    Kt_A = 0.06; Kt_B = 0.05;
+for i = 1:5
+    deg_thC = (rmse_thC_mod(i, idx_peor_m) - rmse_thC_mod(i, idx_nom_m)) / rmse_thC_mod(i, idx_nom_m) * 100;
+    deg_omC = (rmse_omC_mod(i, idx_peor_m) - rmse_omC_mod(i, idx_nom_m)) / rmse_omC_mod(i, idx_nom_m) * 100;
+    deg_IB  = (rmse_IB_mod(i, idx_peor_m) - rmse_IB_mod(i, idx_nom_m)) / rmse_IB_mod(i, idx_nom_m) * 100;
+    deg_max = max(abs([deg_thC, deg_omC, deg_IB]));
     
-    % Configuración temporal
-    fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 5; % Simulación corta (5s) para sensibilidad rápida
-    t = (0:dt_sim:T_sim-dt_sim)'; N = length(t);
+    if deg_max > 25.0 
+        fprintf('[CRÍTICO] %s:\n -> Requiere modelado 3D o ensayos reales (Error se dispara %.1f%%).\n\n', nombres_parametros{i}, deg_max);
+    else
+        fprintf('[TABULAR] %s:\n -> Usa un valor de internet. La dinámica es robusta a este error (Variación: %.1f%%).\n\n', nombres_parametros{i}, deg_max);
+    end
+end
+fprintf('========================================================================\n');
+
+function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mult)
+    d = 0.005; L = 0.15; G = 79.3e9; J_polar = (pi * d^4) / 32; 
+    k_nom = (G * J_polar) / L; c_nom = 0.05;
+    k1_nom = 2*k_nom; k2_nom = 2*k_nom; c1_nom = 2*c_nom; c2_nom = 2*c_nom;
+    JA_nom = 4e-4; JB_nom = 3e-4; JC_nom = 5e-5; bA_nom = 0.02; bB_nom = 0.02;
+    KtA_nom = 0.06; KtB_nom = 0.05; r_imu = 0.005;
+    g_sens_imu = 0.05*(pi/180); g_terrestre = 9.81;   % (duplicado de paso1: se elimina en la refactorización)
     
-    % Perfil de entrada (Torque Motor A)
-    T_A_ref = zeros(N,1); 
-    T_A_ref(t >= 1) = 4.0;
+    n_hall_nom = 0.002; n_curr_nom = 0.03; n_gyro_nom = 0.02; n_strain_nom = 0.005;
+    sig_b_IA_nom = 0.15; sig_b_IB_nom = 0.12; sig_b_imu_nom = 0.25; sig_b_sg_nom = 0.20;
+
+    JA_true = JA_nom; JB_true = JB_nom; JC_true = JC_nom;
+    k1_true = k1_nom; k2_true = k2_nom; 
+    c1_true = c1_nom; c2_true = c2_nom; bA_true = bA_nom; bB_true = bB_nom;
+    KtA_true = KtA_nom; KtB_true = KtB_nom;
+    sig_b_IA_true = sig_b_IA_nom; sig_b_imu_true = sig_b_imu_nom; sig_b_sg_true = sig_b_sg_nom;
+    n_hall_true = n_hall_nom; n_curr_true = n_curr_nom; n_gyro_true = n_gyro_nom; n_strain_true = n_strain_nom;
+
+    if tipo_test == 1 
+        if idx_caso == 1, n_hall_true = n_hall_nom * mult; end
+        if idx_caso == 2, n_curr_true = n_curr_nom * mult; end
+        if idx_caso == 3, n_gyro_true = n_gyro_nom * mult; end
+        if idx_caso == 4, n_strain_true = n_strain_nom * mult; end
+    elseif tipo_test == 2 
+        if idx_caso == 1, JA_true = JA_nom * mult; JB_true = JB_nom * mult; JC_true = JC_nom * mult; end
+        if idx_caso == 2, c1_true = c1_nom * mult; c2_true = c2_nom * mult; bA_true = bA_nom * mult; bB_true = bB_nom * mult; end
+        if idx_caso == 3, KtA_true = KtA_nom * mult; KtB_true = KtB_nom * mult; end
+        if idx_caso == 4, sig_b_IA_true = sig_b_IA_nom * mult; sig_b_imu_true = sig_b_imu_nom * mult; sig_b_sg_true = sig_b_sg_nom * mult; end
+        if idx_caso == 5, k1_true = k1_nom * mult; k2_true = k2_nom * mult; end
+    end
+
+    Ac6_nom = [0, 1, 0, 0, 0, 0; -k1_nom/JA_nom, -(c1_nom+bA_nom)/JA_nom, k1_nom/JA_nom, c1_nom/JA_nom, 0, 0;
+               0, 0, 0, 1, 0, 0; k1_nom/JC_nom, c1_nom/JC_nom, -(k1_nom+k2_nom)/JC_nom, -(c1_nom+c2_nom)/JC_nom, k2_nom/JC_nom, c2_nom/JC_nom;
+               0, 0, 0, 0, 0, 1; 0, 0, k2_nom/JB_nom, c2_nom/JB_nom, -k2_nom/JB_nom, -(c2_nom+bB_nom)/JB_nom];
+    Bc6_nom = [0,0; 1/JA_nom,0; 0,0; 0,0; 0,0; 0,-1/JB_nom];
+    C_torque_nom = [k1_nom, c1_nom, -k1_nom, -c1_nom, 0, 0; 0, 0, k2_nom, c2_nom, -k2_nom, -c2_nom];
     
-    % Matrices de Estado de Planta 6x6
-    Ac6 = [0, 1, 0, 0, 0, 0;
-          -k1/J_A, -(c1+b_A)/J_A,  k1/J_A,  c1/J_A, 0, 0;
-           0, 0, 0, 1, 0, 0;
-           k1/J_C,  c1/J_C, -(k1+k2)/J_C, -(c1+c2)/J_C,  k2/J_C,  c2/J_C;
-           0, 0, 0, 0, 0, 1;
-           0, 0, k2/J_B, c2/J_B, -k2/J_B, -(c2+b_B)/J_B];
-    Bc6 = [0,0; 1/J_A,0; 0,0; 0,0; 0,0; 0,-1/J_B];
-    C_torque = [k1, c1, -k1, -c1, 0, 0; 0, 0, k2, c2, -k2, -c2];
-    sys_d = c2d(ss(Ac6, Bc6, eye(6), zeros(6,2)), dt_sim, 'zoh');
-    Ad6 = sys_d.A; Bd6 = sys_d.B;
+    fs_sim = 5000; dt_sim = 1/fs_sim; T_sim = 4;
+    sys_nom = c2d(ss(Ac6_nom, Bc6_nom, eye(6), zeros(6,2)), dt_sim, 'zoh');
+    Ad6_nom = sys_nom.A; Bd6_nom = sys_nom.B;
     
-    % Filtros Sensores
-    alpha_drv = dt_sim / (1/(2*pi*200) + dt_sim);
-    alpha_hall = dt_sim / (1/(2*pi*500) + dt_sim);
-    alpha_cs = dt_sim / (1/(2*pi*500) + dt_sim);
-    alpha_imu = dt_sim / (1/(2*pi*150) + dt_sim);
-    alpha_sg = dt_sim / (1/(2*pi*30) + dt_sim);
+    Ac6_true = [0, 1, 0, 0, 0, 0; -k1_true/JA_true, -(c1_true+bA_true)/JA_true, k1_true/JA_true, c1_true/JA_true, 0, 0;
+                0, 0, 0, 1, 0, 0; k1_true/JC_true, c1_true/JC_true, -(k1_true+k2_true)/JC_true, -(c1_true+c2_true)/JC_true, k2_true/JC_true, c2_true/JC_true;
+                0, 0, 0, 0, 0, 1; 0, 0, k2_true/JB_true, c2_true/JB_true, -k2_true/JB_true, -(c2_true+bB_true)/JB_true];
+    Bc6_true = [0,0; 1/JA_true,0; 0,0; 0,0; 0,0; 0,-1/JB_true];
+    C_torque_true = [k1_true, c1_true, -k1_true, -c1_true, 0, 0; 0, 0, k2_true, c2_true, -k2_true, -c2_true];
     
-    % Parámetros Kalman Ampliado (14 Estados)
-    nx = 14; Ac14 = zeros(nx,nx);
-    Ac14(1:6, 1:6) = Ac6; Ac14(1:6, 7:8) = Bc6;
-    Ac14(9,4) = 150*2*pi; Ac14(9,9) = -150*2*pi; % BW IMU = 150Hz
-    Ac14(10,1:6) = C_torque(1,:) * (30*2*pi); Ac14(10,10) = -30*2*pi; % BW SG = 30Hz
-    
-    % Dinámica de Sesgos (Gauss-Markov aproximado)
-    tau_b = 10; Ac14(11:14, 11:14) = diag([-1/12, -1/12, -1/8, -1/10]);
+    sys_true = c2d(ss(Ac6_true, Bc6_true, eye(6), zeros(6,2)), dt_sim, 'zoh');
+    Ad6_true = sys_true.A; Bd6_true = sys_true.B;
+
+    nx = 14; Ac14 = zeros(nx,nx); Ac14(1:6, 1:6) = Ac6_nom; Ac14(1:6, 7:8) = Bc6_nom;
+    Ac14(9,4) = 150*2*pi; Ac14(9,9) = -150*2*pi; Ac14(10,1:6) = C_torque_nom(1,:)*(30*2*pi); Ac14(10,10) = -30*2*pi;
+    Ac14(11:14, 11:14) = diag([-1/12, -1/12, -1/8, -1/10]);
     Adk = expm(Ac14*dt_sim);
     
-    H = zeros(6,nx);
-    H(1,1)=1; H(2,5)=1; 
-    H(3,7)=1; H(3,11)=1; 
-    H(4,8)=1; H(4,12)=1; 
-    H(5,9)=1; H(5,13)=1; 
-    H(6,10)=1; H(6,14)=1;
-    
-    % Matrices Q y R para el Kalman según la iteración
-    var_hall = noise_hall^2 * alpha_hall/(2-alpha_hall);
-    var_IA   = noise_current^2 * alpha_cs/(2-alpha_cs);
-    var_imu  = noise_gyro^2 * alpha_imu/(2-alpha_imu);
-    var_sg   = noise_strain^2 * alpha_sg/(2-alpha_sg);
-    R = diag([var_hall, var_hall, (Kt_A^2)*var_IA, (Kt_B^2)*var_IA, var_imu, var_sg]);
-    
-    Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, ... 
-              0.01*dt_sim, 0.01*dt_sim, 1e-8, 1e-8, ... 
-              1e-5, 1e-5, 1e-5, 1e-5]); 
-          
+    H = zeros(6,nx); H(1,1)=1; H(2,5)=1; H(3,7)=1; H(3,11)=1; H(4,8)=1; H(4,12)=1; H(5,9)=1; H(5,13)=1; H(6,10)=1; H(6,14)=1;
+    Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, 0.01*dt_sim, 0.01*dt_sim, 1e-8, 1e-8, 1e-5, 1e-5, 1e-5, 1e-5]);
+    R = diag([1e-5, 1e-5, 1e-3, 1e-3, 1e-4, 1e-4]);
     P = eye(nx);
-    for iter = 1:100
-        P_pred = Adk*P*Adk' + Q;
-        K_k = (P_pred*H') / (H*P_pred*H' + R);
-        P = (eye(nx) - K_k*H)*P_pred;
-    end
-    
-    % Bucle de Simulación
+    for iter = 1:50, P_pred = Adk*P*Adk' + Q; K_k = (P_pred*H') / (H*P_pred*H' + R); P = (eye(nx) - K_k*H)*P_pred; end
+
+    t = (0:dt_sim:T_sim-dt_sim)'; N = length(t);
     x6 = zeros(6,N); x_est = zeros(nx,1); X_hist = zeros(nx,N);
-    TA_true = 0; TB_true = 0; IA_true = 0; IB_true = 0;
-    thA_meas=0; thB_meas=0; IA_meas=0; IB_meas=0; wC_meas=0; SG_meas=0;
-    th_err_int = 0;
+    TA_true = 0; TB_true = 0; IA_true = 0; IB_true = 0; th_err_int = 0;
+    
+    bias_IA = 0.1; bias_IB = -0.08; bias_imu = 0.2; bias_sg = 0.15;
+    alpha_drv = dt_sim / (1/(2*pi*200) + dt_sim);
+    IB_true_arr = zeros(N,1);
     
     for i=2:N
-        % Planta y Control Básico
-        TA_true = TA_true + alpha_drv*(T_A_ref(i) - TA_true);
-        IA_true = TA_true / Kt_A;
+        TA_cmd = (t(i) >= 1) * 4.0 * sin(2 * pi * 5 * t(i));
+        TA_true = TA_true + alpha_drv*(TA_cmd - TA_true);
+        IA_true = TA_true / KtA_true;
         
-        th_err = 0 - x_est(3); th_err_int = th_err_int + th_err*dt_sim;
+        th_err = 0 - x_est(3); th_err_int = max(min(th_err_int + th_err*dt_sim, 10), -10);
         TB_cmd = -(1*th_err + 5*th_err_int + 0.5*(0 - x_est(4)));
-        IB_true = IB_true + alpha_drv*((TB_cmd/Kt_B) - IB_true);
-        TB_true = Kt_B * IB_true;
+        IB_true = IB_true + alpha_drv*((TB_cmd/KtB_nom) - IB_true); 
+        TB_true = KtB_true * IB_true; 
+        IB_true_arr(i) = IB_true;
         
-        x6(:,i) = Ad6*x6(:,i-1) + Bd6*[TA_true; TB_true];
+        x6(:,i) = Ad6_true*x6(:,i-1) + Bd6_true*[TA_true; TB_true];
         
-        % Sensores + Ruido
-        thA_meas = thA_meas + alpha_hall*((x6(1,i) + noise_hall*randn) - thA_meas);
-        thB_meas = thB_meas + alpha_hall*((x6(5,i) + noise_hall*randn) - thB_meas);
-        IA_meas  = IA_meas  + alpha_cs*((IA_true + noise_current*randn) - IA_meas);
-        IB_meas  = IB_meas  + alpha_cs*((IB_true + noise_current*randn) - IB_meas);
-        wC_meas  = wC_meas  + alpha_imu*((x6(4,i) + noise_gyro*randn) - wC_meas);
+        bias_IA = bias_IA*exp(-dt_sim/12) + sig_b_IA_true*sqrt(1-exp(-2*dt_sim/12))*randn;
+        bias_IB = bias_IB*exp(-dt_sim/12) + sig_b_IB_nom*sqrt(1-exp(-2*dt_sim/12))*randn;
+        bias_imu = bias_imu*exp(-dt_sim/8) + sig_b_imu_true*sqrt(1-exp(-2*dt_sim/8))*randn;
+        bias_sg = bias_sg*exp(-dt_sim/10) + sig_b_sg_true*sqrt(1-exp(-2*dt_sim/10))*randn;
         
-        TAC_true_i = C_torque(1,:) * x6(:,i);
-        SG_meas  = SG_meas + alpha_sg*((TAC_true_i + noise_strain*randn) - SG_meas);
+        thA_m = x6(1,i) + n_hall_true*randn;
+        thB_m = x6(5,i) + n_hall_true*randn;
+        IA_m  = IA_true + bias_IA + n_curr_true*randn;
+        IB_m  = IB_true + bias_IB + n_curr_true*randn;
         
-        % Kalman Fusión
+        omega_C_val  = x6(4,i);
+        a_centripeta = (omega_C_val^2) * r_imu;                    % [m/s^2]
+        error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);  % [rad/s]
+        wC_m  = omega_C_val + error_gsens + bias_imu + n_gyro_true*randn;
+        
+        SG_m  = C_torque_true(1,:)*x6(:,i) + bias_sg + n_strain_true*randn;
+        
         x_pred = Adk*x_est;
-        z = [thA_meas; thB_meas; Kt_A*IA_meas; Kt_B*IB_meas; wC_meas; SG_meas];
+        z = [thA_m; thB_m; KtA_nom*IA_m; KtB_nom*IB_m; wC_m; SG_m];
         x_est = x_pred + K_k*(z - H*x_pred);
         X_hist(:,i) = x_est;
     end
     
-    % Calcular RMSE para los estados críticos (Omitiendo el transitorio inicial de 1s)
     idx_eval = (fs_sim*1):N;
     rmse_thC = sqrt(mean((X_hist(3,idx_eval)' - x6(3,idx_eval)').^2));
+    rmse_omC = sqrt(mean((X_hist(4,idx_eval)' - x6(4,idx_eval)').^2));
     
-    T_CB_true = (C_torque(2,:) * x6(:,idx_eval))';
-    T_CB_kf   = (C_torque(2,:) * X_hist(1:6,idx_eval))';
-    rmse_tcb  = sqrt(mean((T_CB_kf - T_CB_true).^2));
+    IB_est = (X_hist(8,idx_eval) / KtB_nom)';
+    rmse_IB  = sqrt(mean((IB_est - IB_true_arr(idx_eval)).^2));
+    
+    if rmse_thC > 1e3 || isnan(rmse_thC), rmse_thC = 1e3; end
+    if rmse_omC > 1e3 || isnan(rmse_omC), rmse_omC = 1e3; end
+    if rmse_IB > 1e3 || isnan(rmse_IB),   rmse_IB = 1e3; end
 end

@@ -43,14 +43,15 @@
   * [X] forzar theta b fijo ( o theta c a lo mejor sea) y evaluar como se comporta T_B. No supe como hacerlo.
   * [X] cambiar plots de T_transmitido por theta_a y theta_b.
   * [X] explicar bien lo de estados filtros pero tenerlo escrito bien para finalmente salir del tema.
-  * [ ] Hacer análisis de sensibilidad.
+  * [X] Hacer análisis de sensibilidad.
+  * [ ] Revisar el código completo.
+  * [ ] en una parte se suma torque y corriente (bias), falta multiplicar por Kt ahí.
 * [X] Escribir conceptos y ecuaciones del modelo y generales.
-* [ ] Animar sistema mecánico equivalente
+* [X] Animar sistema mecánico equivalente
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente. Decidir uno solamente si igual no está en el alcance del proyecto que avión se va a modelar.
 * [X] Ver que dicen los chinos del transductor de torque e incorporarlo
 
   * [X] Ya no será con el transductor chino, muy caro. Se hará uno casero, un tubo con mayor diámetro (donde si quepan los strain gauges) con rebajes donde se deban pegar y este irá acolpado al eje.
-* [ ] en el modelo dinámico a lo mejor tirar la mitad de la inercia del eje mismo por lado (A y C o B y C), aunque vicuña dijo que la inercia del eje suele ser casi insignificante
 * [ ] Agregar revisión a la hora de integrar que los cables no interfieran con el movimiento o que cambien la inercia al ser un sistema muy pequeño.
 * [X] Crear/actualizar la documentación una vez cerrados los temas que se mantienen abiertos
 * [ ] Quiero tener un esquema ordenado como el de annastopoulos et al. Para eso falta tener el sistema completamente definido y cerrado
@@ -59,4 +60,5 @@
 
   * [X] prueba con deflexión
   * [ ] Terminar de probar si funciona el barrido
+  * [ ] Configurar los efectos dinámicos
   * [ ] Definir correctamente el barrido a usar
