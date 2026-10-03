@@ -13,7 +13,12 @@ internalField   uniform (@UX@ @UY@ 0);
 
 boundaryField
 {
-    airfoil
+    mainfoil
+    {
+        type            noSlip;
+    }
+
+    flap
     {
         type            noSlip;
     }

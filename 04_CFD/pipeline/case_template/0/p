@@ -13,7 +13,12 @@ internalField   uniform 0;
 
 boundaryField
 {
-    airfoil
+    mainfoil
+    {
+        type            zeroGradient;
+    }
+
+    flap
     {
         type            zeroGradient;
     }

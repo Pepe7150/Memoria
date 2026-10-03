@@ -45,7 +45,7 @@ fi
 if ! command -v gmshToFoam &> /dev/null; then
     echo "ERROR: no se encuentra gmshToFoam."
     echo "       ¿Cargaste el entorno de OpenFOAM? Prueba:"
-    echo "       source /opt/openfoam*/etc/bashrc"
+    echo "       source /opt/OpenFOAM/OpenFOAM-v2012/etc/bashrc"
     exit 1
 fi
 
@@ -93,7 +93,7 @@ echo "=== 2. Corrigiendo tipos de patch en constant/polyMesh/boundary ==="
 # patch, así que "-entry front.type" falla con "not found in dictionary".
 # La forma robusta es editar el texto del archivo directamente:
 python3 "$(dirname "$0")/fix_patch_types.py" "$CASE_DIR/constant/polyMesh/boundary" \
-    front:empty back:empty airfoil:wall
+    front:empty back:empty mainfoil:wall flap:wall
 
 echo ""
 echo "=== 3. Validando calidad de malla ==="

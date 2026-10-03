@@ -82,20 +82,20 @@ def build_geometry_and_mesh(delta, cfg, workdir):
     return mesh_case
 
 
-def parse_force_coeffs(case_dir):
+def parse_force_coeffs(case_dir, function_object="forceCoeffs1"):
     """
-    Lee el último valor de Cl/Cd/Cm escrito por el function object forceCoeffs
-    (postProcessing/forceCoeffs1/0/forceCoeffs.dat o coefficient.dat según la
-    versión de OpenFOAM). Devuelve (Cd, Cl, CmPitch) del último renglón.
+    Lee el último valor de Cd/Cl/CmPitch escrito por un function object tipo
+    forceCoeffs (postProcessing/<function_object>/0/coefficient.dat o
+    forceCoeffs.dat según la versión de OpenFOAM).
     """
     candidates = [
-        os.path.join(case_dir, "postProcessing", "forceCoeffs1", "0", "coefficient.dat"),
-        os.path.join(case_dir, "postProcessing", "forceCoeffs1", "0", "forceCoeffs.dat"),
+        os.path.join(case_dir, "postProcessing", function_object, "0", "coefficient.dat"),
+        os.path.join(case_dir, "postProcessing", function_object, "0", "forceCoeffs.dat"),
     ]
     dat_file = next((c for c in candidates if os.path.exists(c)), None)
     if dat_file is None:
         raise FileNotFoundError(
-            f"No encontré el archivo de forceCoeffs en {case_dir}/postProcessing/forceCoeffs1/"
+            f"No encontré el archivo de forceCoeffs en {case_dir}/postProcessing/{function_object}/"
         )
 
     last_line = None
@@ -142,20 +142,45 @@ def main():
                     "--mach", str(mach), "--aoa", str(aoa),
                     "--chord", str(cfg["chord"]), "--extrude-z", str(cfg["extrude_z"]),
                     "--a", str(cfg["speed_of_sound"]), "--nu", str(cfg["nu"]),
+                    "--hinge", str(cfg["hinge"]),
                     "--out", case_dir,
                 ])
 
                 run(["simpleFoam", "-case", case_dir], cwd=HERE)
 
-                coeffs = parse_force_coeffs(case_dir)
+                coeffs = parse_force_coeffs(case_dir, "forceCoeffs1")
+                hinge_coeffs = parse_force_coeffs(case_dir, "hingeMoment1")
+
+                # Reconstituye el momento de bisagra dimensional REAL: el
+                # CmPitch de hingeMoment1 es dimensionless (viene de un
+                # rhoInf/Aref/lRef "de mentira" en unidades de malla), así
+                # que se reconvierte con las cantidades físicas reales --
+                # exactamente la misma lógica de "teoría de franjas" (strip
+                # theory) que se usa para pasar de coeficientes 2D a fuerzas
+                # 3D totales de una superficie de envergadura finita.
+                rho_real = cfg["rho_real"]
+                chord_real = cfg["chord_real"]
+                span_real = cfg["span_real"]
+                umag_real = mach * cfg["speed_of_sound"]
+                hinge_moment_Nm = (
+                    hinge_coeffs["CmPitch"] * 0.5 * rho_real * umag_real**2
+                    * chord_real**2 * span_real
+                )
+
                 rows.append({
                     "delta_deg": delta, "mach": mach, "aoa_deg": aoa,
                     **coeffs,
+                    "ChHinge": hinge_coeffs["CmPitch"],
+                    "HingeMoment_Nm": hinge_moment_Nm,
                 })
-                print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  CmPitch={coeffs['CmPitch']:.4f}")
+                print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  CmPitch={coeffs['CmPitch']:.4f}"
+                      f"  |  ChHinge={hinge_coeffs['CmPitch']:.4f}  M_bisagra={hinge_moment_Nm:.4f} N·m")
 
     with open(args.summary, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=["delta_deg", "mach", "aoa_deg", "Cl", "Cd", "CmPitch"])
+        writer = csv.DictWriter(f, fieldnames=[
+            "delta_deg", "mach", "aoa_deg", "Cl", "Cd", "CmPitch",
+            "ChHinge", "HingeMoment_Nm",
+        ])
         writer.writeheader()
         writer.writerows(rows)
 
@@ -167,7 +192,7 @@ def generate_example_config(path):
         "deltas": [-10, 0, 10],
         "machs": [0.1, 0.15, 0.2],
         "aoas": [-4, 0, 4, 8, 12],
-        "chord": 1.0,
+        "chord": 1.0,                 # cuerda en unidades de la malla -- SIEMPRE 1.0, no la toques
         "hinge": 0.7,
         "extrude_z": 0.1,
         "farfield": 15,
@@ -179,11 +204,16 @@ def generate_example_config(path):
         "layers": 20,
         "growth": 1.2,
         "speed_of_sound": 340.3,
-        "nu": 1.5e-5,
+        "nu": 1.5e-5,                  # nu "de malla" (nu_real / chord_real), no el nu real del aire
+        "rho_real": 1.225,             # densidad real del aire, para reconstituir el momento de bisagra en N·m
+        "chord_real": 0.2,             # cuerda REAL en metros de tu superficie de control
+        "span_real": 0.15,             # envergadura REAL en metros de tu superficie de control -- AJUSTA a tu banco de ensayos
     }
     with open(path, "w") as f:
         json.dump(example, f, indent=2)
     print(f"Config de ejemplo escrita en: {path}")
+    print("OJO: ajusta rho_real, chord_real y span_real a tu banco de ensayos real --")
+    print("     son necesarios para convertir ChHinge (adimensional) a HingeMoment_Nm (N·m real).")
 
 
 if __name__ == "__main__":

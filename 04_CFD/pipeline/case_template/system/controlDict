@@ -39,9 +39,11 @@ functions
 {
     forceCoeffs1
     {
+        // Cl/Cd/Cm del perfil COMPLETO (mainfoil + flap), respecto al cuarto
+        // de cuerda -- para las curvas aerodinámicas generales del perfil.
         type            forceCoeffs;
         libs            (forces);
-        patches         (airfoil);
+        patches         (mainfoil flap);
 
         rho             rhoInf;
         rhoInf          1;          // incompresible: densidad de referencia arbitraria (coeficientes quedan normalizados igual)
@@ -54,6 +56,36 @@ functions
         magUInf         @UMAG@;
         lRef            @CHORD@;                 // cuerda
         Aref            @AREF@;                  // cuerda * espesor de extrusión (revisa que calce con tu malla)
+
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+    }
+
+    hingeMoment1
+    {
+        // Momento SOLO sobre el flap, respecto a la bisagra -- este es el
+        // que necesitas para dimensionar el actuador. Mismo Aref/lRef/rhoInf
+        // que forceCoeffs1 (convención consistente): el coeficiente CmPitch
+        // que devuelve esto se reconvierte a momento dimensional real con
+        //   M_bisagra = CmPitch * 0.5 * rho_real * U_real^2 * chord_real^2 * span_real
+        // (span_real = envergadura real de tu superficie de control, un dato
+        // que tú defines -- no viene de la malla, que es pseudo-2D).
+        type            forceCoeffs;
+        libs            (forces);
+        patches         (flap);
+
+        rho             rhoInf;
+        rhoInf          1;
+
+        liftDir         (@LIFT_X@ @LIFT_Y@ 0);
+        dragDir         (@DRAG_X@ @DRAG_Y@ 0);
+        CofR            (@COFR_HINGE_X@ 0 0);    // bisagra del flap, NO el cuarto de cuerda
+        pitchAxis       (0 0 1);
+
+        magUInf         @UMAG@;
+        lRef            @CHORD@;
+        Aref            @AREF@;
 
         writeControl    timeStep;
         writeInterval   1;

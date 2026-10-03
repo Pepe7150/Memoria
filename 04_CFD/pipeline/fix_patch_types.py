@@ -46,8 +46,11 @@ def main():
 
     for change in changes:
         patch_name, new_type = change.split(":")
-        text = fix_patch_type(text, patch_name, new_type)
-        print(f"  {patch_name} -> type {new_type}")
+        try:
+            text = fix_patch_type(text, patch_name, new_type)
+            print(f"  {patch_name} -> type {new_type}")
+        except ValueError as e:
+            print(f"  AVISO: {e} -- se omite (¿malla generada sin ese patch?)")
 
     with open(path, "w") as f:
         f.write(text)

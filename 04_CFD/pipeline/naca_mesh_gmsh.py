@@ -30,7 +30,8 @@ import gmsh
 
 def read_dat(path, min_spacing=5e-4):
     """
-    Lee el .dat y filtra puntos consecutivos demasiado cercanos entre sí.
+    Lee el .dat (2 o 3 columnas: x y [is_flap]) y filtra puntos consecutivos
+    demasiado cercanos entre sí.
 
     Los .dat generados con espaciado coseno acumulan puntos extremadamente
     juntos cerca del borde de fuga (más aún si además hay un flap deflectado
@@ -38,32 +39,56 @@ def read_dat(path, min_spacing=5e-4):
     hace que la recuperación de la curva 1D falle ("Edge not recovered").
     Este filtro conserva la forma pero evita segmentos menores a min_spacing
     (en fracción de cuerda).
+
+    Devuelve (coords, is_flap). Si el .dat no trae la tercera columna,
+    is_flap es None (modo legado: toda la superficie queda en un solo patch).
     """
     pts = []
+    flags = []
+    has_flag = None
     with open(path) as f:
         lines = f.readlines()[1:]  # salta el header
     for line in lines:
         line = line.strip()
         if not line:
             continue
-        x, y = map(float, line.split())
+        parts = line.split()
+        if has_flag is None:
+            has_flag = len(parts) >= 3
+        x, y = float(parts[0]), float(parts[1])
         pts.append((x, y))
+        if has_flag:
+            flags.append(bool(int(parts[2])))
     pts = np.array(pts)
+    flags = np.array(flags, dtype=bool) if has_flag else None
 
     filtered = [pts[0]]
-    for p in pts[1:]:
+    filtered_flags = [flags[0]] if has_flag else None
+    for i, p in enumerate(pts[1:], start=1):
         if np.linalg.norm(p - filtered[-1]) >= min_spacing:
             filtered.append(p)
+            if has_flag:
+                filtered_flags.append(flags[i])
     filtered.append(pts[-1])  # asegura cerrar exactamente donde termina el .dat
-    return np.array(filtered)
+    if has_flag:
+        filtered_flags.append(flags[-1])
+
+    coords = np.array(filtered)
+    is_flap = np.array(filtered_flags, dtype=bool) if has_flag else None
+    return coords, is_flap
 
 
 def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
                 y1=1e-5, n_layers=25, growth_rate=1.2,
                 te_size=0.001, le_size=0.001, farfield_size=1.5,
                 extrude_z=0.1, min_spacing=5e-4):
-    coords = read_dat(dat_path, min_spacing=min_spacing)
+    coords, is_flap = read_dat(dat_path, min_spacing=min_spacing)
     print(f"Puntos del perfil tras filtrar (min_spacing={min_spacing}): {len(coords)}")
+    if is_flap is None:
+        print("AVISO: el .dat no trae columna is_flap (formato antiguo) -- "
+              "todo el perfil va a quedar en un solo patch 'mainfoil', sin "
+              "'flap' separado. No vas a poder calcular el momento de "
+              "bisagra por separado para esta malla.")
 
     gmsh.initialize()
     gmsh.model.add("naca_c_mesh")
@@ -75,6 +100,12 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     # suave donde la geometría en realidad tiene una esquina) y eso es lo que
     # generaba las auto-intersecciones. La solución estándar es partir la
     # curva en extradós + intradós y cerrar el TE con una línea recta.
+    #
+    # Además, si tenemos is_flap, partimos cada superficie (extradós/intradós)
+    # en dos tramos (mainfoil/flap) en el punto donde is_flap cambia de valor
+    # -- así el perfil principal y el flap quedan como patches separados en
+    # OpenFOAM, y se puede pedir el forceCoeffs solo sobre "flap" para el
+    # momento de bisagra.
     le_idx = int(np.argmin(coords[:, 0]))  # el .dat va TE_sup -> LE -> TE_inf
     upper = coords[: le_idx + 1]           # TE_sup -> LE
     lower = coords[le_idx:]                # LE -> TE_inf
@@ -84,12 +115,45 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     # comparten el punto del LE para no duplicarlo
     lower_pts[0] = upper_pts[-1]
 
-    spline_upper = occ.addSpline(upper_pts)                  # TE_sup -> LE
-    spline_lower = occ.addSpline(lower_pts)                  # LE -> TE_inf
-    te_line = occ.addLine(lower_pts[-1], upper_pts[0])        # TE_inf -> TE_sup
+    if is_flap is not None:
+        flap_upper_flags = is_flap[: le_idx + 1]  # TE_sup -> LE, empieza en True
+        flap_lower_flags = is_flap[le_idx:]       # LE -> TE_inf, termina en True
 
-    airfoil_loop = occ.addCurveLoop([spline_upper, spline_lower, te_line])
-    airfoil_curves = [spline_upper, spline_lower, te_line]
+        # primer índice donde el extradós deja de ser flap (True -> False)
+        split_u = int(np.argmin(flap_upper_flags))  # argmin de bool: primer False
+        # primer índice donde el intradós empieza a ser flap (False -> True)
+        split_l = int(np.argmax(flap_lower_flags))  # argmax de bool: primer True
+
+        if split_u == 0 or split_l == 0:
+            raise ValueError(
+                "No encontré una transición mainfoil/flap válida en el .dat -- "
+                "revisa que se haya generado con la versión nueva de "
+                "naca0012_flap_geometry.py (con columna is_flap)."
+            )
+
+        flap_upper_spline = occ.addSpline(upper_pts[: split_u + 1])   # TE_sup -> bisagra
+        main_upper_spline = occ.addSpline(upper_pts[split_u:])        # bisagra -> LE
+        main_lower_spline = occ.addSpline(lower_pts[: split_l + 1])   # LE -> bisagra
+        flap_lower_spline = occ.addSpline(lower_pts[split_l:])        # bisagra -> TE_inf
+        te_line = occ.addLine(lower_pts[-1], upper_pts[0])            # TE_inf -> TE_sup
+
+        mainfoil_curves = [main_upper_spline, main_lower_spline]
+        flap_curves = [flap_upper_spline, flap_lower_spline, te_line]
+        airfoil_loop = occ.addCurveLoop([
+            flap_upper_spline, main_upper_spline,
+            main_lower_spline, flap_lower_spline,
+            te_line,
+        ])
+    else:
+        spline_upper = occ.addSpline(upper_pts)             # TE_sup -> LE
+        spline_lower = occ.addSpline(lower_pts)             # LE -> TE_inf
+        te_line = occ.addLine(lower_pts[-1], upper_pts[0])  # TE_inf -> TE_sup
+
+        mainfoil_curves = [spline_upper, spline_lower, te_line]
+        flap_curves = []
+        airfoil_loop = occ.addCurveLoop([spline_upper, spline_lower, te_line])
+
+    airfoil_curves = mainfoil_curves + flap_curves
 
     # --- 2. Dominio exterior tipo C: semicírculo aguas arriba + rectángulo aguas abajo ---
     # OJO: un único addCircleArc de 3 puntos (inicio, centro, fin) no garantiza
@@ -164,8 +228,10 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     gmsh.model.addPhysicalGroup(3, [vol_tag], name="internal")
 
     airfoil_curve_set = set(airfoil_curves)
+    mainfoil_curve_set = set(mainfoil_curves)
+    flap_curve_set = set(flap_curves)
     base_curve_ids = airfoil_curve_set | farfield_arc_curves | {l_top, l_out, l_bot}
-    airfoil_tags, farfield_tags, outlet_tags = [], [], []
+    mainfoil_tags, flap_tags, farfield_tags, outlet_tags = [], [], [], []
     front_tag = None
 
     for dim, tag in gmsh.model.getEntities(2):
@@ -174,8 +240,10 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
         bnd = gmsh.model.getBoundary([(2, tag)], oriented=False, combined=False)
         curve_ids = {abs(c[1]) for c in bnd}
 
-        if curve_ids & airfoil_curve_set:
-            airfoil_tags.append(tag)
+        if curve_ids & mainfoil_curve_set:
+            mainfoil_tags.append(tag)
+        elif curve_ids & flap_curve_set:
+            flap_tags.append(tag)
         elif l_out in curve_ids:
             outlet_tags.append(tag)
         elif curve_ids & (farfield_arc_curves | {l_top, l_bot}):
@@ -188,14 +256,18 @@ def build_mesh(dat_path, out_path, farfield_radius=20.0, wake_length=25.0,
     if front_tag is None:
         raise RuntimeError("No se identificó la tapa 'front' del extrude; revisa la geometría.")
 
-    gmsh.model.addPhysicalGroup(2, airfoil_tags, name="airfoil")
+    gmsh.model.addPhysicalGroup(2, mainfoil_tags, name="mainfoil")
+    if flap_tags:
+        gmsh.model.addPhysicalGroup(2, flap_tags, name="flap")
     gmsh.model.addPhysicalGroup(2, farfield_tags, name="farfield")
     gmsh.model.addPhysicalGroup(2, outlet_tags, name="outlet")
     gmsh.model.addPhysicalGroup(2, [front_tag], name="front")
     gmsh.model.addPhysicalGroup(2, [surface], name="back")
 
     print("Patches creados:")
-    print(f"  airfoil  -> {len(airfoil_tags)} superficie(s)")
+    print(f"  mainfoil -> {len(mainfoil_tags)} superficie(s)")
+    print(f"  flap     -> {len(flap_tags)} superficie(s)"
+          + ("" if flap_tags else "  (sin flap separado -- .dat sin columna is_flap)"))
     print(f"  farfield -> {len(farfield_tags)} superficie(s)  (arco + costados sup/inf)")
     print(f"  outlet   -> {len(outlet_tags)} superficie(s)")
     print(f"  front/back -> tags {front_tag} / {surface} (empty, para el caso pseudo-2D)")

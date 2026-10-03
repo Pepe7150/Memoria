@@ -58,7 +58,7 @@ def substitute(text, tokens):
 
 
 def build_case(mesh_case, mach, aoa_deg, chord, extrude_z, a, nu, out_dir,
-               nutilda_ratio=3.0, cofr_x=0.25):
+               nutilda_ratio=3.0, cofr_x=0.25, hinge_x=0.7):
     if os.path.exists(out_dir):
         raise FileExistsError(f"{out_dir} ya existe -- bórralo o elige otro nombre")
 
@@ -89,6 +89,7 @@ def build_case(mesh_case, mach, aoa_deg, chord, extrude_z, a, nu, out_dir,
         "DRAG_X": f"{drag_x:.6f}",
         "DRAG_Y": f"{drag_y:.6f}",
         "COFR_X": f"{cofr_x:.6f}",
+        "COFR_HINGE_X": f"{hinge_x:.6f}",
     }
 
     # 1. copia la malla ya convertida (constant/polyMesh)
@@ -124,6 +125,7 @@ def build_case(mesh_case, mach, aoa_deg, chord, extrude_z, a, nu, out_dir,
     print(f"  dragDir = ({drag_x:.4f}, {drag_y:.4f}, 0)")
     print(f"  liftDir = ({lift_x:.4f}, {lift_y:.4f}, 0)")
     print(f"  Aref = {aref:.4f}  (chord x extrude_z -- confirma que extrude_z calza con tu malla)")
+    print(f"  Bisagra (hingeMoment1 CofR) en x={hinge_x:.4f}  -- debe calzar con --hinge de la geometría")
 
 
 def main():
@@ -138,13 +140,15 @@ def main():
     ap.add_argument("--nutilda-ratio", type=float, default=3.0,
                      help="nuTilda_freestream / nu (default 3, práctica estándar para SA)")
     ap.add_argument("--cofr-x", type=float, default=0.25, help="Posición x del centro de referencia de momento (default: 1/4 de cuerda)")
+    ap.add_argument("--hinge", type=float, default=0.7, dest="hinge_x",
+                     help="Posición x de la bisagra del flap, en fracción de cuerda (debe calzar con --hinge de naca0012_flap_geometry.py)")
     ap.add_argument("--out", required=True, help="Carpeta de salida del caso")
     args = ap.parse_args()
 
     build_case(
         args.mesh_case, args.mach, args.aoa, args.chord, args.extrude_z,
         args.a, args.nu, args.out,
-        nutilda_ratio=args.nutilda_ratio, cofr_x=args.cofr_x,
+        nutilda_ratio=args.nutilda_ratio, cofr_x=args.cofr_x, hinge_x=args.hinge_x,
     )
 
 

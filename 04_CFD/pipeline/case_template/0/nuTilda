@@ -13,7 +13,13 @@ internalField   uniform @NUTILDA@;
 
 boundaryField
 {
-    airfoil
+    mainfoil
+    {
+        type            fixedValue;
+        value           uniform 0;
+    }
+
+    flap
     {
         type            fixedValue;
         value           uniform 0;

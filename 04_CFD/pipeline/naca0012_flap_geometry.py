@@ -15,7 +15,7 @@ Uso típico:
     python naca0012_flap_geometry.py --delta -5 --hinge 0.7 --out naca0012_dm5.dat
 
 Para generar todo el barrido de deltas de una vez:
-    python naca0012_flap_geometry.py --sweep -20 20 5 --hinge 0.7 --outdir geometrias/ --plot
+    python naca0012_flap_geometry.py --sweep -20 20 5 --hinge 0.7 --outdir geometrias/
 """
 
 import argparse
@@ -87,8 +87,16 @@ def build_geometry(naca_digits="0012", delta_deg=0.0, x_hinge=0.7, n_points=200)
     superior, sobre el extradós hacia el borde de ataque, y de vuelta por el
     intradós hasta el borde de fuga. Ese es el orden que esperan la mayoría
     de los malladores (Gmsh, Construct2D, Xfoil).
+
+    También devuelve un arreglo booleano `is_flap` (mismo largo que x/y) que
+    marca qué puntos pertenecen al flap -- se calcula ANTES de rotar, así que
+    sigue siendo válido aunque la deflexión mueva esos puntos a coordenadas
+    que ya no cumplen literalmente "x >= x_hinge". naca_mesh_gmsh.py necesita
+    esto para separar la malla en dos patches (mainfoil/flap) y así poder
+    calcular el momento de bisagra sobre el flap solo.
     """
     x, y_upper, y_lower = base_airfoil(naca_digits, n_points)
+    flap_mask_base = x >= x_hinge  # calculado ANTES de rotar
 
     if abs(delta_deg) > 1e-9:
         x_upper, y_upper = deflect_flap(x, y_upper, x_hinge, delta_deg)
@@ -105,23 +113,38 @@ def build_geometry(naca_digits="0012", delta_deg=0.0, x_hinge=0.7, n_points=200)
     x_full = np.concatenate([x_top, x_bot])
     y_full = np.concatenate([y_top, y_bot])
 
-    return x_full, y_full
+    flap_top = flap_mask_base[::-1]
+    flap_bot = flap_mask_base[1:]
+    flap_full = np.concatenate([flap_top, flap_bot])
+
+    return x_full, y_full, flap_full
 
 
-def write_dat(path, x, y, header):
+def write_dat(path, x, y, header, is_flap=None):
     with open(path, "w") as f:
         f.write(header.strip() + "\n")
-        for xi, yi in zip(x, y):
-            f.write(f"{xi:.6f} {yi:.6f}\n")
+        if is_flap is None:
+            for xi, yi in zip(x, y):
+                f.write(f"{xi:.6f} {yi:.6f}\n")
+        else:
+            for xi, yi, fi in zip(x, y, is_flap):
+                f.write(f"{xi:.6f} {yi:.6f} {int(fi)}\n")
 
 
-def plot_geometry(x, y, title, out_png=None):
+def plot_geometry(x, y, title, is_flap=None, out_png=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(8, 3))
-    ax.plot(x, y, "-o", markersize=2, linewidth=1)
+    if is_flap is None:
+        ax.plot(x, y, "-o", markersize=2, linewidth=1)
+    else:
+        is_flap = np.asarray(is_flap, dtype=bool)
+        ax.plot(x, y, "-", linewidth=1, color="0.6", zorder=1)
+        ax.scatter(x[~is_flap], y[~is_flap], s=6, c="tab:blue", label="mainfoil", zorder=2)
+        ax.scatter(x[is_flap], y[is_flap], s=6, c="tab:red", label="flap", zorder=2)
+        ax.legend(loc="upper right", fontsize=8)
     ax.axhline(0, color="gray", linewidth=0.5, linestyle="--")
     ax.set_aspect("equal")
     ax.set_title(title)
@@ -170,14 +193,14 @@ def main():
         ]
 
     for delta_deg, out_path in zip(deltas, outputs):
-        x, y = build_geometry(args.naca, delta_deg, args.hinge, args.points)
+        x, y, is_flap = build_geometry(args.naca, delta_deg, args.hinge, args.points)
         header = f"NACA{args.naca} flap hinge={args.hinge} delta={delta_deg:.2f}deg"
-        write_dat(out_path, x, y, header)
+        write_dat(out_path, x, y, header, is_flap=is_flap)
         print(f"Escrito: {out_path}  (delta = {delta_deg:.2f} deg)")
 
         if args.plot:
             png_path = os.path.splitext(out_path)[0] + ".png"
-            plot_geometry(x, y, header, out_png=png_path)
+            plot_geometry(x, y, header, is_flap=is_flap, out_png=png_path)
             print(f"  -> figura de verificación: {png_path}")
 
 

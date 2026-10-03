@@ -13,10 +13,16 @@ internalField   uniform 0;
 
 boundaryField
 {
-    airfoil
+    mainfoil
     {
         // se adapta automáticamente si el y+ real queda algo distinto de 1
         // (por ejemplo en las condiciones de menor Re del barrido)
+        type            nutLowReWallFunction;
+        value           uniform 0;
+    }
+
+    flap
+    {
         type            nutLowReWallFunction;
         value           uniform 0;
     }
