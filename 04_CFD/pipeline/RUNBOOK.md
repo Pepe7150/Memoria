@@ -238,3 +238,16 @@ delta_deg, mach, aoa_deg, Cl, Cd, CmPitch, ChHinge, HingeMoment_Nm
 
 `HingeMoment_Nm` es el momento de bisagra real (en N·m), listo para el
 dimensionamiento del actuador.
+
+## 9. Visualizar un caso específico del barrido en ParaView
+
+Para visualizar los resultados de un caso particular que ya fue corrido dentro del barrido (por ejemplo, `d+10p0_M0p200_aoa+12p0`), sigue estos pasos:
+
+1. **Crear el archivo `.foam`:** Genera un archivo vacío dentro de la carpeta del caso específico.
+   ```bash
+   touch sweep_run/cases/d+10p0_M0p200_aoa+12p0/caso.foam
+   ```
+2. Abrir con paraFoam: Ejecuta el comando limpiando la variable de entorno para evitar choques de librerías con el entorno de OpenFOAM.
+  ```bash
+    LD_LIBRARY_PATH="" paraFoam -case sweep_run/cases/d+10p0_M0p200_aoa+12p0
+  ```
