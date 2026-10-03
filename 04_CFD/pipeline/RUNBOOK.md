@@ -14,7 +14,7 @@ Archivos que deben estar en esta carpeta:
 ## 0. Preparar el entorno (una vez por sesión de terminal)
 
 ```bash
-cd ruta/a/04_CFD/pipeline
+cd /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline
 
 # entorno de OpenFOAM
 source /opt/OpenFOAM/OpenFOAM-v2012/etc/bashrc

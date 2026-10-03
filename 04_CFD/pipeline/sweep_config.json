@@ -28,7 +28,7 @@
   "layers": 20,
   "growth": 1.2,
   "speed_of_sound": 340.3,
-  "nu": 1.5e-05,
+  "nu": 7.5e-05,
   "rho_real": 1.225,
   "chord_real": 0.2,
   "span_real": 0.15
