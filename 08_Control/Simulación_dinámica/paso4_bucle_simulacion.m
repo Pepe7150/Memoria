@@ -94,10 +94,13 @@ for i = 2:N
     TA_current_est(i) = Kt_A * IA_meas;
     TB_current_est(i) = Kt_B * IB_meas;
 
-    % IMU con efecto de excentricidad radial (Aceleración centrífuga añadida)
-    omega_C_val = x6(4,i);
-    aceleracion_centrifuga = (omega_C_val^2) * r_imu;
-    wC_raw = omega_C_val + aceleracion_centrifuga + bias_imu_true(i) + noise_gyro_std*randn;
+    % IMU con excentricidad radial: la aceleración centrípeta [m/s^2] NO se
+    % suma directo a una velocidad angular [rad/s]; se acopla a la salida del
+    % giroscopio a través de su g-sensitivity (ver paso1).
+    omega_C_val  = x6(4,i);
+    a_centripeta = (omega_C_val^2) * r_imu;                       % [m/s^2]
+    error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);     % [rad/s]
+    wC_raw = omega_C_val + error_gsens + bias_imu_true(i) + noise_gyro_std*randn;
     omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
 
     T_AC_true_i = C_torque(1,:) * x6(:,i);

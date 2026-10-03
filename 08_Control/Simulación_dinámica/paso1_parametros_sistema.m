@@ -31,6 +31,14 @@ Kt_B = 0.05;                      % Constante de torque Motor B [Nm/A]
 % --- Parámetros Físicos de Montaje ---
 r_imu = 0.005;                    % Excentricidad radial de la IMU [m] (5 mm fuera del centro)
 
+% Sensibilidad del giroscopio a aceleración lineal (g-sensitivity).
+% Un giroscopio MEMS montado fuera del eje siente la aceleración centrípeta
+% (omega^2 * r_imu) y una fracción se filtra a su salida de velocidad angular.
+% El datasheet la da en [°/s por g]. 0.05 °/s/g es un valor TÍPICO de MEMS,
+% NO el de tu IMU: reemplázalo con el valor del datasheet del sensor real.
+g_sens_imu  = 0.05 * (pi/180);    % [(rad/s) por g]
+g_terrestre = 9.81;               % [m/s^2]
+
 % --- Frecuencias Naturales ---
 M = diag([J_A, J_C, J_B]);
 K = [ k1,      -k1,      0;

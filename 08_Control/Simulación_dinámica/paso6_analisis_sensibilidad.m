@@ -111,6 +111,7 @@ function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mu
     k1_nom = 2*k_nom; k2_nom = 2*k_nom; c1_nom = 2*c_nom; c2_nom = 2*c_nom;
     JA_nom = 4e-4; JB_nom = 3e-4; JC_nom = 5e-5; bA_nom = 0.02; bB_nom = 0.02;
     KtA_nom = 0.06; KtB_nom = 0.05; r_imu = 0.005;
+    g_sens_imu = 0.05*(pi/180); g_terrestre = 9.81;   % (duplicado de paso1: se elimina en la refactorización)
     
     n_hall_nom = 0.002; n_curr_nom = 0.03; n_gyro_nom = 0.02; n_strain_nom = 0.005;
     sig_b_IA_nom = 0.15; sig_b_IB_nom = 0.12; sig_b_imu_nom = 0.25; sig_b_sg_nom = 0.20;
@@ -196,9 +197,10 @@ function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mu
         IA_m  = IA_true + bias_IA + n_curr_true*randn;
         IB_m  = IB_true + bias_IB + n_curr_true*randn;
         
-        omega_C_val = x6(4,i);
-        aceleracion_centrifuga = (omega_C_val^2) * r_imu;
-        wC_m  = omega_C_val + aceleracion_centrifuga + bias_imu + n_gyro_true*randn;
+        omega_C_val  = x6(4,i);
+        a_centripeta = (omega_C_val^2) * r_imu;                    % [m/s^2]
+        error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);  % [rad/s]
+        wC_m  = omega_C_val + error_gsens + bias_imu + n_gyro_true*randn;
         
         SG_m  = C_torque_true(1,:)*x6(:,i) + bias_sg + n_strain_true*randn;
         

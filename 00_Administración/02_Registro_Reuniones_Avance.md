@@ -142,6 +142,21 @@ Respuestas:
 2. Plotear las variables intermedias theta_a y theta_b en lugar de los torques transmitidos. Para saber cuanto de la posición de c viene de la flexión del eje.
 3. Hacer análisis de sensibilidad.
 
+## Reunión 02/10/2026
+
+**Estado:** Realizada.
+
+**Preguntas a plantear:**
+
+1. Presentar presupuesto y avances de CFD.
+
+**Respuestas / acuerdos:**
+
+1. cambiar ina por algo con hall
+2. cambiar motor por un dc con engranaje de metal
+3. mas reguladores de voltaje de mayor capacidad
+4. cfd sin separación de flujo
+
 ## Cómo usar este documento
 
 * Cada reunión se documenta como una nueva sección, con fecha en el título.
