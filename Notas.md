@@ -44,8 +44,8 @@
   * [X] cambiar plots de T_transmitido por theta_a y theta_b.
   * [X] explicar bien lo de estados filtros pero tenerlo escrito bien para finalmente salir del tema.
   * [X] Hacer análisis de sensibilidad.
-  * [ ] Revisar el código completo.
   * [ ] en una parte se suma torque y corriente (bias), falta multiplicar por Kt ahí.
+  * [ ] Revisar el código completo.
 * [X] Escribir conceptos y ecuaciones del modelo y generales.
 * [X] Animar sistema mecánico equivalente
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente. Decidir uno solamente si igual no está en el alcance del proyecto que avión se va a modelar.
@@ -59,6 +59,6 @@
 * [ ] Seguir con el CFD
 
   * [X] prueba con deflexión
-  * [ ] Terminar de probar si funciona el barrido
+  * [X] Terminar de probar si funciona el barrido
   * [ ] Configurar los efectos dinámicos
   * [ ] Definir correctamente el barrido a usar

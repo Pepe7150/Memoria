@@ -5,7 +5,10 @@ continue_nonconverged.py
 Para cada caso que verify_sweep.py marca como "posiblemente no convergió"
 (llegó a endTime sin cumplir el residualControl), le sube el endTime y lo
 retoma desde el último estado guardado (NO desde cero), y actualiza
-resultados.csv con el Cl/Cd/CmPitch final una vez que termina.
+resultados.csv con el Cl/Cd/CmPitch Y TAMBIÉN ChHinge/HingeMoment_Nm una vez
+que termina (las cuatro columnas, no solo las tres primeras -- antes este
+script dejaba ChHinge/HingeMoment_Nm con el valor viejo, de antes de
+converger).
 
 Clave: cambia "startFrom" a "latestTime" antes de relanzar simpleFoam --
 si no, simpleFoam vuelve a arrancar desde el tiempo 0 (el controlDict de la
@@ -21,6 +24,7 @@ Uso:
 
 import argparse
 import csv
+import json
 import os
 import subprocess
 import sys
@@ -62,7 +66,8 @@ def continue_case(case_dir, new_end_time):
 
 
 def update_csv(summary_path, updates):
-    """updates: dict {(delta,mach,aoa): {"Cl":.., "Cd":.., "CmPitch":..}}"""
+    """updates: dict {(delta,mach,aoa): {"Cl":.., "Cd":.., "CmPitch":..,
+    "ChHinge":.., "HingeMoment_Nm":..}}"""
     rows = []
     with open(summary_path) as f:
         reader = csv.DictReader(f)
@@ -70,7 +75,8 @@ def update_csv(summary_path, updates):
         for row in reader:
             key = (float(row["delta_deg"]), float(row["mach"]), float(row["aoa_deg"]))
             if key in updates:
-                row.update({k: f"{v:.6f}" for k, v in updates[key].items()})
+                for k, v in updates[key].items():
+                    row[k] = f"{v:.6f}" if k != "HingeMoment_Nm" else f"{v:.8f}"
             rows.append(row)
 
     with open(summary_path, "w", newline="") as f:
@@ -88,9 +94,13 @@ def main():
                      help="Cuántas iteraciones más darle (se suma al endTime actual)")
     args = ap.parse_args()
 
-    import json
     with open(args.config) as f:
         cfg = json.load(f)
+
+    rho_real = cfg["rho_real"]
+    chord_real = cfg["chord_real"]
+    span_real = cfg["span_real"]
+    a = cfg["speed_of_sound"]
 
     targets = find_not_converged(cfg, args.workdir)
     if not targets:
@@ -105,12 +115,25 @@ def main():
         print(f"\n--- {os.path.basename(case_dir)}  (endTime {end_time:g} -> {new_end_time:g}) ---")
         continue_case(case_dir, new_end_time)
 
-        coeffs = parse_force_coeffs(case_dir)
-        updates[(delta, mach, aoa)] = coeffs
-        print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  CmPitch={coeffs['CmPitch']:.4f}")
+        coeffs = parse_force_coeffs(case_dir, "forceCoeffs1")
+        hinge_coeffs = parse_force_coeffs(case_dir, "hingeMoment1")
+
+        umag_real = mach * a
+        hinge_moment_Nm = (
+            hinge_coeffs["CmPitch"] * 0.5 * rho_real * umag_real**2
+            * chord_real**2 * span_real
+        )
+
+        updates[(delta, mach, aoa)] = {
+            **coeffs,
+            "ChHinge": hinge_coeffs["CmPitch"],
+            "HingeMoment_Nm": hinge_moment_Nm,
+        }
+        print(f"  -> Cl={coeffs['Cl']:.4f}  Cd={coeffs['Cd']:.4f}  CmPitch={coeffs['CmPitch']:.4f}"
+              f"  |  ChHinge={hinge_coeffs['CmPitch']:.4f}  M_bisagra={hinge_moment_Nm:.4f} N·m")
 
     update_csv(args.summary, updates)
-    print(f"\n{args.summary} actualizado con {len(updates)} filas.")
+    print(f"\n{args.summary} actualizado con {len(updates)} filas (las 5 columnas calculadas).")
     print("Vuelve a correr verify_sweep.py para confirmar que ya convergieron")
     print("(si alguno sigue llegando al tope, puede ser flujo genuinamente")
     print("separado/inestable -- ahí conviene mirar el caso en ParaView antes")
