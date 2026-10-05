@@ -111,7 +111,7 @@ function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mu
     k1_nom = 2*k_nom; k2_nom = 2*k_nom; c1_nom = 2*c_nom; c2_nom = 2*c_nom;
     JA_nom = 4e-4; JB_nom = 3e-4; JC_nom = 5e-5; bA_nom = 0.02; bB_nom = 0.02;
     KtA_nom = 0.06; KtB_nom = 0.05; r_imu = 0.005;
-    g_sens_imu = 0.05*(pi/180); g_terrestre = 9.81;   % (duplicado de paso1: se elimina en la refactorización)
+    g_sens_imu = 0.05*(pi/180); g_terrestre = 9.81;
     
     n_hall_nom = 0.002; n_curr_nom = 0.03; n_gyro_nom = 0.02; n_strain_nom = 0.005;
     sig_b_IA_nom = 0.15; sig_b_IB_nom = 0.12; sig_b_imu_nom = 0.25; sig_b_sg_nom = 0.20;
@@ -160,7 +160,9 @@ function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mu
     Ac14(11:14, 11:14) = diag([-1/12, -1/12, -1/8, -1/10]);
     Adk = expm(Ac14*dt_sim);
     
-    H = zeros(6,nx); H(1,1)=1; H(2,5)=1; H(3,7)=1; H(3,11)=1; H(4,8)=1; H(4,12)=1; H(5,9)=1; H(5,13)=1; H(6,10)=1; H(6,14)=1;
+    % <- CORREGIDO: Matriz H multiplicada por KtA_nom y KtB_nom
+    H = zeros(6,nx); H(1,1)=1; H(2,5)=1; H(3,7)=1; H(3,11)=KtA_nom; H(4,8)=1; H(4,12)=KtB_nom; H(5,9)=1; H(5,13)=1; H(6,10)=1; H(6,14)=1;
+    
     Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, 0.01*dt_sim, 0.01*dt_sim, 1e-8, 1e-8, 1e-5, 1e-5, 1e-5, 1e-5]);
     R = diag([1e-5, 1e-5, 1e-3, 1e-3, 1e-4, 1e-4]);
     P = eye(nx);
@@ -198,8 +200,8 @@ function [rmse_thC, rmse_omC, rmse_IB] = run_unified_sim(tipo_test, idx_caso, mu
         IB_m  = IB_true + bias_IB + n_curr_true*randn;
         
         omega_C_val  = x6(4,i);
-        a_centripeta = (omega_C_val^2) * r_imu;                    % [m/s^2]
-        error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);  % [rad/s]
+        a_centripeta = (omega_C_val^2) * r_imu;                    
+        error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);  
         wC_m  = omega_C_val + error_gsens + bias_imu + n_gyro_true*randn;
         
         SG_m  = C_torque_true(1,:)*x6(:,i) + bias_sg + n_strain_true*randn;

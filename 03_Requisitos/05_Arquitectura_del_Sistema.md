@@ -1,4 +1,6 @@
-# Arquitectura del Sistema
+# Arquitectura del Sistema PENCO
+
+**P**lataforma **E**xperimental basada en análisis **N**umérico para la **C**aracterización de actuadores **O**ff-the-Shelf
 
 **Proyecto:** Banco de ensayos para dimensionamiento y caracterización de actuadores de superficies de control basado en cargas CFD.
 
@@ -59,7 +61,7 @@ flowchart LR
 
 ## 2. Subsistemas
 
-### 2.1 Módulo CFD (offline)
+### 2.1 Módulo CFD PUELCHE (offline)
 
 **Responsabilidad:** obtener las cargas fluidodinámicas sobre la superficie de control mediante simulaciones CFD y estructurarlas en una tabla aerodinámica.
 
@@ -70,7 +72,7 @@ flowchart LR
 
 > **Nota (confirmado en reunión de avance del 28/08/2026):** se había planteado la posibilidad de que, en un modelo de aleta aislada sin fuselaje, ángulo de ataque y deflexión de la aleta fueran indistinguibles (miden la misma orientación relativa al flujo desde marcos de referencia distintos), lo que habría simplificado las "condiciones de operación" de este módulo a (Mach, ángulo total, velocidad angular). **Esta pregunta ya fue resuelta:** el acuerdo #2 de la reunión del 28/08/2026 confirma una configuración de **ala con flap, con ángulo de ataque y deflexión como variables separadas** — no se simplifica a un ángulo único. Las cuatro variables de entrada (Mach, ángulo de ataque, deflexión, velocidad angular de deflexión) quedan confirmadas tal como se listan arriba. Ver `02_Requisitos_Funcionales.md` (nota de RF-CFD-02) y `00_Administración/02_Registro_Reuniones_Avance.md`.
 
-### 2.2 Módulo de procesamiento (Python, offline)
+### 2.2 Módulo de procesamiento LLACOLÉN (Python, offline)
 
 **Responsabilidad:** transformar la salida cruda de CFD en una tabla de carga lista para ser consumida por el banco (limpieza, formato, eventualmente reducción de orden o ajuste de superficie de respuesta).
 
@@ -78,7 +80,7 @@ flowchart LR
 - **Salidas:** archivo de tabla de carga (CSV/JSON) con estructura validada (cuatro variables de entrada: Mach, ángulo de ataque, deflexión, velocidad angular de deflexión; una variable de salida: torque de charnela).
 - **RF relacionados:** RF-CFD-01, RF-CFD-02.
 
-### 2.3 Lectura e interpolación (online)
+### 2.3 Lectura e interpolación HUALPÉN (online)
 
 **Responsabilidad:** importar la tabla de carga, validar su estructura y rango, e interpolar el torque objetivo. A diferencia de la versión anterior de esta arquitectura, el torque objetivo **no se limita a un perfil temporal precalculado**: la tabla de carga relaciona torque con (Mach, ángulo de ataque, **deflexión de la aleta y su velocidad angular de deflexión**), por lo que este módulo recibe continuamente la **posición angular real y la velocidad angular real de la aleta** (medidas por instrumentación) y recalcula el torque objetivo correspondiente a ese estado, no solo a la posición comandada. El perfil temporal generado al configurar el ensayo (CU-002) sigue existiendo como **referencia inicial y como envolvente de validación**, pero el valor aplicado en cada instante proviene del recálculo en tiempo real sobre las cuatro variables de la tabla.
 
@@ -88,7 +90,7 @@ Adicionalmente, este módulo puede recibir, en **modo manual**, los valores de M
 - **Salidas:** torque objetivo instantáneo, perfil temporal de referencia (para comparación/validación), estimación del error de interpolación.
 - **RF relacionados:** RF-CFD-01 a RF-CFD-04, RF-PRO-01 a RF-PRO-06, RF-BAN-07.
 
-### 2.4 Controlador
+### 2.4 Controlador LONCO
 
 **Responsabilidad:** ejecutar el lazo de control que compara el torque objetivo (recalculado según posición y velocidad real, 2.3) con el torque medido y comanda el motor de carga, incluyendo la **compensación activa del torque parásito** inducido por el movimiento del actuador bajo prueba (efecto documentado en la literatura del Tema 2: Yao et al. 2010/2012; Lee & Cho 2001), típicamente mediante feedforward o sincronización de velocidad. El controlador también implementa la **protección ante atasco mutuo (stall)**: si el actuador bajo prueba y el motor de carga se oponen de forma sostenida sin que la posición de la aleta cambie, el sistema debe detectar la condición y llevar el banco a estado seguro, en lugar de forzar ambos motores indefinidamente.
 
@@ -99,7 +101,7 @@ El comando final hacia el motor de carga se ejecuta mediante un **lazo de corrie
 - **RF relacionados:** RF-BAN-01 a RF-BAN-04, RF-BAN-06, RF-SWC-02.
 - **RNF relacionados:** RNF-REN-01, RNF-REN-02, RNF-REN-03, RNF-SEG-02, RNF-SEG-04.
 
-### 2.5 Banco: motor de carga + sensor de torque + actuador bajo prueba + aleta + instrumentación
+### 2.5 Banco CHEPE
 
 **Responsabilidad:** aplicar físicamente el torque comandado sobre el eje (motor de carga), medir el torque real transmitido (sensor de torque) y medir la posición angular y la velocidad angular real alcanzada por la **aleta** (no por el actuador internamente, dado que puede haber holgura o compliance entre ambos bajo carga).
 
@@ -122,7 +124,7 @@ El comando final hacia el motor de carga se ejecuta mediante un **lazo de corrie
 - **RF relacionados:** RF-BAN-01, RF-BAN-05, RF-BAN-07 (aplicación física del torque comandado, modo manual, entradas manuales por potenciómetro de condiciones de vuelo y comando directo de ángulo objetivo — la decisión de control, incluida la detección de atasco mutuo RF-BAN-06, se aloja en el Controlador, sección 2.4), RF-BAN-08 (incorporación física de switches de fin de carrera), RF-INS-01 a RF-INS-04, RF-SIS-02.
 - **RNF relacionados:** RNF-PRE-02, RNF-PRE-03, RNF-PRE-04, RNF-SEG-01, RNF-SEG-03, RNF-CAR-01 (la decisión de detener ante atasco mutuo, RNF-SEG-04, se aloja en el Controlador, sección 2.4).
 
-### 2.6 Adquisición de datos y registro
+### 2.6 Adquisición de datos y registro NONGUÉN
 
 **Responsabilidad:** sincronizar temporalmente las señales medidas, registrarlas junto con la referencia objetivo, y dejarlas disponibles para visualización y exportación.
 
@@ -131,7 +133,7 @@ El comando final hacia el motor de carga se ejecuta mediante un **lazo de corrie
 - **RF relacionados:** RF-INS-04, RF-INS-05, RF-SWC-04, RF-SWC-05.
 - **RNF relacionados:** RNF-DOC-01.
 
-### 2.7 Software de operación (interfaz de usuario)
+### 2.7 Software de operación CAHUÍN (interfaz de usuario)
 
 **Responsabilidad:** proveer al operador la interfaz para importar tablas, configurar ensayos, ejecutarlos/detenerlos, visualizar variables en tiempo real y consultar la bitácora. El **panel de potenciómetros** (2.5, I-11/I-12) es una interfaz de entrada física complementaria a esta interfaz de software, pensada para modo manual/calibración (CU-006) más que para la configuración inicial de un ensayo automático (CU-002).
 

@@ -94,12 +94,10 @@ for i = 2:N
     TA_current_est(i) = Kt_A * IA_meas;
     TB_current_est(i) = Kt_B * IB_meas;
 
-    % IMU con excentricidad radial: la aceleración centrípeta [m/s^2] NO se
-    % suma directo a una velocidad angular [rad/s]; se acopla a la salida del
-    % giroscopio a través de su g-sensitivity (ver paso1).
+    % IMU con excentricidad radial
     omega_C_val  = x6(4,i);
-    a_centripeta = (omega_C_val^2) * r_imu;                       % [m/s^2]
-    error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);     % [rad/s]
+    a_centripeta = (omega_C_val^2) * r_imu;                       
+    error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);     
     wC_raw = omega_C_val + error_gsens + bias_imu_true(i) + noise_gyro_std*randn;
     omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
 
@@ -120,13 +118,11 @@ thetaC_kf = X_hist(3,:)'; omegaC_kf = X_hist(4,:)';
 thetaB_kf = X_hist(5,:)'; omegaB_kf = X_hist(6,:)';
 T_A_kf    = X_hist(7,:)'; T_B_kf    = X_hist(8,:)';
 
-bias_TA_kf  = X_hist(11,:)';
-bias_TB_kf  = X_hist(12,:)';
+% <- CORREGIDO: Se extraen los bias de corriente directamente sin dividir por Kt
+bias_IA_kf  = X_hist(11,:)';
+bias_IB_kf  = X_hist(12,:)';
 bias_imu_kf = X_hist(13,:)';
 bias_sg_kf  = X_hist(14,:)';
-
-bias_IA_kf = bias_TA_kf / Kt_A;
-bias_IB_kf = bias_TB_kf / Kt_B;
 
 theta_A_true = x6(1,:)'; omega_A_true = x6(2,:)';
 theta_C_true = x6(3,:)'; omega_C_true = x6(4,:)';

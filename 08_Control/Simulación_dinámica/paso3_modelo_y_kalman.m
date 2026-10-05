@@ -43,8 +43,8 @@ Adk = expm(Ac14*dt_sim);
 H = zeros(6,nx); 
 H(1,1)  = 1;               
 H(2,5)  = 1;               
-H(3,7)  = 1; H(3,11) = 1;  
-H(4,8)  = 1; H(4,12) = 1;  
+H(3,7)  = 1; H(3,11) = Kt_A;  % <- CORREGIDO: Escalamiento por Kt_A
+H(4,8)  = 1; H(4,12) = Kt_B;  % <- CORREGIDO: Escalamiento por Kt_B
 H(5,9)  = 1; H(5,13) = 1;  
 H(6,10) = 1; H(6,14) = 1;  
 
@@ -71,15 +71,17 @@ var_sg   = noise_strain_std^2 * alpha_sg/(2-alpha_sg);
 
 R = diag([var_hall, var_hall, (Kt_A^2)*var_IA, (Kt_B^2)*var_IA, var_imu, var_sg]);
 
-q_b_TA  = (2 * (Kt_A * sigma_b_IA)^2)  / tau_b_IA;
-q_b_TB  = (2 * (Kt_B * sigma_b_IB)^2)  / tau_b_IB;
+% <- CORREGIDO: q_b ahora se define puramente en Amperes, sin multiplicar por Kt
+q_b_IA  = (2 * sigma_b_IA^2)           / tau_b_IA;
+q_b_IB  = (2 * sigma_b_IB^2)           / tau_b_IB;
 q_b_imu = (2 * sigma_b_imu^2)          / tau_b_imu;
 q_b_sg  = (2 * sigma_b_sg^2)           / tau_b_sg;
 
+% <- CORREGIDO: Se reemplaza q_b_TA por q_b_IA y q_b_TB por q_b_IB
 Q = diag([1e-10, 5e-5, 1e-10, 5e-5, 1e-10, 5e-5, ... 
           0.01*dt_sim, 0.01*dt_sim, ...              
           1e-8, 1e-8, ...                            
-          q_b_TA * dt_sim, q_b_TB * dt_sim, ...      
+          q_b_IA * dt_sim, q_b_IB * dt_sim, ...      
           q_b_imu * dt_sim, q_b_sg * dt_sim]);       
 
 P_temp = diag([1e-4, 1, 1e-4, 1, 1e-4, 1, 10, 10, 1, 1, 1, 1, 1, 1]);                  
