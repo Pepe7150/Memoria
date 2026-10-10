@@ -1,0 +1,56 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       pointVectorField;
+    object      pointDisplacement;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dimensions      [0 1 0 0 0 0 0];
+
+internalField   uniform (0 0 0);
+
+boundaryField
+{
+    flap
+    {
+        type            solidBodyMotionDisplacement;
+        solidBodyMotionFunction tabulated6DoFMotion;
+        tabulated6DoFMotionCoeffs
+        {
+            CofG            (0.7 0 0);     // bisagra (z es irrelevante: giro alrededor de z)
+            timeDataFileName "$FOAM_CASE/constant/flapMotion.dat";
+        }
+    }
+
+    mainfoil
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+
+    farfield
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+
+    outlet
+    {
+        type            fixedValue;
+        value           uniform (0 0 0);
+    }
+
+    front
+    {
+        type            empty;
+    }
+
+    back
+    {
+        type            empty;
+    }
+}
+
+// ************************************************************************* //

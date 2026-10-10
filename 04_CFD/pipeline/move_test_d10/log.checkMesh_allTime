@@ -1,0 +1,7 @@
+Using: OpenFOAM-v2012 (2012) - visit www.openfoam.com
+Build: _7bdb509494-20201222
+
+Invalid option: -allTime
+
+See 'checkMesh -help' for usage
+

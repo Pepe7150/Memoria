@@ -6,8 +6,10 @@ viven todos los scripts) y corriendo dentro de WSL.
 Archivos que deben estar en esta carpeta:
 `naca0012_flap_geometry.py`, `naca_mesh_gmsh.py`, `compute_first_layer_height.py`,
 `fix_patch_types.py`, `convert_mesh.sh`, `build_case.py`, `run_sweep.py`,
-`verify_sweep.py`, `continue_nonconverged.py`, `case_template/` (con `0/`,
-`constant/`, `system/`).
+`verify_sweep.py`, `continue_nonconverged.py`, `resync_results.py`,
+`case_template/` (con `0/`, `constant/`, `system/`). Para la campaña
+dinámica, además: `naca0012_flap_geometry_gapped.py`,
+`naca_mesh_gmsh_dynamic.py`.
 
 ---
 
@@ -29,7 +31,8 @@ which python3   # debe apuntar a .../pipeline/venv/bin/python3
 > Nota: los scripts de Python (numpy/gmsh) y los binarios de OpenFOAM
 > requieren `LD_LIBRARY_PATH` distinto (chocan entre sí). Si corres algo de
 > Python SUELTO (no a través de `run_sweep.py`, que ya maneja esto solo) y
-> te tira un error de `libstdc++`/`GLIBCXX`, antepone `LD_LIBRARY_PATH=""`:
+> te tira un error de `libstdc++`/`GLIBCXX`/`CXXABI`, antepone
+> `LD_LIBRARY_PATH=""`:
 > ```bash
 > LD_LIBRARY_PATH="" python3 naca0012_flap_geometry.py ...
 > ```
@@ -226,9 +229,18 @@ Si algún caso sigue sin converger después de esto, probablemente es flujo
 genuinamente separado/inestable (cerca de pérdida) -- ahí conviene mirarlo
 en ParaView en vez de seguir dándole más iteraciones a ciegas.
 
+Si en algún momento `resultados.csv` queda con columnas `ChHinge`/
+`HingeMoment_Nm` desactualizadas (por ejemplo, de una corrida vieja de
+`continue_nonconverged.py` previa al fix de ese bug), reconstrúyelo sin
+relanzar nada:
+
+```bash
+python3 resync_results.py --config sweep_config.json --summary resultados.csv --workdir sweep_run
+```
+
 ---
 
-## 8. Resultado final
+## 8. Resultado final (campaña estática)
 
 `resultados.csv` queda con las columnas:
 
@@ -248,6 +260,122 @@ Para visualizar los resultados de un caso particular que ya fue corrido dentro d
    touch sweep_run/cases/d+10p0_M0p200_aoa+12p0/caso.foam
    ```
 2. Abrir con paraFoam: Ejecuta el comando limpiando la variable de entorno para evitar choques de librerías con el entorno de OpenFOAM.
-  ```bash
-    LD_LIBRARY_PATH="" paraFoam -case sweep_run/cases/d+10p0_M0p200_aoa+12p0
-  ```
+   ```bash
+   LD_LIBRARY_PATH="" paraFoam -case sweep_run/cases/d+10p0_M0p200_aoa+12p0
+   ```
+
+---
+
+## 10. Campaña dinámica -- paso 1: geometría y malla con gap de bisagra
+
+Ver `DOCUMENTACION_CFD_DINAMICA.md` para la teoría y el porqué de este gap.
+
+### 10.1 Geometría con gap
+
+```bash
+LD_LIBRARY_PATH="" python3 naca0012_flap_geometry_gapped.py --delta 0 --hinge 0.7 --gap 0.01 --out naca_gap.dat --plot
+```
+
+Revisa `naca_gap.png`: debe verse `mainfoil` y `flap` como dos polígonos
+separados por un hueco visible en la bisagra, sin traslape.
+
+### 10.2 Malla con mainfoil y flap como agujeros independientes
+
+```bash
+LD_LIBRARY_PATH="" python3 naca_mesh_gmsh_dynamic.py --dat naca_gap.dat --out naca_gap.msh \
+    --farfield 15 --wake 20 --yplus-height 2.5513e-05 --layers 20 --growth 1.2 \
+    --te-size 0.004 --le-size 0.004 --farfield-size 1.5
+```
+
+Confirma que salen los 7 grupos físicos (`mainfoil`, `flap`, `farfield`,
+`outlet`, `front`, `back`, `internal`) sin warnings ni errores de Gmsh.
+
+### 10.3 Convertir y revisar en ParaView
+
+Igual que en la campaña estática (pasos 2.3 y 2.7), usando `naca_gap.msh`.
+Presta especial atención a la calidad de malla cerca del gap -- es la zona
+más delicada de toda la malla.
+
+Repite con `--delta 10`, `--delta -10` (u otros valores) para confirmar que
+el gap se mantiene sin traslape también con el flap deflectado, antes de
+pasar al paso 2 del roadmap dinámico (`moveDynamicMesh`).
+
+---
+
+## 11. Campaña dinámica -- paso 2: validar SOLO el movimiento de malla
+
+No se resuelve flujo todavía: se mueve la malla con el flap rotando y se
+revisa que no se degrade. Ver `DOCUMENTACION_CFD_DINAMICA.md` (Secciones
+4.3, 5.1 y 5.2) para el porqué de cada decisión.
+
+### 11.1 Convertir la malla con gap a OpenFOAM
+
+`convert_mesh.sh` sirve tal cual (los patches se llaman igual: `mainfoil`,
+`flap`, `farfield`, `outlet`, `front`, `back`):
+
+```bash
+./convert_mesh.sh mesh_case_gap naca_gap.msh
+```
+
+Revisa que `checkMesh` no falle en topología (el aspect ratio alto es
+normal por la capa límite).
+
+### 11.2 Armar el caso de movimiento de malla
+
+Los tiempos se dan en segundos REALES; el script los convierte a tiempo de
+OpenFOAM (`t_OF = t_real / chord_real`):
+
+```bash
+python3 build_dynamic_move_case.py --mesh-case mesh_case_gap \
+    --delta-target 10 --t-actuation-real 0.05 --t-hold-real 0.05 \
+    --chord-real 0.2 --hinge 0.7 --gap 0.01 --out move_test_d10
+```
+
+Lee el resumen que imprime: tiempo total, tiempos de escritura, y sobre
+todo la **holgura de esquina** (si baja del 30% del gap original, avisa).
+
+### 11.3 Mover la malla y revisar su calidad
+
+```bash
+cd move_test_d10
+moveDynamicMesh | tee log.moveDynamicMesh
+checkMesh -allTime -allGeometry -allTopology | tee log.checkMesh_allTime
+```
+
+Busca en `log.checkMesh_allTime`, para cada tiempo: `Mesh OK` (o fallas
+solo en cosas esperables), volumen mínimo POSITIVO, `Max skewness`,
+`Mesh non-orthogonality Max`. Lo más probable es que lo peor ocurra al
+final de la rampa (máxima deflexión).
+
+### 11.4 Verificar numéricamente rotación, signo y unidades
+
+```bash
+python3 ../check_flap_motion.py --case . --time 0.25 --hinge 0.7
+```
+
+(`--time` es una de las carpetas de tiempo escritas; usa una durante la
+rampa, por ejemplo 0.125 -> se esperan -5°, y una al final, 0.25 -> -10°.)
+Debe terminar en `RESULTADO: OK`. Si dice FALLA, el mensaje indica si es
+signo, unidades (radianes vs grados) o si el flap no se movió.
+
+Este script solo usa numpy: si el entorno de OpenFOAM está cargado y falla
+por `libstdc++`, antepón `LD_LIBRARY_PATH=""`.
+
+### 11.5 Mirar la malla en movimiento (opcional)
+
+```bash
+touch caso.foam
+LD_LIBRARY_PATH="" paraFoam -case .
+```
+
+En ParaView avanza por los tiempos y haz zoom en la bisagra: la zona del
+gap es la más delicada. Si las celdas del lado comprimido se aplastan o
+se cruzan, ver la alternativa de nariz redondeada concéntrica en la
+Sección 4.3 de la documentación dinámica.
+
+### 11.6 Probar otros casos
+
+Repite 11.2-11.4 con `--delta-target -10`, con `--quadratic` (malla más
+rígida cerca del flap) y con otros `--gap` (hay que regenerar la malla con
+ese gap, pasos 10.1-10.2, y reconvertirla) para ver qué combinación aguanta
+mejor el rango de deflexión que necesitas.

@@ -148,10 +148,52 @@ una pequeña holgura, rellena de celdas de dominio fluido normales — no un
 tratamiento especial, solo geometría que dé espacio para que el flap se
 mueva sin que las mallas se toquen ni se crucen.
 
-**(pendiente)**: definir el tamaño del gap (típicamente una fracción
-pequeña de la cuerda, a determinar empíricamente — lo bastante chico para
-no alterar la aerodinámica de forma significativa, lo bastante grande para
-que la malla no se degrade al rotar el flap en el rango de δ de interés).
+**Estado: implementado.** `naca0012_flap_geometry_gapped.py` genera
+`mainfoil` y `flap` como dos polígonos cerrados independientes (gap inicial
+de prueba: 1% de cuerda, `--gap 0.01` -- **(pendiente)** afinar este valor,
+ver más abajo). `naca_mesh_gmsh_dynamic.py` los malla como dos agujeros
+separados del dominio (en vez de un solo contorno partido), reutilizando el
+mismo truco de la malla estática (spline de extradós + spline de intradós +
+línea recta de cierre) para evitar auto-intersecciones en las esquinas
+agudas -- acá cada polígono tiene su propia esquina de cierre en el lado de
+la bisagra (el "gap cap"), y el flap además conserva la del borde de fuga
+romo.
+
+Validado con δ=0°, 10° y −15° (mallas limpias, sin warnings/errores de
+Gmsh, gap mantenido sin traslape incluso con deflexión agresiva).
+
+**(pendiente)**: afinar el tamaño del gap -- 1% de cuerda fue el valor de
+partida para probar la mecánica de la malla, no una elección final. Lo
+bastante chico para no alterar la aerodinámica de forma significativa, lo
+bastante grande para que la malla no se degrade al rotar el flap en el
+rango de δ de interés (falta correr el paso 2, `moveDynamicMesh`, para ver
+si este valor aguanta el rango completo o hay que agrandarlo).
+
+**Límite geométrico de deflexión con caras planas.** Al rotar el flap
+alrededor de la bisagra, la esquina de su cara frontal (a distancia
+$g/2$ de la bisagra y altura $h$ = semi-espesor local) se acerca al
+mainfoil en el lado comprimido. Con las caras planas actuales, el flap
+choca con el mainfoil cuando
+
+$$\tan\left(\frac{\theta_{max}}{2}\right) = \frac{g/2}{h}
+\quad\Rightarrow\quad \theta_{max} = 2\arctan\left(\frac{g}{2h}\right)$$
+
+Para $g=0.01$ y $h \approx 0.036$ (NACA0012 en $x/c=0.7$):
+$\theta_{max} \approx 15.7°$. Mucho antes de eso la malla ya sufre: a 10°
+solo queda ~36% del gap original en el lado comprimido (la celdas ahí se
+aplastan a un tercio de su ancho). `build_dynamic_move_case.py` imprime
+esta holgura y avisa si baja del 30%.
+
+**Alternativa si el paso 2 muestra deterioro excesivo: nariz redondeada
+concéntrica.** Es lo que hacen las superficies de control reales: la cara
+frontal del flap es un arco de círculo centrado en la bisagra y el
+mainfoil tiene un "cove" cóncavo concéntrico. Con arcos concéntricos el
+gap es *constante para cualquier δ* (el flap solo desliza tangencialmente),
+las celdas del gap se cizallan en vez de comprimirse, y el rango de
+deflexión deja de estar limitado por la geometría. Es un cambio de
+geometría (arcos en vez de líneas de cierre en
+`naca0012_flap_geometry_gapped.py` y `naca_mesh_gmsh_dynamic.py`), así que
+solo conviene hacerlo si los resultados de `moveDynamicMesh` lo justifican.
 
 ---
 
@@ -175,6 +217,40 @@ cierra el círculo de diseño entre "qué tan rápido necesito que se mueva" y
 **(pendiente)**: rango de $T$ a explorar — depende de la velocidad angular
 típica de actuadores candidatos para el banco de ensayos (°/s), que aún no
 está definida.
+
+### 5.1 Escalamiento del tiempo (importante)
+
+La malla está en unidades de cuerda ($x_m = x_{real}/c_{real}$), pero se usa
+la velocidad real y $\nu_{malla} = \nu_{real}/c_{real}$ (Sección 5.4 de
+`DOCUMENTACION_CFD.md`). Para que las ecuaciones de Navier-Stokes sean
+semejantes, el **tiempo** también debe escalarse. Con $\nabla_r =
+\nabla_m / c_{real}$ y multiplicando la ecuación de cantidad de movimiento
+por $c_{real}$:
+
+$$c_{real}\,\frac{\partial u}{\partial t_{real}} + u\cdot\nabla_m u =
+-\nabla_m \frac{p}{\rho} + \frac{\nu_{real}}{c_{real}}\nabla_m^2 u
+\;\;\Rightarrow\;\; t_{OF} = \frac{t_{real}}{c_{real}}$$
+
+Ejemplo: $T_{real}=0.05$ s con $c_{real}=0.2$ m → $T_{OF}=0.25$. Los
+ángulos (grados) no se escalan; la velocidad angular real es
+$\omega_{real} = \omega_{OF}/c_{real}$. Los coeficientes ($Ch_{hinge}(t_{OF})$)
+siguen siendo adimensionales y el momento real se reconstituye igual que en
+la campaña estática:
+$M_{real}(t_{real}) = Ch_{hinge}(t_{OF}=t_{real}/c_{real})\cdot 0.5\rho U^2 c^2 b$.
+
+Si se olvidara este escalamiento, la rampa correría 5× más rápido de lo
+real (para $c_{real}=0.2$ m) y el pico dinámico saldría sobreestimado.
+`build_dynamic_move_case.py` recibe los tiempos en segundos **reales** y
+hace la conversión.
+
+### 5.2 Convención de signo y eje
+
+El caso es 2D en el plano x-y, así que el flap rota alrededor de **z**
+(canal *yaw* de `tabulated6DoFMotion`; tabla en grados, valores totales).
+δ positivo = flap hacia abajo = giro horario = rotación **negativa** alrededor
+de +z, por lo que `yaw = -δ`. `check_flap_motion.py` mide la rotación real
+de la malla movida y detecta errores de signo, de unidades (grados/radianes)
+y de eje.
 
 ---
 
@@ -200,13 +276,21 @@ está definida.
 
 ## 7. Plan de implementación (roadmap)
 
-1. **Gap de bisagra en la geometría**: modificar `naca0012_flap_geometry.py`
-   y `naca_mesh_gmsh.py` para generar una malla neutra (δ=0) con el gap
-   físico entre `mainfoil` y `flap`.
-2. **Validar solo el movimiento de malla**: `dynamicMeshDict` +
-   `0/pointDisplacement` + `moveDynamicMesh`, revisar en ParaView que la
-   malla no se degrade ni invierta celdas durante el rango de δ(t) de
-   interés -- sin resolver flujo todavía.
+1. ✅ **Gap de bisagra en la geometría** -- `naca0012_flap_geometry_gapped.py`
+   + `naca_mesh_gmsh_dynamic.py` (scripts nuevos, separados de los
+   estáticos). Ver Sección 4.3 y la bitácora de bugs (Sección 9) para el
+   detalle.
+2. 🔧 **Validar solo el movimiento de malla** (scripts listos, falta
+   correrlos en el servidor): `build_dynamic_move_case.py` arma el caso
+   (`dynamicMeshDict` + `0/pointDisplacement` + tabla `flapMotion.dat` con
+   tiempo escalado), se corre `moveDynamicMesh` + `checkMesh -allTime`, y
+   `check_flap_motion.py` verifica numéricamente rotación, signo y
+   unidades. Criterios de aprobación: `checkMesh` sin celdas de volumen
+   negativo en ningún tiempo, no-ortogonalidad/skewness razonables, y
+   `check_flap_motion.py` en OK. **Nota**: la sintaxis de OpenFOAM v2012 se
+   contrastó con documentación y la wiki ESI pero NO se pudo ejecutar en el
+   entorno de desarrollo -- los primeros errores de `moveDynamicMesh` pueden
+   requerir ajustes menores en los diccionarios.
 3. **Un caso de prueba con `pimpleFoam`**: una sola rampa, un Mach, un AoA
    fijos -- validar que el caso corre, converge razonablemente, y que el
    momento de bisagra en función del tiempo se ve físicamente sensato
@@ -219,7 +303,27 @@ está definida.
 
 ---
 
-## 8. Preguntas abiertas / pendientes
+## 8. Bitácora de bugs -- paso 1 (gap de bisagra)
+
+1. **Doble reversión de orden en los puntos del flap**: al armar la
+   secuencia de puntos del polígono del flap, se aplicó una reversión de
+   orden dos veces por accidente (se cancelan entre sí), dejando extradós e
+   intradós en el mismo sentido en vez de sentidos opuestos -- esto arma un
+   recorrido que va y vuelve en vez de un polígono simple, generando
+   auto-intersección al cerrarlo en Gmsh. Fix: una sola reversión en el
+   extradós, ninguna en el intradós (el orden que entrega `build_side` ya
+   era el correcto ahí).
+2. **El filtro de puntos casi-duplicados podía generar un punto extra**: la
+   función de filtrado agregaba el último punto original al final
+   incondicionalmente, incluso si ya había quedado conservado por el filtro
+   normal -- duplicándolo. Eso rompía `addSpline` en Gmsh (segmento final de
+   largo ~cero) justo en el punto de corte de la bisagra del mainfoil. Fix:
+   reemplazar el último punto conservado por el original exacto solo si no
+   coinciden, en vez de agregarlo siempre.
+
+---
+
+## 9. Preguntas abiertas / pendientes
 
 - [ ] Tamaño del gap de bisagra (Sección 4.3).
 - [ ] Rango de $T$ a explorar, atado a velocidades de actuador candidatas

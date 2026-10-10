@@ -1,0 +1,27 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object      dynamicMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+dynamicFvMesh       dynamicMotionSolverFvMesh;
+
+motionSolverLibs    ("libfvMotionSolvers.so");
+
+// v2012 acepta 'motionSolver' (y 'solver' como alias antiguo); se dejan los
+// dos para maximizar compatibilidad -- el que sobre se ignora.
+motionSolver        displacementLaplacian;
+solver              displacementLaplacian;
+
+displacementLaplacianCoeffs
+{
+    // Cerca del flap (patch que se mueve) la malla es "rigida" y sigue al
+    // flap; lejos del flap absorbe la deformacion.
+    diffusivity     inverseDistance 1(flap);
+}
+
+// ************************************************************************* //
