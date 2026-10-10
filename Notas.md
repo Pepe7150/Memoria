@@ -24,7 +24,7 @@
 * [X] Terminar de ver lo de los anchos de banda
 * [X] En el motor de carga definir los límites de torque para que el sistema no se mantenga girando ante la ausencia de un torque resistente
 * [X] Evaluar si el lazo de todo el sistema responde mejor al torque o a la posición
-* [ ] Terminar de ver el sistema simulado en matlab
+* [X] Terminar de ver el sistema simulado en matlab
 
   * [X] Terminar de seccionar el código
   * [X] Revisar el lazo de control de posición de B, por qué empieza a controlar la posición cuando termina la rampa
@@ -44,8 +44,8 @@
   * [X] cambiar plots de T_transmitido por theta_a y theta_b.
   * [X] explicar bien lo de estados filtros pero tenerlo escrito bien para finalmente salir del tema.
   * [X] Hacer análisis de sensibilidad.
-  * [ ] en una parte se suma torque y corriente (bias), falta multiplicar por Kt ahí.
-  * [ ] Revisar el código completo.
+  * [X] en una parte se suma torque y corriente (bias), falta multiplicar por Kt ahí.
+  * [X] Revisar el código completo.
 * [X] Escribir conceptos y ecuaciones del modelo y generales.
 * [X] Animar sistema mecánico equivalente
 * [ ] Para lo de la altitud, definir en que rango tendría sentido el NACA 0012 de el objeto de estudio.  que sea coherente con el contexto del laboratorio y los uavs que se usan ahí. Preguntar a Tinnapp o decidir uno solamente. Decidir uno solamente si igual no está en el alcance del proyecto que avión se va a modelar.

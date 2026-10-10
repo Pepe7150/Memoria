@@ -157,6 +157,19 @@ Respuestas:
 3. mas reguladores de voltaje de mayor capacidad
 4. cfd sin separación de flujo
 
+## Reunión 09/10/2026
+
+**Estado:** Realizada.
+
+**Preguntas a plantear:**
+
+1. Comprar cosas y presentar avances en CFD.
+
+**Respuestas / acuerdos:**
+
+1. Antes de ver efectos transientes terminar el barrido estacionario completo y validado
+2. comprar más reguladores de voltaje, drivers BTS y un rollo de pla.
+
 ## Cómo usar este documento
 
 * Cada reunión se documenta como una nueva sección, con fecha en el título.
