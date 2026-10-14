@@ -339,13 +339,18 @@ todo la **holgura de esquina** (si baja del 30% del gap original, avisa).
 ```bash
 cd move_test_d10
 moveDynamicMesh | tee log.moveDynamicMesh
-checkMesh -allTime -allGeometry -allTopology | tee log.checkMesh_allTime
+../checkmesh_series.sh .
 ```
 
-Busca en `log.checkMesh_allTime`, para cada tiempo: `Mesh OK` (o fallas
-solo en cosas esperables), volumen mínimo POSITIVO, `Max skewness`,
-`Mesh non-orthogonality Max`. Lo más probable es que lo peor ocurra al
-final de la rampa (máxima deflexión).
+(`checkMesh -allTime` NO existe en v2012; `checkmesh_series.sh` corre
+`checkMesh -time T` por cada carpeta de tiempo escrita.)
+
+La tabla muestra, por tiempo: volumen mínimo, skewness máxima y
+no-ortogonalidad máxima. La columna `avisos` vacía = sin problemas graves
+(umbrales: volumen <= 0, skewness > 4, no-ortogonalidad > 70). OJO: la
+columna `fallos` = 1 es NORMAL (es el aspect ratio alto de la capa límite,
+también presente en la malla estática buena); no uses "Mesh OK" como
+criterio. Lo que importa es en qué tiempo aparece el primer aviso.
 
 ### 11.4 Verificar numéricamente rotación, signo y unidades
 
@@ -356,7 +361,11 @@ python3 ../check_flap_motion.py --case . --time 0.25 --hinge 0.7
 (`--time` es una de las carpetas de tiempo escritas; usa una durante la
 rampa, por ejemplo 0.125 -> se esperan -5°, y una al final, 0.25 -> -10°.)
 Debe terminar en `RESULTADO: OK`. Si dice FALLA, el mensaje indica si es
-signo, unidades (radianes vs grados) o si el flap no se movió.
+signo, unidades (radianes vs grados), si el flap no se movió, o si la malla
+**explotó** (algún punto desplazado > 0.5 o NaN). Ojo: que el flap tenga la
+rotación correcta NO garantiza que el interior de la malla esté bien (los
+puntos del flap son la condición de borde); por eso se revisa también el
+desplazamiento global y la calidad con `checkmesh_series.sh`.
 
 Este script solo usa numpy: si el entorno de OpenFOAM está cargado y falla
 por `libstdc++`, antepón `LD_LIBRARY_PATH=""`.
@@ -379,3 +388,32 @@ Repite 11.2-11.4 con `--delta-target -10`, con `--quadratic` (malla más
 rígida cerca del flap) y con otros `--gap` (hay que regenerar la malla con
 ese gap, pasos 10.1-10.2, y reconvertirla) para ver qué combinación aguanta
 mejor el rango de deflexión que necesitas.
+
+### 11.7 Matriz de experimentos (si la malla explota o se degrada)
+
+Primer intento real (δ=10°, difusividad solo respecto al flap): la rotación
+del flap fue la correcta pero la malla explotó ya en t=0.15 (≈6.5°), con
+desplazamientos de ~1e12. Mecanismo probable y plan en la Sección 4.4 de
+`DOCUMENTACION_CFD_DINAMICA.md`. Para probar las correcciones baratas de una
+sola vez:
+
+```bash
+# 1) malla refinada en el gap (misma geometría, solo cambia el tamaño de celda cerca de la bisagra)
+LD_LIBRARY_PATH="" python3 naca_mesh_gmsh_dynamic.py --dat naca_gap.dat --out naca_gap_ref.msh \
+    --farfield 15 --wake 20 --yplus-height 2.5513e-05 --layers 20 --growth 1.2 \
+    --te-size 0.004 --le-size 0.004 --farfield-size 1.5 \
+    --hinge 0.7 --gap-refine-size 0.001
+./convert_mesh.sh mesh_case_gap_ref naca_gap_ref.msh
+
+# 2) correr la matriz completa (usa la malla base y la refinada)
+./run_move_matrix.sh mesh_case_gap mesh_case_gap_ref
+```
+
+La matriz prueba: difusividad solo-flap (lo que fallo) vs flap+mainfoil,
+con y sin `quadratic`, malla base vs refinada, y δ=4° vs δ=10°. Imprime por
+variante el primer tiempo con problemas. Variables de entorno opcionales:
+`DELTA`, `TACT`, `THOLD`, `CHORD`, `HINGE`, `GAP`
+(por ejemplo `DELTA=-10 ./run_move_matrix.sh ...`).
+
+Pásame el bloque RESUMEN que imprime al final, más `move_A_base_flap/log.moveDynamicMesh`
+(las últimas ~40 líneas) para ver qué hizo el solver en el paso que se cae.

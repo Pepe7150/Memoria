@@ -195,6 +195,54 @@ geometría (arcos en vez de líneas de cierre en
 `naca0012_flap_geometry_gapped.py` y `naca_mesh_gmsh_dynamic.py`), así que
 solo conviene hacerlo si los resultados de `moveDynamicMesh` lo justifican.
 
+### 4.4 Primer intento de movimiento de malla: qué pasó y por qué
+
+**Resultado (δ=10°, gap 1%, `inverseDistance 1(flap)`, malla sin
+refinamiento local):**
+- `check_flap_motion.py`: rotación medida −10.0000° = esperada; radio
+  conservado; unidades (grados), signo y eje correctos
+  (`tabulated6DoFMotion` canal *yaw*, `yaw = -δ`).
+- Pero la malla se destruyó ya en t=0.15 (≈6.5° de rotación) y el
+  desplazamiento máximo llegó a ~3·10¹² (45 212 de 46 126 puntos movidos).
+  El verificador original lo dio por "OK" (omisión corregida: los puntos del
+  flap son condición de borde y siempre cumplen; ahora también se revisa el
+  desplazamiento global).
+
+**Mecanismo probable (hipótesis consistente con la evidencia, aún sin
+confirmar con `log.moveDynamicMesh` ni calidad por tiempo):**
+1. El gap es una *ranura* de 0.01 de ancho por ~0.074 de alto (7:1). Sin
+   refinamiento local, tiene ~3 celdas a través de su parte libre (medido
+   sobre la malla generada), además de las capas límite de ambas caras.
+2. Al rotar θ, las esquinas de la cara del flap se mueven ≈ h·θ (≈0.004 a
+   6.5°) = ~40% del ancho de la ranura. Con difusividad solo respecto al
+   flap, las celdas junto a la cara del *mainfoil* (fija) son "blandas"
+   (rigidez ~1/distancia al flap ≈ 100 contra ~10⁵ junto al flap) y absorben
+   toda la deformación -> celdas invertidas.
+3. `displacementLaplacian` discretiza el Laplaciano sobre la geometría
+   actual: con una celda de volumen negativo el operador deja de ser definido
+   positivo y el paso siguiente diverge (de ahí 10¹²).
+Conclusión de diseño: antes de la colisión geométrica (~15.7°), la
+*distribución* de la deformación en la ranura es lo que limita.
+
+**Correcciones, de menor a mayor costo:**
+1. `--diff-patches flap mainfoil` (rigidez cerca de ambas paredes: la
+   deformación se concentra en el interior del gap y en el flujo exterior).
+2. `--quadratic` (rigidez ~1/d², paredes aún más rígidas).
+3. `--gap-refine-size 0.001` en `naca_mesh_gmsh_dynamic.py` (≈10 celdas a
+   través del gap en vez de ~3; +36% de nodos).
+4. Menor δ máximo del barrido dinámico.
+5. **Nariz redondeada concéntrica** (Sección 4.3): gap constante a cualquier
+   δ, las celdas se cizallan en vez de comprimirse. Es el arreglo de fondo
+   si 1-3 no alcanzan.
+
+`run_move_matrix.sh` prueba las combinaciones 1-4 de una vez.
+
+**Pendiente de validación independiente de la malla:** un gap abierto deja
+pasar flujo del intradós al extradós y puede cambiar el momento de bisagra
+respecto al caso estático sin gap. Hay que comparar un caso estático CON gap
+(δ=10°, mismo Mach/AoA que uno del barrido estático) contra el resultado
+estático sin gap antes de confiar en los picos dinámicos.
+
 ---
 
 ## 5. Definición del movimiento prescrito
@@ -280,8 +328,9 @@ y de eje.
    + `naca_mesh_gmsh_dynamic.py` (scripts nuevos, separados de los
    estáticos). Ver Sección 4.3 y la bitácora de bugs (Sección 9) para el
    detalle.
-2. 🔧 **Validar solo el movimiento de malla** (scripts listos, falta
-   correrlos en el servidor): `build_dynamic_move_case.py` arma el caso
+2. 🔧 **Validar solo el movimiento de malla** (scripts listos; primer
+   intento: rotación correcta pero la malla explotó en t=0.15, ver
+   Sección 4.4 -- en curso): `build_dynamic_move_case.py` arma el caso
    (`dynamicMeshDict` + `0/pointDisplacement` + tabla `flapMotion.dat` con
    tiempo escalado), se corre `moveDynamicMesh` + `checkMesh -allTime`, y
    `check_flap_motion.py` verifica numéricamente rotación, signo y
@@ -323,9 +372,23 @@ y de eje.
 
 ---
 
+3. **`checkMesh -allTime` no existe en OpenFOAM v2012** (error mío al
+   escribir el runbook): el log solo decía `Invalid option: -allTime`. Se usa
+   `checkMesh -time T` por cada tiempo (`checkmesh_series.sh`).
+4. **El verificador `check_flap_motion.py` daba OK con una malla explotada**:
+   solo medía puntos prescritos (siempre correctos). Ahora revisa también el
+   desplazamiento máximo global y NaN/Inf.
+5. **"Mesh OK" no sirve como criterio de calidad** en mallas con capa límite:
+   el aspect ratio alto produce `Failed 1 mesh checks` incluso en la malla
+   estática buena. `checkmesh_series.sh` usa umbrales concretos (volumen <= 0,
+   skewness > 4, no-ortogonalidad > 70).
+
+---
+
 ## 9. Preguntas abiertas / pendientes
 
-- [ ] Tamaño del gap de bisagra (Sección 4.3).
+- [ ] Tamaño del gap de bisagra (Sección 4.3) -- y si hace falta pasar a nariz redondeada concéntrica (Sección 4.4).
+- [ ] Validar el efecto del gap abierto sobre el momento de bisagra comparando un caso estático con gap contra el estático sin gap (Sección 4.4).
 - [ ] Rango de $T$ a explorar, atado a velocidades de actuador candidatas
       (Sección 5).
 - [ ] Resolución temporal ($\Delta t$) necesaria para resolver bien el
