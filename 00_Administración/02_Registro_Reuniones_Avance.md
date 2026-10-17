@@ -170,6 +170,20 @@ Respuestas:
 1. Antes de ver efectos transientes terminar el barrido estacionario completo y validado
 2. comprar más reguladores de voltaje, drivers BTS y un rollo de pla.
 
+## Reunión 16/10/2026
+
+**Estado:** Realizada.
+
+**Preguntas a plantear:**
+
+1. avances en CFD.
+
+**Respuestas / acuerdos:**
+
+1. Abstraer más el problema antes de poner el modelo con los discos
+2. Incluir todo lo investigado de efectos transientes en el informe, pero no hacerlo
+3. Hacer el diseño de detalle del banco.
+
 ## Cómo usar este documento
 
 * Cada reunión se documenta como una nueva sección, con fecha en el título.
