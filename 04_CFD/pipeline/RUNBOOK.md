@@ -42,7 +42,7 @@ which python3   # debe apuntar a .../pipeline/venv/bin/python3
 ## 1. Calcular la altura de primera celda (`y1`) para tu condición más exigente
 
 ```bash
-python3 compute_first_layer_height.py --u 68.06 --c 0.2 --nu 1.5e-5 --yplus 1
+python compute_first_layer_height.py --u 102.09 --c 1.0 --nu 7.5e-05
 ```
 
 Usa el valor de la línea `-> fracción de cuerda` (no el que está en metros)
@@ -218,8 +218,7 @@ casos que posiblemente no convergieron, valores sospechosos.
 ## 7. Continuar los casos que no convergieron
 
 ```bash
-python3 continue_nonconverged.py --config sweep_config.json \
-    --summary resultados.csv --workdir sweep_run --extra-iters 3000
+python3 continue_nonconverged.py --config sweep_config.json --summary resultados.csv --workdir sweep_run --extra-iters 3000
 ```
 
 Esto retoma esos casos puntuales desde donde quedaron (no desde cero) y

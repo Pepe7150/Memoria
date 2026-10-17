@@ -1,0 +1,57 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      fvSolution;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solvers
+{
+    p
+    {
+        solver          GAMG;
+        tolerance       1e-8;
+        relTol          0.01;
+        smoother        GaussSeidel;
+    }
+
+    "(U|nuTilda)"
+    {
+        solver          smoothSolver;
+        smoother        GaussSeidel;
+        tolerance       1e-8;
+        relTol          0.1;
+    }
+}
+
+SIMPLE
+{
+    nNonOrthogonalCorrectors 1;
+    consistent      yes;             // SIMPLEC: suele converger más rápido para este tipo de caso
+
+    residualControl
+    {
+        p               1e-5;
+        U               1e-6;
+        nuTilda         1e-6;
+    }
+}
+
+relaxationFactors
+{
+    // con SIMPLEC (consistent yes) los factores pueden ir más cerca de 1
+    // que con SIMPLE clásico; si el caso diverge, bájalos (ej. 0.3 / 0.7)
+    fields
+    {
+        p               0.5;
+    }
+    equations
+    {
+        U               0.7;
+        nuTilda         0.7;
+    }
+}
+
+// ************************************************************************* //
