@@ -1,0 +1,96 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+Plantilla de caso: NACA0012 con flap, subsónico incompresible (simpleFoam).
+Los valores marcados con arroba los reemplaza build_case.py según Mach/AoA/delta.
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+
+startFrom       startTime;
+startTime       0;
+
+stopAt          endTime;
+endTime         2000;               // iteraciones; el caso puede converger antes (ver residualControl en fvSolution)
+
+deltaT          1;
+
+writeControl    timeStep;
+writeInterval   200;
+
+purgeWrite      2;                  // conserva solo las últimas 2 carpetas de tiempo (ahorra disco en el barrido)
+
+writeFormat     ascii;
+writePrecision  8;
+writeCompression off;
+
+timeFormat      general;
+timePrecision   6;
+
+runTimeModifiable true;
+
+functions
+{
+    forceCoeffs1
+    {
+        // Cl/Cd/Cm del perfil COMPLETO (mainfoil + flap), respecto al cuarto
+        // de cuerda -- para las curvas aerodinámicas generales del perfil.
+        type            forceCoeffs;
+        libs            (forces);
+        patches         (mainfoil flap);
+
+        rho             rhoInf;
+        rhoInf          1;          // incompresible: densidad de referencia arbitraria (coeficientes quedan normalizados igual)
+
+        liftDir         (-0.207912 0.978148 0);   // perpendicular a la corriente libre, NO al perfil (rota con AoA)
+        dragDir         (0.978148 0.207912 0);   // alineado con la corriente libre (rota con AoA)
+        CofR            (0.250000 0 0);          // referencia de momento (cuarto de cuerda por defecto)
+        pitchAxis       (0 0 1);
+
+        magUInf         51.045000;
+        lRef            1.000000;                 // cuerda
+        Aref            0.100000;                  // cuerda * espesor de extrusión (revisa que calce con tu malla)
+
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+    }
+
+    hingeMoment1
+    {
+        // Momento SOLO sobre el flap, respecto a la bisagra -- este es el
+        // que necesitas para dimensionar el actuador. Mismo Aref/lRef/rhoInf
+        // que forceCoeffs1 (convención consistente): el coeficiente CmPitch
+        // que devuelve esto se reconvierte a momento dimensional real con
+        //   M_bisagra = CmPitch * 0.5 * rho_real * U_real^2 * chord_real^2 * span_real
+        // (span_real = envergadura real de tu superficie de control, un dato
+        // que tú defines -- no viene de la malla, que es pseudo-2D).
+        type            forceCoeffs;
+        libs            (forces);
+        patches         (flap);
+
+        rho             rhoInf;
+        rhoInf          1;
+
+        liftDir         (-0.207912 0.978148 0);
+        dragDir         (0.978148 0.207912 0);
+        CofR            (0.700000 0 0);    // bisagra del flap, NO el cuarto de cuerda
+        pitchAxis       (0 0 1);
+
+        magUInf         51.045000;
+        lRef            1.000000;
+        Aref            0.100000;
+
+        writeControl    timeStep;
+        writeInterval   1;
+        log             true;
+    }
+}
+
+// ************************************************************************* //
