@@ -72,6 +72,9 @@ def main():
     ap.add_argument("--far-ref", type=float, nargs=2, default=[-15.0, 0.0],
                     help="Un punto del far-field (no debe moverse)")
     ap.add_argument("--tol-deg", type=float, default=0.05)
+    ap.add_argument("--max-disp", type=float, default=0.5,
+                    help="Desplazamiento maximo admisible de cualquier punto, en unidades de malla "
+                         "(el borde de fuga se mueve ~0.05 a 10 deg; mucho mas que eso = malla explotada)")
     args = ap.parse_args()
 
     p0_path = os.path.join(args.case, "constant", "polyMesh", "points")
@@ -133,8 +136,19 @@ def main():
 
     # --- cuánto se mueve la malla en total
     disp_all = np.linalg.norm(pts1 - pts0, axis=1)
-    print(f"\n[GLOBAL] desplazamiento maximo de cualquier punto: {disp_all.max():.5f}   "
+    finite = np.isfinite(disp_all)
+    print(f"\n[GLOBAL] desplazamiento maximo de cualquier punto: {np.nanmax(disp_all):.5g}   "
           f"(puntos que se mueven > 1e-9: {int((disp_all > 1e-9).sum())} de {len(disp_all)})")
+    n_bad = int((~finite).sum() + (disp_all[finite] > args.max_disp).sum())
+    if n_bad:
+        ok = False
+        worst = int(np.nanargmax(np.where(finite, disp_all, -1)))
+        print(f"  >>> FALLA: {n_bad} puntos se desplazaron mas de {args.max_disp} (o son NaN/Inf).")
+        print(f"      Peor punto #{worst}: ({pts0[worst][0]:.4f}, {pts0[worst][1]:.4f}) -> "
+              f"({pts1[worst][0]:.4g}, {pts1[worst][1]:.4g})")
+        print("      La malla EXPLOTO aunque el flap tenga la rotacion correcta (esos puntos son la condicion")
+        print("      de borde, siempre cumplen). Causa tipica: una celda se invirtio en un paso anterior y el")
+        print("      solver de movimiento diverge. Revisa en que tiempo empieza con checkmesh_series.sh.")
 
     print("\nRESULTADO:", "OK" if ok else "REVISAR")
     sys.exit(0 if ok else 1)

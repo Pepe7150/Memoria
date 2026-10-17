@@ -111,8 +111,9 @@ def hdr(cls, obj, location=None):
     return HEADER.format(cls=cls, obj=obj, loc=loc)
 
 
-def dynamic_mesh_dict(exponent_quadratic=False):
-    diff = "quadratic inverseDistance 1(flap)" if exponent_quadratic else "inverseDistance 1(flap)"
+def dynamic_mesh_dict(exponent_quadratic=False, diff_patches=("flap",)):
+    diff = (f"{'quadratic ' if exponent_quadratic else ''}"
+            f"inverseDistance {len(diff_patches)}({' '.join(diff_patches)})")
     return hdr("dictionary", "dynamicMeshDict", "constant") + f"""
 dynamicFvMesh       dynamicMotionSolverFvMesh;
 
@@ -125,8 +126,10 @@ solver              displacementLaplacian;
 
 displacementLaplacianCoeffs
 {{
-    // Cerca del flap (patch que se mueve) la malla es "rigida" y sigue al
-    // flap; lejos del flap absorbe la deformacion.
+    // Rigidez ~ 1/distancia a los patches listados: cerca de ellos la malla
+    // es "rigida"; lejos de ellos absorbe la deformacion. Incluir mainfoil
+    // ademas de flap evita que la capa limite del mainfoil junto al gap
+    // (que esta fija) se vuelva la zona blanda que absorbe todo.
     diffusivity     {diff};
 }}
 
@@ -262,7 +265,7 @@ def build_case(args):
     write_motion_table(os.path.join(args.out, "constant", "flapMotion.dat"), rows)
 
     with open(os.path.join(args.out, "constant", "dynamicMeshDict"), "w") as f:
-        f.write(dynamic_mesh_dict(args.quadratic))
+        f.write(dynamic_mesh_dict(args.quadratic, args.diff_patches))
     with open(os.path.join(args.out, "0", "pointDisplacement"), "w") as f:
         f.write(point_displacement(args.hinge))
     with open(os.path.join(args.out, "system", "controlDict"), "w") as f:
@@ -281,6 +284,7 @@ def build_case(args):
     print(f"  tiempo total (OF)   = {t_total:.6g}   deltaT = {dt:.6g}  ({args.n_steps} pasos)")
     print(f"  escritura cada {write_interval} pasos -> tiempos: "
           + ", ".join(f"{k * write_interval * dt:.4g}" for k in range(1, args.n_steps // write_interval + 1)))
+    print(f"  difusividad: {'quadratic ' if args.quadratic else ''}inverseDistance sobre {args.diff_patches}")
     print(f"  velocidad angular media de la rampa ~ {math.degrees(omega_real):.1f} deg/s reales")
 
     clear, frac = corner_clearance(args.delta_target, args.hinge, args.gap, args.naca_t)
@@ -295,7 +299,7 @@ def build_case(args):
     print(f"  deflexion maxima teorica antes de chocar (cara plana, gap={args.gap}): {theta_max:.1f} deg")
     print("\nSiguiente paso (en WSL con OpenFOAM cargado):")
     print(f"  cd {args.out} && moveDynamicMesh | tee log.moveDynamicMesh")
-    print("  checkMesh -allTime -allGeometry -allTopology | tee log.checkMesh_allTime")
+    print("  ../checkmesh_series.sh .        # calidad de malla en cada tiempo escrito")
     print(f"  python check_flap_motion.py --case . --time {t_total / 2:.6g} --hinge {args.hinge}")
 
 
@@ -314,7 +318,9 @@ def main():
     ap.add_argument("--n-writes", type=int, default=10)
     ap.add_argument("--n-ramp", type=int, default=100, help="Puntos de la tabla en la rampa")
     ap.add_argument("--yaw-sign", type=float, default=-1.0, help="-1: delta positivo = giro horario (flap abajo)")
-    ap.add_argument("--quadratic", action="store_true", help="Usa 'quadratic inverseDistance' (malla mas rigida cerca del flap)")
+    ap.add_argument("--quadratic", action="store_true", help="Usa 'quadratic inverseDistance' (malla mas rigida cerca de las paredes)")
+    ap.add_argument("--diff-patches", nargs="+", default=["flap"],
+                    help="Patches usados para la difusividad inverseDistance (default: flap). Prueba: flap mainfoil")
     args = ap.parse_args()
     build_case(args)
 

@@ -104,7 +104,8 @@ def build_polygon_curves(occ, pts, le_size, split_at_sign_change=False):
 def build_mesh(dat_path, out_path, farfield_radius=15.0, wake_length=20.0,
                 y1=2.5e-5, n_layers=20, growth_rate=1.2,
                 te_size=0.004, le_size=0.004, farfield_size=1.5,
-                extrude_z=0.1, min_spacing=5e-4):
+                extrude_z=0.1, min_spacing=5e-4,
+                hinge=0.7, gap_refine_size=None, gap_refine_halfwidth=0.03):
     main_pts, flap_pts = read_gapped_dat(dat_path, min_spacing=min_spacing)
     print(f"Puntos tras filtrar: mainfoil={len(main_pts)}  flap={len(flap_pts)}")
 
@@ -157,7 +158,26 @@ def build_mesh(dat_path, out_path, farfield_radius=15.0, wake_length=20.0,
     gmsh.model.mesh.field.setNumber(size_field, "SizeMax", farfield_size)
     gmsh.model.mesh.field.setNumber(size_field, "DistMin", 0.05)
     gmsh.model.mesh.field.setNumber(size_field, "DistMax", R * 0.8)
-    gmsh.model.mesh.field.setAsBackgroundMesh(size_field)
+
+    if gap_refine_size:
+        # Refinamiento local alrededor de la bisagra: la deformacion del gap
+        # durante el movimiento la tienen que absorber las celdas del interior
+        # del gap, y con te_size ~ gap/2 hay solo ~2 celdas a traves de el.
+        box = gmsh.model.mesh.field.add("Box")
+        gmsh.model.mesh.field.setNumber(box, "VIn", gap_refine_size)
+        gmsh.model.mesh.field.setNumber(box, "VOut", farfield_size)
+        gmsh.model.mesh.field.setNumber(box, "XMin", hinge - gap_refine_halfwidth)
+        gmsh.model.mesh.field.setNumber(box, "XMax", hinge + gap_refine_halfwidth)
+        gmsh.model.mesh.field.setNumber(box, "YMin", -0.08)
+        gmsh.model.mesh.field.setNumber(box, "YMax", 0.08)
+        gmsh.model.mesh.field.setNumber(box, "ZMin", -1)
+        gmsh.model.mesh.field.setNumber(box, "ZMax", 1)
+        gmsh.model.mesh.field.setNumber(box, "Thickness", 0.05)
+        min_field = gmsh.model.mesh.field.add("Min")
+        gmsh.model.mesh.field.setNumbers(min_field, "FieldsList", [size_field, box])
+        gmsh.model.mesh.field.setAsBackgroundMesh(min_field)
+    else:
+        gmsh.model.mesh.field.setAsBackgroundMesh(size_field)
 
     gmsh.option.setNumber("Mesh.MeshSizeExtendFromBoundary", 0)
     gmsh.option.setNumber("Mesh.MeshSizeFromPoints", 0)
@@ -235,6 +255,11 @@ def main():
     ap.add_argument("--farfield-size", type=float, default=1.5)
     ap.add_argument("--extrude-z", type=float, default=0.1)
     ap.add_argument("--min-spacing", type=float, default=5e-4)
+    ap.add_argument("--hinge", type=float, default=0.7, help="Posicion x de la bisagra (centra el refinamiento)")
+    ap.add_argument("--gap-refine-size", type=float, default=None,
+                    help="Tamano de celda en una caja alrededor de la bisagra (ej. 0.001). Sin esto no hay refinamiento local.")
+    ap.add_argument("--gap-refine-halfwidth", type=float, default=0.03,
+                    help="Semi-ancho en x de la caja de refinamiento (default 0.03)")
     args = ap.parse_args()
 
     build_mesh(
@@ -243,6 +268,8 @@ def main():
         y1=args.y1, n_layers=args.layers, growth_rate=args.growth,
         te_size=args.te_size, le_size=args.le_size, farfield_size=args.farfield_size,
         extrude_z=args.extrude_z, min_spacing=args.min_spacing,
+        hinge=args.hinge, gap_refine_size=args.gap_refine_size,
+        gap_refine_halfwidth=args.gap_refine_halfwidth,
     )
 
 
