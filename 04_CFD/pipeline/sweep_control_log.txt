@@ -1,0 +1,52 @@
+
+=== delta = 0 deg ===
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/naca0012_flap_geometry.py --delta 0 --hinge 0.7 --out sweep_control/naca_delta+0.0.dat
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/naca_mesh_gmsh.py --dat sweep_control/naca_delta+0.0.dat --out sweep_control/naca_delta+0.0.msh --farfield 15 --wake 20 --yplus-height 1.7712e-05 --layers 20 --growth 1.2 --te-size 0.004 --le-size 0.004 --farfield-size 1.5 --extrude-z 0.1
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/convert_mesh.sh sweep_control/mesh_case_delta+0.0 sweep_control/naca_delta+0.0.msh
+
+--- d+0p0_M0p100_aoa+0p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+0.0 --mach 0.1 --aoa 0 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+0p0_M0p100_aoa+0p0
+$ simpleFoam -case sweep_control/cases/d+0p0_M0p100_aoa+0p0
+  -> Cl=-0.0002  Cd=0.0130  CmPitch=-0.0000  |  ChHinge=-0.0000  M_bisagra=-0.0000 N·m
+
+--- d+0p0_M0p100_aoa+10p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+0.0 --mach 0.1 --aoa 10 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+0p0_M0p100_aoa+10p0
+$ simpleFoam -case sweep_control/cases/d+0p0_M0p100_aoa+10p0
+  -> Cl=0.9960  Cd=0.0267  CmPitch=0.0087  |  ChHinge=-0.0042  M_bisagra=-0.0100 N·m
+
+--- d+0p0_M0p300_aoa+0p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+0.0 --mach 0.3 --aoa 0 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+0p0_M0p300_aoa+0p0
+$ simpleFoam -case sweep_control/cases/d+0p0_M0p300_aoa+0p0
+  -> Cl=-0.0020  Cd=0.0105  CmPitch=0.0004  |  ChHinge=0.0001  M_bisagra=0.0022 N·m
+
+--- d+0p0_M0p300_aoa+10p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+0.0 --mach 0.3 --aoa 10 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+0p0_M0p300_aoa+10p0
+$ simpleFoam -case sweep_control/cases/d+0p0_M0p300_aoa+10p0
+  -> Cl=1.0212  Cd=0.0229  CmPitch=0.0062  |  ChHinge=-0.0045  M_bisagra=-0.0961 N·m
+
+=== delta = 15 deg ===
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/naca0012_flap_geometry.py --delta 15 --hinge 0.7 --out sweep_control/naca_delta+15.0.dat
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/naca_mesh_gmsh.py --dat sweep_control/naca_delta+15.0.dat --out sweep_control/naca_delta+15.0.msh --farfield 15 --wake 20 --yplus-height 1.7712e-05 --layers 20 --growth 1.2 --te-size 0.004 --le-size 0.004 --farfield-size 1.5 --extrude-z 0.1
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/convert_mesh.sh sweep_control/mesh_case_delta+15.0 sweep_control/naca_delta+15.0.msh
+
+--- d+15p0_M0p100_aoa+0p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+15.0 --mach 0.1 --aoa 0 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+15p0_M0p100_aoa+0p0
+$ simpleFoam -case sweep_control/cases/d+15p0_M0p100_aoa+0p0
+  -> Cl=0.9526  Cd=0.0232  CmPitch=-0.1449  |  ChHinge=-0.0139  M_bisagra=-0.0332 N·m
+
+--- d+15p0_M0p100_aoa+10p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+15.0 --mach 0.1 --aoa 10 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+15p0_M0p100_aoa+10p0
+$ simpleFoam -case sweep_control/cases/d+15p0_M0p100_aoa+10p0
+  -> Cl=1.5496  Cd=0.0634  CmPitch=-0.0836  |  ChHinge=-0.0175  M_bisagra=-0.0418 N·m
+
+--- d+15p0_M0p300_aoa+0p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+15.0 --mach 0.3 --aoa 0 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+15p0_M0p300_aoa+0p0
+$ simpleFoam -case sweep_control/cases/d+15p0_M0p300_aoa+0p0
+  -> Cl=0.9857  Cd=0.0203  CmPitch=-0.1510  |  ChHinge=-0.0145  M_bisagra=-0.3134 N·m
+
+--- d+15p0_M0p300_aoa+10p0 ---
+$ /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/venv/bin/python3 /mnt/c/Users/usuario_pc/Desktop/Memoria/04_CFD/pipeline/build_case.py --mesh-case sweep_control/mesh_case_delta+15.0 --mach 0.3 --aoa 10 --chord 1.0 --extrude-z 0.1 --a 340.3 --nu 0.0001 --hinge 0.7 --out sweep_control/cases/d+15p0_M0p300_aoa+10p0
+$ simpleFoam -case sweep_control/cases/d+15p0_M0p300_aoa+10p0
+  -> Cl=1.6254  Cd=0.0564  CmPitch=-0.0908  |  ChHinge=-0.0174  M_bisagra=-0.3755 N·m
+
+Resumen escrito en: resultados_control.csv (8 corridas)
