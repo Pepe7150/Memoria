@@ -1,0 +1,149 @@
+% =========================================================================
+% SCRIPT 4: BUCLE CERRADO CON EXCENTRICIDAD RADIAL DE LA IMU
+% =========================================================================
+
+x6 = zeros(6, N);
+
+I_A_true = zeros(N,1); T_A_true = zeros(N,1); heatA = zeros(N,1);
+I_B_true = zeros(N,1); T_B_true = zeros(N,1); heatB = zeros(N,1);
+
+I_A_rated = T_nom_A / Kt_A;  kt_drift_A = 0;
+I_B_rated = T_nom_B / Kt_B;  kt_drift_B = 0;
+
+x_est = zeros(nx,1);
+X_hist = zeros(nx, N);
+thetaA_meas = zeros(N,1); thetaB_meas = zeros(N,1);
+TA_current_est = zeros(N,1); TB_current_est = zeros(N,1);
+omegaC_meas = zeros(N,1); SG_meas = zeros(N,1);
+T_A_cmd = zeros(N,1); IA_meas = 0; IB_meas = 0; 
+
+bias_currentA_true = zeros(N,1); bias_currentA_true(1) = bias_currentA_0;
+bias_currentB_true = zeros(N,1); bias_currentB_true(1) = bias_currentB_0;
+bias_imu_true      = zeros(N,1); bias_imu_true(1)      = bias_imu_0;
+bias_sg_true       = zeros(N,1); bias_sg_true(1)       = bias_sg_0;
+
+exp_IA  = exp(-dt_sim / tau_b_IA);  std_OU_IA  = sigma_b_IA  * sqrt(1 - exp(-2*dt_sim / tau_b_IA));
+exp_IB  = exp(-dt_sim / tau_b_IB);  std_OU_IB  = sigma_b_IB  * sqrt(1 - exp(-2*dt_sim / tau_b_IB));
+exp_imu = exp(-dt_sim / tau_b_imu); std_OU_imu = sigma_b_imu * sqrt(1 - exp(-2*dt_sim / tau_b_imu));
+exp_sg  = exp(-dt_sim / tau_b_sg);  std_OU_sg  = sigma_b_sg  * sqrt(1 - exp(-2*dt_sim / tau_b_sg));
+
+integral_max = 10; theta_err_int = 0;
+alpha_dsrv = dt_sim/(tau_d_srv + dt_sim);
+pot_prev = 0; omega_srv = 0;            % Servo B: lectura previa del potenciómetro y derivada filtrada
+
+max_angle_rad = 135 * (pi / 180);
+max_speed_rads = 1000 * (2*pi / 60);
+max_fin_rad = max_fin_deg * (pi / 180);
+% max_torque_Nm viene de paso1
+system_fault = false; fault_time = NaN; fault_reason = '';
+
+for i = 2:N
+    if ~system_fault
+        T_trans_prev = C_torque * x6(:,i-1);
+        if abs(x6(1,i-1)) >= max_angle_rad || abs(x6(5,i-1)) >= max_angle_rad
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de ÁNGULO superado';
+        elseif abs(x6(3,i-1)) >= max_fin_rad
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de ÁNGULO DE ALETA (theta_C) superado';
+        elseif abs(x6(2,i-1)) >= max_speed_rads || abs(x6(6,i-1)) >= max_speed_rads
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de VELOCIDAD superado';
+        elseif abs(T_A_true(i-1)) >= max_torque_Nm || abs(T_B_true(i-1)) >= max_torque_Nm
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de TORQUE superado';
+        end
+    end
+
+    if system_fault
+        T_A_cmd(i) = 0; T_B_cmd_i = 0; T_A_true(i) = 0; I_A_true(i) = 0; I_B_ref_i = 0; 
+    else
+        % --- MOTOR A: emula el momento de bisagra H(delta) con el ángulo ESTIMADO de la aleta ---
+        T_A_cmd(i) = H_lut_deg(x_est(3)*180/pi);
+        T_A_true(i) = T_A_true(i-1) + alpha_drv*(T_A_cmd(i) - T_A_true(i-1));
+        
+        heatA(i) = heatA(i-1) + alpha_th*((I_A_true(i-1)/I_A_rated)^2 - heatA(i-1));
+        Kt_A_actual = Kt_A * (1 - kt_drift_A*heatA(i));
+        I_A_true(i) = T_A_true(i) / Kt_A_actual;
+        
+        % --- MOTOR B (MG996R): lazo interno modelado como PID sobre su propio potenciómetro ---
+        pot_raw = x6(5,i-1) + noise_pot_std*randn;
+        omega_srv = omega_srv + alpha_dsrv*((pot_raw - pot_prev)/dt_sim - omega_srv);
+        pot_prev = pot_raw;
+        theta_err = delta_cmd(i) - pot_raw;
+        theta_err_int = max(min(theta_err_int + dt_sim*theta_err, integral_max), -integral_max);
+        T_B_cmd_i = -(Kp_pos*theta_err + Ki_pos*theta_err_int + Kd_pos*(omega_cmd(i) - omega_srv));
+        T_B_cmd_i = max(min(T_B_cmd_i, T_B_max), -T_B_max);   % saturación del servo
+        I_B_ref_i = T_B_cmd_i / Kt_B;
+    end
+
+    I_B_true(i) = I_B_true(i-1) + alpha_drv*(I_B_ref_i - I_B_true(i-1));
+    heatB(i) = heatB(i-1) + alpha_th*((I_B_true(i)/I_B_rated)^2 - heatB(i-1));
+    Kt_B_actual = Kt_B * (1 - kt_drift_B*heatB(i));
+    T_B_true(i) = Kt_B_actual * I_B_true(i);
+
+    u_plant = [T_A_true(i); T_B_true(i)];
+    x6(:,i) = Ad6*x6(:,i-1) + Bd6*u_plant; 
+    
+    bias_currentA_true(i) = bias_currentA_true(i-1) * exp_IA  + std_OU_IA  * randn;
+    bias_currentB_true(i) = bias_currentB_true(i-1) * exp_IB  + std_OU_IB  * randn;
+    bias_imu_true(i)      = bias_imu_true(i-1)      * exp_imu + std_OU_imu * randn;
+    bias_sg_true(i)       = bias_sg_true(i-1)       * exp_sg  + std_OU_sg  * randn;
+
+    thA_raw = x6(1,i) + bias_hallA + noise_hall_std*randn;
+    thB_raw = x6(5,i) + bias_hallB + noise_hall_std*randn;
+    thA_cal = thA_raw - bias_hallA; thB_cal = thB_raw - bias_hallB; 
+    
+    thetaA_meas(i) = thetaA_meas(i-1) + alpha_hall*(thA_cal - thetaA_meas(i-1));
+    thetaB_meas(i) = thetaB_meas(i-1) + alpha_hall*(thB_cal - thetaB_meas(i-1));
+    
+    IA_raw = I_A_true(i) + bias_currentA_true(i) + noise_current_std*randn;
+    IB_raw = I_B_true(i) + bias_currentB_true(i) + noise_current_std*randn;
+    
+    IA_meas = IA_meas + alpha_cs*(IA_raw - IA_meas);
+    IB_meas = IB_meas + alpha_cs*(IB_raw - IB_meas);
+    
+    TA_current_est(i) = Kt_A * IA_meas;
+    TB_current_est(i) = Kt_B * IB_meas;
+
+    % IMU con excentricidad radial
+    omega_C_val  = x6(4,i);
+    a_centripeta = (omega_C_val^2) * r_imu;                       
+    error_gsens  = g_sens_imu * (a_centripeta / g_terrestre);     
+    wC_raw = omega_C_val + error_gsens + bias_imu_true(i) + noise_gyro_std*randn;
+    omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
+
+    T_AC_true_i = C_torque(1,:) * x6(:,i);
+    SG_raw = T_AC_true_i + bias_sg_true(i) + noise_strain_std*randn;
+    SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw - SG_meas(i-1));
+
+    % El Kalman corre a la tasa de adquisición; entre actualizaciones se mantiene la última estimación
+    if mod(i, decim) == 0
+        x_pred = Adk*x_est;
+        z = [thetaA_meas(i); thetaB_meas(i); TA_current_est(i); TB_current_est(i); omegaC_meas(i); SG_meas(i)];
+        y_innov = z - H*x_pred;
+        x_est = x_pred + K_kalman_steady*y_innov;
+    end
+    X_hist(:,i) = x_est;
+end
+
+thetaA_kf = X_hist(1,:)'; omegaA_kf = X_hist(2,:)';
+thetaC_kf = X_hist(3,:)'; omegaC_kf = X_hist(4,:)';
+thetaB_kf = X_hist(5,:)'; omegaB_kf = X_hist(6,:)';
+T_A_kf    = X_hist(7,:)'; T_B_kf    = X_hist(8,:)';
+
+% <- CORREGIDO: Se extraen los bias de corriente directamente sin dividir por Kt
+bias_IA_kf  = X_hist(11,:)';
+bias_IB_kf  = X_hist(12,:)';
+bias_imu_kf = X_hist(13,:)';
+bias_sg_kf  = X_hist(14,:)';
+
+theta_A_true = x6(1,:)'; omega_A_true = x6(2,:)';
+theta_C_true = x6(3,:)'; omega_C_true = x6(4,:)';
+theta_B_true = x6(5,:)'; omega_B_true = x6(6,:)';
+
+T_trans_kf = C_torque * X_hist(1:6,:);
+T_AC_kf = T_trans_kf(1,:)';
+T_CB_kf = T_trans_kf(2,:)';
+
+T_trans_true = C_torque * x6;
+T_AC_true = T_trans_true(1,:)';
+T_CB_true = T_trans_true(2,:)';
+
+fprintf('=== BUCLE DE SIMULACIÓN FINALIZADO ===\n\n');
