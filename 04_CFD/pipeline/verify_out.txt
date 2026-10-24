@@ -1,0 +1,16 @@
+Combinaciones esperadas: 315
+OK (en CSV, carpeta existe, converge, valores sanos): 305
+
+POSIBLEMENTE NO CONVERGIERON -- llegaron al tope de iteraciones (10):
+  - d-15p0_M0p300_aoa-4p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+0p0_M0p300_aoa+10p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+10p0_M0p100_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+10p0_M0p150_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+10p0_M0p250_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+15p0_M0p100_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+15p0_M0p150_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+15p0_M0p200_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+15p0_M0p250_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+  - d+15p0_M0p300_aoa+12p0  (última carpeta de tiempo: 5000, endTime: 5000)
+
+Total de casos con algún problema: 10 de 315
