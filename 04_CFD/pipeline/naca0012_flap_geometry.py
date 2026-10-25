@@ -142,7 +142,7 @@ def plot_geometry(x, y, title, is_flap=None, out_png=None):
     else:
         is_flap = np.asarray(is_flap, dtype=bool)
         ax.plot(x, y, "-", linewidth=1, color="0.6", zorder=1)
-        ax.scatter(x[~is_flap], y[~is_flap], s=6, c="tab:blue", label="mainfoil", zorder=2)
+        ax.scatter(x[~is_flap], y[~is_flap], s=6, c="tab:blue", label="Perfil principal", zorder=2)
         ax.scatter(x[is_flap], y[is_flap], s=6, c="tab:red", label="flap", zorder=2)
         ax.legend(loc="upper right", fontsize=8)
     ax.axhline(0, color="gray", linewidth=0.5, linestyle="--")
@@ -200,7 +200,8 @@ def main():
 
         if args.plot:
             png_path = os.path.splitext(out_path)[0] + ".png"
-            plot_geometry(x, y, header, is_flap=is_flap, out_png=png_path)
+            plot_title = f"NACA{args.naca} delta = {delta_deg:g}°"
+            plot_geometry(x, y, plot_title, is_flap=is_flap, out_png=png_path)
             print(f"  -> figura de verificación: {png_path}")
 
 
