@@ -19,6 +19,11 @@ sys_d = c2d(sys_c, dt_sim, 'zoh');
 Ad6 = sys_d.A; 
 Bd6 = sys_d.B;
 
+% Planta "verdadera": por defecto idéntica a la nominal. paso6_desajuste_parametros.m
+% la perturba para estudiar el desajuste modelo-planta sin tocar el Kalman.
+Ad6_true = Ad6; Bd6_true = Bd6; C_torque_true = C_torque;
+fac_Kt_A = 1; fac_Kt_B = 1;      % factores de Kt real / Kt nominal
+
 % --- Modelo Ampliado del Kalman (14 Estados Ordenados) ---
 nx = 14; 
 Ac14 = zeros(nx,nx);

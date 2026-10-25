@@ -4,7 +4,10 @@
 Entrada : resultados.csv (barrido CFD estatico: delta, mach, aoa -> Cl, Cd, CmPitch, ChHinge, HingeMoment_Nm)
 Salidas : lut_cargas.csv, lut_cargas.mat, figuras/*.png, LUT_cargas.md
 
-Uso: python build_lut.py [ruta/resultados.csv] [carpeta_salida]
+.\venv\Scripts\Activate.ps1
+Uso: python build_lut.py <resultados.csv> <carpeta_de_salida>
+     (usar el resultados.csv ya actualizado con los casos continuados;
+      editar NO_CONVERGIDOS y DELTAS_MALLA_DEFECTO si cambia el estado del barrido)
 """
 import os
 import sys
@@ -29,6 +32,24 @@ VARS = ["Cl", "Cd", "CmPitch", "ChHinge"]
 # paridad frente a (delta, alpha) -> (-delta, -alpha) en perfil simetrico
 SIGN = {"Cl": -1, "Cd": +1, "CmPitch": -1, "ChHinge": -1}
 
+# ---------------------------------------------------------------- trazabilidad de la CFD (EDITAR si cambia el barrido)
+# Valores de referencia usados en el post-proceso de la CFD (sweep_config.json)
+RHO_REAL, A_SND, CHORD_REAL, SPAN_REAL = 1.225, 340.3, 0.20, 0.15
+
+# Casos CFD que llegaron al tope de iteraciones (8000) sin cumplir los residuales (salida de verify_sweep.py).
+# Formato: (delta_deg, mach, aoa_deg). Si un caso converge o aparecen otros, actualizar esta lista.
+NO_CONVERGIDOS = [
+    (-15, 0.30, -4), (0, 0.30, 10),
+    (10, 0.10, 12), (10, 0.15, 12),
+    (15, 0.10, 12), (15, 0.15, 12), (15, 0.20, 12), (15, 0.25, 12), (15, 0.30, 12),
+]
+# Deflexiones cuya malla tiene defectos locales en la bisagra segun checkMesh
+# (skewness > 4 o no-ortogonalidad > 70 deg). Con |delta| <= 10 las mallas pasan todos los chequeos.
+DELTAS_MALLA_DEFECTO = [-15, 15]
+
+FLAG_NOCONV, FLAG_MALLA = 1, 2          # mascara de bits de la columna "estado"
+ESTADO_TXT = {0: "ok", 1: "no_convergio", 2: "malla_defecto", 3: "no_convergio+malla_defecto"}
+
 # ---------------------------------------------------------------- 1. carga y grilla
 raw = pd.read_csv(SRC).sort_values(["delta_deg", "mach", "aoa_deg"]).reset_index(drop=True)
 dl = np.sort(raw.delta_deg.unique())
@@ -41,10 +62,23 @@ A = {v: raw[v].values.reshape(nD, nM, nA) for v in VARS}
 HM_raw = raw["HingeMoment_Nm"].values.reshape(nD, nM, nA)
 rng = {v: float(np.ptp(A[v])) for v in VARS}
 
+# estado de cada punto CFD (mascara de bits)
+S = np.zeros((nD, nM, nA), dtype=np.int8)
+for (d_, m_, a_) in NO_CONVERGIDOS:
+    ii, jj, kk = (np.where(np.isclose(ax, v_))[0] for ax, v_ in ((dl, d_), (ma, m_), (al, a_)))
+    assert len(ii) == len(jj) == len(kk) == 1, f"NO_CONVERGIDOS: ({d_}, {m_}, {a_}) no esta en la grilla CFD"
+    S[ii[0], jj[0], kk[0]] |= FLAG_NOCONV
+for d_ in DELTAS_MALLA_DEFECTO:
+    ii = np.where(np.isclose(dl, d_))[0]
+    assert len(ii) == 1, f"DELTAS_MALLA_DEFECTO: {d_} no esta en la grilla CFD"
+    S[ii[0], :, :] |= FLAG_MALLA
+
 # ---------------------------------------------------------------- 2. HingeMoment = K * M^2 * ChHinge
 x = (ma[None, :, None] ** 2) * A["ChHinge"]
 K = float((HM_raw * x).sum() / (x * x).sum())
 k_rel_err = float(np.abs(HM_raw - K * x).max() / np.abs(HM_raw).max())
+K_teo = 0.5 * RHO_REAL * A_SND ** 2 * CHORD_REAL ** 2 * SPAN_REAL   # K = 1/2 rho a^2 c^2 b
+k_teo_err = abs(K - K_teo) / K_teo
 
 # ---------------------------------------------------------------- 3. simetria (solo pares con -alpha en la grilla)
 al_idx = {round(a, 6): i for i, a in enumerate(al)}
@@ -78,6 +112,13 @@ for v in VARS:
             arr[:, :, k] = SIGN[v] * A[v][::-1, :, al_idx[round(-a, 6)]]
             origen[:, :, k] = 1
     E[v] = arr
+# estado extendido: los puntos por simetria heredan el estado de su punto espejo (-delta, -alpha)
+estado = np.zeros((nD, nM, nAe), dtype=np.int8)
+for k, a in enumerate(al_ext):
+    if round(a, 6) in al_idx:
+        estado[:, :, k] = S[:, :, al_idx[round(a, 6)]]
+    else:
+        estado[:, :, k] = S[::-1, :, al_idx[round(-a, 6)]]
 HM_ext = K * (ma[None, :, None] ** 2) * E["ChHinge"]
 cfd_mask = origen == 0
 hm_check = float(np.abs(HM_ext[:, :, [round(a, 6) in al_idx for a in al_ext]] - HM_raw).max())
@@ -89,17 +130,20 @@ lut = pd.DataFrame({
     **{v: E[v].ravel() for v in VARS},
     "HingeMoment_Nm": HM_ext.ravel(),
     "origen": np.where(origen.ravel() == 0, "cfd", "simetria"),
+    "estado": [ESTADO_TXT[int(v_)] for v_ in estado.ravel()],
 })
 lut.to_csv(os.path.join(OUT, "lut_cargas.csv"), index=False, float_format="%.10g")
 savemat(os.path.join(OUT, "lut_cargas.mat"), {
     "delta_deg": dl, "mach": ma, "aoa_deg": al_ext,
     **{v: E[v] for v in VARS},
     "HingeMoment_Nm": HM_ext, "K_hinge": K, "origen": origen,
+    "estado": estado, "estado_leyenda": "bits: 1=no_convergio, 2=malla_defecto (0=ok, 3=ambos)",
 })
 
 # verificacion de ida y vuelta
 L = loadmat(os.path.join(OUT, "lut_cargas.mat"))
 assert np.array_equal(L["ChHinge"], E["ChHinge"]) and L["ChHinge"].shape == (nD, nM, nAe)
+assert np.array_equal(L["estado"], estado)
 interp = {v: RegularGridInterpolator((dl, ma, al_ext), E[v], method="linear") for v in VARS}
 pts = np.column_stack([D3.ravel(), M3.ravel(), A3.ravel()])
 node_err = max(float(np.abs(interp[v](pts) - E[v].ravel()).max()) for v in VARS)
@@ -180,6 +224,31 @@ fig.colorbar(im, label="error lineal estimado en α [% del rango de ChHinge]")
 ax.set_title("Error de interpolación lineal en α (máx. sobre Mach)")
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "figuras", "fig3_error_interpolacion.png"), dpi=130); plt.close(fig)
 
+# mapa de estado de la grilla (delta, alpha): numero = casos no convergidos entre los 5 Mach
+from matplotlib.lines import Line2D  # noqa: E402
+fig, ax = plt.subplots(figsize=(8.5, 5))
+for i, d in enumerate(dl):
+    for k, a in enumerate(al_ext):
+        st = estado[i, :, k]
+        n_nc = int(((st & FLAG_NOCONV) > 0).sum())
+        defecto = bool((st & FLAG_MALLA).any())
+        sim = origen[i, 0, k] == 1
+        color = "tab:red" if n_nc else ("tab:orange" if defecto else "tab:green")
+        ax.scatter(d, a, s=300, facecolors="none" if sim else color, edgecolors=color, linewidths=1.8, alpha=0.9)
+        if n_nc:
+            ax.text(d, a, str(n_nc), ha="center", va="center", fontsize=8, fontweight="bold",
+                    color=color if sim else "white")
+ax.set_xticks(dl); ax.set_yticks(al_ext)
+ax.set_xlabel("δ [°]"); ax.set_ylabel("AoA [°]"); ax.grid(alpha=0.25)
+ax.legend(handles=[
+    Line2D([], [], marker="o", ls="", color="tab:green", label="ok"),
+    Line2D([], [], marker="o", ls="", color="tab:orange", label="malla con defectos (|δ| = 15°)"),
+    Line2D([], [], marker="o", ls="", color="tab:red", label="≥1 caso sin converger (n.º = casos de 5 Mach)"),
+    Line2D([], [], marker="o", ls="", mfc="none", color="gray", label="relleno vacío = por simetría"),
+], fontsize=8, loc="center left", bbox_to_anchor=(1.01, 0.5))
+ax.set_title("Estado de la grilla (δ, AoA)")
+fig.tight_layout(); fig.savefig(os.path.join(OUT, "figuras", "fig4_estado_grilla.png"), dpi=130); plt.close(fig)
+
 # ---------------------------------------------------------------- 9. documento .md
 def fmt_pt(t):
     return f"δ={t[0]:g}°, M={t[1]:g}, α={t[2]:g}°"
@@ -194,7 +263,10 @@ corner_rows = "\n".join(
     f"| {ma[m]:g} | {A['Cl'][ic, m, kc]:.4f} | {A['Cd'][ic, m, kc]:.4f} | {A['ChHinge'][ic, m, kc]:.5f} |"
     for m in range(nM))
 n_sym = int((origen == 1).sum())
-Sc_isa = K / (0.5 * 1.225 * 340.294 ** 2)
+n_nc_cfd = int(((S & FLAG_NOCONV) > 0).sum())
+n_mal_cfd = int(((S & FLAG_MALLA) > 0).sum())
+n_flag = int((estado > 0).sum())
+n_nc_all = int(((estado & FLAG_NOCONV) > 0).sum())
 sym_rows = "\n".join(
     f"| {v} | {sym[v]['mean']:.2e} | {sym[v]['max']:.2e} | {sym[v]['pct']:.2f} % |" for v in VARS)
 loo_rows = "\n".join(
@@ -213,8 +285,8 @@ bisagra en función de **δ** (deflexión de la superficie), **Mach** y **AoA**.
 
 | Archivo | Contenido |
 |---|---|
-| `lut_cargas.csv` | LUT en formato largo ({n_total} filas). Columna `origen`: `cfd` o `simetria` |
-| `lut_cargas.mat` | LUT para MATLAB: ejes `delta_deg`, `mach`, `aoa_deg`; arreglos 3D `Cl`, `Cd`, `CmPitch`, `ChHinge`, `HingeMoment_Nm` con dimensiones **(δ, Mach, AoA)** = ({nD}, {nM}, {nAe}); `K_hinge`; `origen` |
+| `lut_cargas.csv` | LUT en formato largo ({n_total} filas). Columnas `origen` (`cfd` o `simetria`) y `estado` (`ok`, `no_convergio`, `malla_defecto` o ambos) |
+| `lut_cargas.mat` | LUT para MATLAB: ejes `delta_deg`, `mach`, `aoa_deg`; arreglos 3D `Cl`, `Cd`, `CmPitch`, `ChHinge`, `HingeMoment_Nm` con dimensiones **(δ, Mach, AoA)** = ({nD}, {nM}, {nAe}); `K_hinge`; `origen`; `estado` (máscara de bits, ver sección 3) |
 | `build_lut.py` | Script que reproduce todo (LUT, validaciones, figuras y este documento) |
 | `figuras/` | Gráficos referenciados abajo |
 
@@ -235,6 +307,12 @@ Los {len(raw)} puntos de CFD se conservan **sin modificar**; los {n_sym} puntos 
 
 - Grilla completa: {nD} × {nM} × {nA} = {nD*nM*nA} puntos, sin valores nulos ni duplicados.
 - Orden de datos: se ordenó por (δ, Mach, AoA) antes de armar los arreglos 3D.
+- Estado de los puntos (columna `estado`): bit 1 = el caso CFD llegó al tope de iteraciones sin cumplir los residuales
+  ({n_nc_cfd} casos); bit 2 = la malla de esa δ tiene defectos locales en la bisagra (δ = ±{max(DELTAS_MALLA_DEFECTO):g}°, {n_mal_cfd} casos CFD).
+  Los puntos por simetría heredan el estado de su punto espejo. En total {n_flag} de {n_total} nodos tienen alguna marca
+  ({n_nc_all} por no convergencia). Ver `figuras/fig4_estado_grilla.png`.
+
+![Estado de la grilla](figuras/fig4_estado_grilla.png)
 
 ## 4. Extensión del rango de AoA por simetría
 
@@ -261,9 +339,8 @@ Comprobación de la simetría con los datos CFD ({n_pairs} pares espejo disponib
 **K = {K:.4f} N·m** (error relativo máximo del ajuste: {k_rel_err:.1e}).
 
 Es decir, el momento dimensional solo agrega la presión dinámica; la información aerodinámica está en `ChHinge`.
-K = ½·ρ·a²·(S·c) para los valores de referencia usados al post-procesar. Como chequeo de plausibilidad:
-si usaste ρ = 1.225 kg/m³ y a = 340.294 m/s (ISA nivel del mar), resulta S·c = {Sc_isa:.5f} m³;
-verifícalo contra tu post-procesado (ver pendientes, sección 10).
+K = ½·ρ·a²·c²·b. Con ρ = {RHO_REAL:g} kg/m³, a = {A_SND:g} m/s, c = {CHORD_REAL:g} m y b = {SPAN_REAL:g} m (valores de `sweep_config.json`)
+el valor teórico es K = {K_teo:.4f} N·m, que coincide con el ajustado (diferencia relativa {k_teo_err:.1e}).
 
 En la LUT, `HingeMoment_Nm` se recalcula como K·M²·ChHinge para todos los puntos (en los puntos CFD coincide con el
 original, diferencia máxima {hm_check:.1e} N·m). Para emular otras condiciones (otra altitud, otra velocidad,
@@ -301,8 +378,8 @@ Puntos con mayor error en α para ChHinge (error de celda estimado = LOO / 4):
 ![Error de interpolación](figuras/fig3_error_interpolacion.png)
 
 Lectura: la tabla es casi lineal en la mayor parte del dominio, y el error se concentra en δ grande con AoA alto, donde
-las curvas dejan de ser lineales (compatible con el inicio de separación del flujo; esto es una hipótesis hasta
-revisar la convergencia de esos casos). Si se aumenta la densidad del barrido, es ahí donde más rinde.
+las curvas dejan de ser lineales (compatible con el inicio de separación del flujo; los casos que no alcanzaron el criterio de convergencia
+se marcan en la columna `estado`, ver sección 3). Si se aumenta la densidad del barrido, es ahí donde más rinde.
 
 Los puntos de borde (δ = ±{dl.max():g}° y α = {al.max():g}°) no se pueden evaluar con este método, y justo ahí está el
 comportamiento más irregular. En δ = {dl[ic]:g}°, α = {al[kc]:g}° Cd cae y luego sube con Mach, y ChHinge invierte su
@@ -342,6 +419,18 @@ F = RegularGridInterpolator((d, m, a), Ch, bounds_error=False, fill_value=np.nan
 F([[7.0, 0.22, 3.5]])
 ```
 
+**Estado de la consulta:** para saber si una consulta cae cerca de puntos marcados, interpola el código de `estado`
+con vecino más cercano y trata como "revisar" cualquier valor distinto de 0:
+
+```python
+cod = {{"ok": 0, "no_convergio": 1, "malla_defecto": 2, "no_convergio+malla_defecto": 3}}
+Sg = t["estado"].map(cod).values.reshape(len(d), len(m), len(a))
+FS = RegularGridInterpolator((d, m, a), Sg, method="nearest", bounds_error=False, fill_value=np.nan)
+FS([[7.0, 0.22, 3.5]])   # 0 = ok
+```
+
+En MATLAB (no ejecutado): `Fs = griddedInterpolant({{L.delta_deg(:), L.mach(:), L.aoa_deg(:)}}, double(L.estado), 'nearest', 'none');`
+
 Verificaciones hechas con `build_lut.py`: el interpolador reproduce los {n_total} nodos (error máx. {node_err:.1e});
 el archivo `.mat` se recarga idéntico; para ChHinge, la interpolación en 2000 puntos aleatorios espejo (δ, M, α) vs
 (−δ, M, −α) con |α| ≤ 4° da una asimetría máxima de {sym_interp:.1e}. El código MATLAB de arriba **no se ejecutó**
@@ -356,18 +445,18 @@ el archivo `.mat` se recarga idéntico; para ChHinge, la interpolación en 2000 
 - **Rango cubierto:** δ ∈ [{dl.min():g}°, {dl.max():g}°], Mach ∈ [{ma.min():g}, {ma.max():g}], AoA ∈ [{al_ext.min():g}°, {al_ext.max():g}°] (con extensión por simetría; CFD real en [{al.min():g}°, {al.max():g}°]).
 - **Puntos por simetría:** no son simulaciones independientes (sección 4).
 
-## 10. Pendientes por completar
+## 10. Trazabilidad de la CFD
 
-Estos datos no se pueden deducir del CSV; conviene registrarlos aquí para que la LUT sea trazable:
+Datos que no se pueden deducir del CSV (editar en el script si cambian):
 
-| Pendiente | Valor |
+| Ítem | Valor |
 |---|---|
-| Convención de signo de δ, α y ChHinge | COMPLETAR |
-| Definición de ChHinge (normalización, S y c de referencia, eje de bisagra) | COMPLETAR |
-| ρ y a de referencia usadas para el momento (para verificar K) | COMPLETAR |
-| Dimensionalidad del caso (2D por unidad de envergadura o 3D) y envergadura de la superficie | COMPLETAR |
-| Solver, modelo de turbulencia y criterio de convergencia | COMPLETAR |
-| Estudio de independencia de malla y validación contra datos del NACA 0012 | COMPLETAR |
+| Convención de signo de δ, α y ChHinge | δ > 0: borde de fuga hacia abajo (Cl > 0 con δ > 0). ChHinge > 0: momento que tiende a bajar el borde de fuga; ChHinge < 0 se opone a δ > 0 (verificado con el flap solo en δ = +15°, α = 0°: fuerza neta hacia arriba y CmPitch < 0) |
+| Definición de ChHinge | Coeficiente de momento del patch `flap` respecto a la bisagra (x/c = 0.7), con q∞, Aref = c·(espesor de extrusión) y lRef = c; ChHinge = M_h / (q∞·c²·b) |
+| ρ y a de referencia | ρ = {RHO_REAL:g} kg/m³, a = {A_SND:g} m/s (K teórico = {K_teo:.4f} N·m, coincide con el ajustado) |
+| Dimensionalidad | 2D (una celda de espesor); teoría de franjas con c = {CHORD_REAL:g} m y b = {SPAN_REAL:g} m (ala completa, flap de envergadura completa) |
+| Solver y convergencia | simpleFoam (SIMPLEC), Spalart-Allmaras; residuales 1e-5 (p) y 1e-6 (U, nuTilda); tope de 8000 iteraciones; {n_nc_cfd} casos sin cumplir el criterio |
+| Independencia de malla y validación contra datos del NACA 0012 | No realizadas al generar este documento |
 """
 with open(os.path.join(OUT, "LUT_cargas.md"), "w", encoding="utf-8") as f:
     f.write(md)
@@ -379,3 +468,4 @@ print("mach", mach_stats, mach_at)
 for k, s in loo_stats.items():
     print(k, {a: (round(b, 3) if not isinstance(b, tuple) else b) for a, b in s.items()})
 print(worst[:3])
+print("estado: no convergidos", n_nc_cfd, "| malla con defecto", n_mal_cfd, "| nodos marcados", n_flag, "de", n_total, "| K teorico", round(K_teo, 4), "dif", f"{k_teo_err:.1e}")

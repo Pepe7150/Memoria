@@ -56,7 +56,7 @@ Comprobación de la simetría con los datos CFD (85 pares espejo disponibles, co
 
 `HingeMoment_Nm` en el CSV original cumple **HingeMoment_Nm = K · Mach² · ChHinge**, con
 
-**K = 425.5800 N·m** (error relativo máximo del ajuste: 2.9e-16).
+**K = 425.5801 N·m** (error relativo máximo del ajuste: 9.4e-06).
 
 Es decir, el momento dimensional solo agrega la presión dinámica; la información aerodinámica está en `ChHinge`.
 K = ½·ρ·a²·(S·c) para los valores de referencia usados al post-procesar. Como chequeo de plausibilidad:
@@ -64,7 +64,7 @@ si usaste ρ = 1.225 kg/m³ y a = 340.294 m/s (ISA nivel del mar), resulta S·c 
 verifícalo contra tu post-procesado (ver pendientes, sección 10).
 
 En la LUT, `HingeMoment_Nm` se recalcula como K·M²·ChHinge para todos los puntos (en los puntos CFD coincide con el
-original, diferencia máxima 1.7e-16 N·m). Para emular otras condiciones (otra altitud, otra velocidad,
+original, diferencia máxima 6.3e-06 N·m). Para emular otras condiciones (otra altitud, otra velocidad,
 otra escala) usa `ChHinge` y recalcula el momento con tu propia presión dinámica en vez de `HingeMoment_Nm`.
 
 **Dependencia de ChHinge con Mach:** en este rango la variación de ChHinge entre M = 0.1 y M = 0.3

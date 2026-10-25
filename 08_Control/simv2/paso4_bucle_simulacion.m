@@ -39,7 +39,7 @@ system_fault = false; fault_time = NaN; fault_reason = '';
 
 for i = 2:N
     if ~system_fault
-        T_trans_prev = C_torque * x6(:,i-1);
+        T_trans_prev = C_torque_true * x6(:,i-1);
         if abs(x6(1,i-1)) >= max_angle_rad || abs(x6(5,i-1)) >= max_angle_rad
             system_fault = true; fault_time = t(i); fault_reason = 'Límite de ÁNGULO superado';
         elseif abs(x6(3,i-1)) >= max_fin_rad
@@ -56,10 +56,10 @@ for i = 2:N
     else
         % --- MOTOR A: emula el momento de bisagra H(delta) con el ángulo ESTIMADO de la aleta ---
         T_A_cmd(i) = H_lut_deg(x_est(3)*180/pi);
-        T_A_true(i) = T_A_true(i-1) + alpha_drv*(T_A_cmd(i) - T_A_true(i-1));
+        T_A_true(i) = T_A_true(i-1) + alpha_drv*(fac_Kt_A*T_A_cmd(i) - T_A_true(i-1));   % corriente comandada con Kt nominal
         
         heatA(i) = heatA(i-1) + alpha_th*((I_A_true(i-1)/I_A_rated)^2 - heatA(i-1));
-        Kt_A_actual = Kt_A * (1 - kt_drift_A*heatA(i));
+        Kt_A_actual = Kt_A * fac_Kt_A * (1 - kt_drift_A*heatA(i));
         I_A_true(i) = T_A_true(i) / Kt_A_actual;
         
         % --- MOTOR B (MG996R): lazo interno modelado como PID sobre su propio potenciómetro ---
@@ -75,11 +75,11 @@ for i = 2:N
 
     I_B_true(i) = I_B_true(i-1) + alpha_drv*(I_B_ref_i - I_B_true(i-1));
     heatB(i) = heatB(i-1) + alpha_th*((I_B_true(i)/I_B_rated)^2 - heatB(i-1));
-    Kt_B_actual = Kt_B * (1 - kt_drift_B*heatB(i));
+    Kt_B_actual = Kt_B * fac_Kt_B * (1 - kt_drift_B*heatB(i));
     T_B_true(i) = Kt_B_actual * I_B_true(i);
 
     u_plant = [T_A_true(i); T_B_true(i)];
-    x6(:,i) = Ad6*x6(:,i-1) + Bd6*u_plant; 
+    x6(:,i) = Ad6_true*x6(:,i-1) + Bd6_true*u_plant; 
     
     bias_currentA_true(i) = bias_currentA_true(i-1) * exp_IA  + std_OU_IA  * randn;
     bias_currentB_true(i) = bias_currentB_true(i-1) * exp_IB  + std_OU_IB  * randn;
@@ -109,7 +109,7 @@ for i = 2:N
     wC_raw = omega_C_val + error_gsens + bias_imu_true(i) + noise_gyro_std*randn;
     omegaC_meas(i) = omegaC_meas(i-1) + alpha_imu*(wC_raw - omegaC_meas(i-1));
 
-    T_AC_true_i = C_torque(1,:) * x6(:,i);
+    T_AC_true_i = C_torque_true(1,:) * x6(:,i);
     SG_raw = T_AC_true_i + bias_sg_true(i) + noise_strain_std*randn;
     SG_meas(i) = SG_meas(i-1) + alpha_sg*(SG_raw - SG_meas(i-1));
 
@@ -142,7 +142,7 @@ T_trans_kf = C_torque * X_hist(1:6,:);
 T_AC_kf = T_trans_kf(1,:)';
 T_CB_kf = T_trans_kf(2,:)';
 
-T_trans_true = C_torque * x6;
+T_trans_true = C_torque_true * x6;
 T_AC_true = T_trans_true(1,:)';
 T_CB_true = T_trans_true(2,:)';
 
