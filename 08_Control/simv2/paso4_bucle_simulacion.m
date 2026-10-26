@@ -34,7 +34,7 @@ pot_prev = 0; omega_srv = 0;            % Servo B: lectura previa del potencióm
 max_angle_rad = 135 * (pi / 180);
 max_speed_rads = 1000 * (2*pi / 60);
 max_fin_rad = max_fin_deg * (pi / 180);
-% max_torque_Nm viene de paso1
+% max_torque_Nm, max_shaft_torque_Nm, max_omega_fin_rads y failsafe_extra vienen de paso1
 system_fault = false; fault_time = NaN; fault_reason = '';
 
 for i = 2:N
@@ -48,6 +48,10 @@ for i = 2:N
             system_fault = true; fault_time = t(i); fault_reason = 'Límite de VELOCIDAD superado';
         elseif abs(T_A_true(i-1)) >= max_torque_Nm || abs(T_B_true(i-1)) >= max_torque_Nm
             system_fault = true; fault_time = t(i); fault_reason = 'Límite de TORQUE superado';
+        elseif failsafe_extra && (abs(T_trans_prev(1)) >= max_shaft_torque_Nm || abs(T_trans_prev(2)) >= max_shaft_torque_Nm)
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de TORQUE EN EL EJE (T_AC / T_CB) superado';
+        elseif failsafe_extra && abs(x6(4,i-1)) >= max_omega_fin_rads
+            system_fault = true; fault_time = t(i); fault_reason = 'Límite de VELOCIDAD DE LA ALETA (omega_C) superado';
         end
     end
 

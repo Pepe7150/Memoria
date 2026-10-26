@@ -55,12 +55,25 @@ end
 % --- LUT de momento de bisagra (CFD) -------------------------------------
 % Se reconstruye en N·m desde ChHinge (adimensional) con la geometría REAL del banco.
 % Columnas de resultados.csv: delta_deg, mach, aoa_deg, Cl, Cd, CmPitch, ChHinge, HingeMoment_Nm
-archivo_lut = 'resultados.csv';
-c_real = 0.15;  b_real = 0.15;       % Cuerda y envergadura de la aleta [m]
+archivo_lut = 'resultados.csv';      % CSV del barrido con los casos continuados hasta 8000 iteraciones
+c_real = 0.20;  b_real = 0.15;       % Cuerda y envergadura de la aleta [m] (20x15 cm: la geometría del CFD)
 rho_real = 1.225;  a_sound = 340.3;  % Aire a nivel del mar (ISA), igual que el barrido CFD
 
 tab = readmatrix(archivo_lut, 'NumHeaderLines', 1);
 dl = tab(:,1);  mc = tab(:,2);  al = tab(:,3);  Ch = tab(:,7);
+
+% Chequeo de consistencia con la geometría de referencia del CFD: la columna HingeMoment_Nm del CSV
+% es Ch*q*c_ref^2*b_ref, así que el cociente HingeMoment/(Ch*q) debe ser c_real^2*b_real.
+q_csv  = 0.5*rho_real*(mc*a_sound).^2;
+sel_ch = abs(Ch) > 1e-3;
+Sc_csv   = median(tab(sel_ch,8) ./ (Ch(sel_ch).*q_csv(sel_ch)));   % c_ref^2*b_ref de la corrida CFD [m^3]
+Sc_banco = c_real^2*b_real;
+if abs(Sc_banco - Sc_csv)/Sc_csv > 1e-3
+    warning('c^2*b del banco (%.3e m^3) difiere del de referencia del CFD (%.3e m^3): la carga emulada es %.3f veces la de HingeMoment_Nm.', ...
+        Sc_banco, Sc_csv, Sc_banco/Sc_csv);
+else
+    fprintf('Geometría del banco coincide con la de referencia del CFD (c^2*b = %.3e m^3).\n', Sc_banco);
+end
 
 dv = unique(dl);  mv = unique(mc);  av = unique(al);
 [~,id] = ismember(dl, dv);  [~,im] = ismember(mc, mv);  [~,ia] = ismember(al, av);

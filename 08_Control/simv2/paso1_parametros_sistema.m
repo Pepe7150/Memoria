@@ -39,12 +39,15 @@ r_imu = 0.005;                    % Excentricidad radial de la IMU [m] (5 mm fue
 g_sens_imu  = 0.05 * (pi/180);    % [(rad/s) por g]
 g_terrestre = 9.81;               % [m/s^2]
 
-% --- Escala de torque del banco (LUT aleta 15x15 cm: pico ~0.38 N·m) ---
-% Antes: 4 N·m (A) y 3 N·m (B) y fail-safe de 8 N·m, heredados del ejemplo.
-T_nom_A = 0.4;                    % Torque nominal A [Nm] (solo modelo térmico)
-T_nom_B = 0.4;                    % Torque nominal B [Nm] (solo modelo térmico)
+% --- Escala de torque del banco (LUT aleta 20x15 cm, igual a la geometría del CFD: pico ~0.67 N·m) ---
+% Antes: 4 N·m (A) y 3 N·m (B) y fail-safe de 8 N·m (ejemplo heredado); luego 0.4 / 1.0 / 0.8 N·m
+% para una aleta de 15x15 cm (pico ~0.38 N·m).
+T_nom_A = 0.8;                    % Torque nominal A [Nm] (solo modelo térmico; >= pico de la LUT)
+T_nom_B = 0.8;                    % Torque nominal B [Nm] (solo modelo térmico; >= pico de la LUT)
 T_B_max = 1.0;                    % Saturación del actuador bajo ensayo [Nm] (MG996R ~1 N·m en bloqueo: VERIFICAR datasheet)
-max_torque_Nm = 0.8;              % Fail-safe de torque [Nm] (~2x el pico de la LUT)
+                                  % OJO: el pico de la carga (~0.67 N·m) es ~67 % de este valor.
+max_torque_Nm = 1.2;              % Fail-safe de torque de A y B [Nm]. Debe ser MAYOR que T_B_max (20 % de margen)
+                                  % para que la saturación del servo actúe antes que el corte.
 max_fin_deg   = 20;               % Fail-safe de ángulo de la aleta C [deg] (topes mecánicos a diseñar)
 
 % --- Actuador bajo ensayo (B = MG996R): lazo interno modelado como PID ---
@@ -53,6 +56,11 @@ Kp_pos = 5; Ki_pos = 20; Kd_pos = 0.05;   % [Nm/rad], [Nm/(rad·s)], [Nm·s/rad]
 noise_pot_std = 0.0005;           % Ruido del potenciómetro del servo [rad]
 tau_d_srv     = 0.01;             % Filtro de la derivada del servo [s]
 w_servo_max   = 6.16;             % Velocidad máx. del servo [rad/s] (0.17 s/60° a 4.8 V: VERIFICAR)
+
+% --- Fail-safes ampliados: vigilan también el eje y la aleta (leen el estado verdadero) ---
+failsafe_extra      = true;       % true: además de A/B, vigila T_AC, T_CB y omega_C; false: comportamiento anterior
+max_shaft_torque_Nm = 1.2;        % Límite de torque en cada tramo del eje [Nm] (igual que max_torque_Nm)
+max_omega_fin_rads  = 3*w_servo_max;  % Límite de velocidad de la aleta C [rad/s] (3x la velocidad máx. del servo; heurístico)
 
 % --- Frecuencias Naturales ---
 M = diag([J_A, J_C, J_B]);

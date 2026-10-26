@@ -163,7 +163,10 @@ fprintf('Ángulo de aleta | RMSE theta_C real vs consigna: %.3f deg | error máx
 fprintf('Carga emulada   | RMSE T_A real vs H_LUT(theta_C real): %.4f Nm (pico de la LUT: %.3f Nm)\n', ...
     rmse(T_A_true, H_ideal_true), max(abs(H_tab)));
 fprintf('Torque de B     | máx |T_B real|: %.3f Nm (saturación %.2f Nm)\n', max(abs(T_B_true)), T_B_max);
-fprintf('Torque en eje   | máx |T_AC real|: %.3f Nm\n\n', max(abs(T_AC_true)));
+fprintf('Torque en eje   | máx |T_AC real|: %.3f Nm | máx |T_CB real|: %.3f Nm (fail-safe %.2f Nm)\n', ...
+    max(abs(T_AC_true)), max(abs(T_CB_true)), max_shaft_torque_Nm);
+fprintf('Velocidad aleta | máx |omega_C real|: %.3f rad/s (fail-safe %.2f rad/s)\n\n', ...
+    max(abs(omega_C_true)), max_omega_fin_rads);
 
 % --- EVALUACIÓN DE ANCHO DE BANDA Y ESTADOS ---
 fprintf('=== EVALUACIÓN DE ANCHO DE BANDA ===\n');
@@ -188,5 +191,8 @@ if system_fault
     fprintf('Causa específica: %s\n', fault_reason);
 else
     fprintf('Estado: OK. No se detectaron violaciones a los límites angulares, cinemáticos ni de torque.\n');
+    if ~failsafe_extra
+        fprintf('(Fail-safes ampliados de eje y aleta desactivados: failsafe_extra = false)\n');
+    end
 end
 fprintf('=====================================================\n');
