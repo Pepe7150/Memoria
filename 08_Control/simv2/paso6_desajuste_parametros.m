@@ -13,7 +13,7 @@
 clc; clear; close all;
 
 run('paso1_parametros_sistema.m');
-escenario = 3;                       % 1, 2 o 3 (ver paso2)
+escenario = 1;                       % 1, 2 o 3 (ver paso2)
 run('paso2_perfiles_y_deriva.m');
 run('paso3_modelo_y_kalman.m');
 
